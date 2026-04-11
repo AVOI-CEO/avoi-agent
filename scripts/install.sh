@@ -94,7 +94,7 @@ print_banner() {
     echo ""
     echo -e "${MAGENTA}${BOLD}"
     echo "┌─────────────────────────────────────────────────────────┐"
-    echo "│             ⚕ Hermes Agent Installer                    │"
+    echo "│             ◆ AVOI Agent Installer                      │"
     echo "├─────────────────────────────────────────────────────────┤"
     echo "│  An AI agent platform by AVOI AI.                       │"
     echo "└─────────────────────────────────────────────────────────┘"
