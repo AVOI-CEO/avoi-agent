@@ -1,0 +1,39 @@
+name: Sync Upstream Hermes
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday 6 AM UTC
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fetch upstream
+        run: |
+          git remote add upstream https://github.com/NousResearch/hermes-agent.git || true
+          git fetch upstream main
+
+      - name: Check for new commits
+        id: check
+        run: |
+          DIFF=$(git log main..upstream/main --oneline | wc -l)
+          echo "new_commits=$DIFF" >> $GITHUB_OUTPUT
+
+      - name: Create PR if updates exist
+        if: steps.check.outputs.new_commits > 0
+        run: |
+          git checkout -b upstream-sync-$(date +%Y%m%d)
+          git merge upstream/main --no-edit || echo "MERGE CONFLICTS - manual review needed"
+          git push origin HEAD
+          gh pr create \
+            --title "🔄 Upstream Hermes sync ($(date +%Y-%m-%d))" \
+            --body "$(git log main..upstream/main --oneline)" \
+            --base avoi/dev
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
