@@ -1,0 +1,9 @@
+# AVOI CLI Skin — default theme
+display:
+  skin:
+    banner_color: "cyan"
+    spinner_faces: ["◐", "◓", "◑", "◒"]
+    spinner_verbs: ["Thinking", "Processing", "Analyzing", "Working"]
+    tool_prefix: "⚡"
+    response_box: true
+    branding_text: "AVOI Agent"
