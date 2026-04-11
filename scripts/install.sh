@@ -96,7 +96,7 @@ print_banner() {
     echo "┌─────────────────────────────────────────────────────────┐"
     echo "│             ⚕ Hermes Agent Installer                    │"
     echo "├─────────────────────────────────────────────────────────┤"
-    echo "│  An open source AI agent by Nous Research.              │"
+    echo "│  An AI agent platform by AVOI AI.                       │"
     echo "└─────────────────────────────────────────────────────────┘"
     echo -e "${NC}"
 }

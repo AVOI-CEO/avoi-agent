@@ -36,7 +36,7 @@ Usage:
     hermes honcho migrate                  # Step-by-step migration guide: OpenClaw native → Hermes + Honcho
     hermes version             Show version
     hermes update              Update to latest version
-    hermes uninstall           Uninstall Hermes Agent
+    avoi uninstall           Uninstall AVOI Agent
     hermes acp                 Run as an ACP server for editor integration
     hermes sessions browse     Interactive session picker with search
 
@@ -842,14 +842,14 @@ def cmd_whatsapp(args):
             print("    2. Send a message to the bot's WhatsApp number")
             print("    3. The agent will reply automatically")
             print()
-            print("  Tip: Agent responses are prefixed with '⚕ Hermes Agent'")
+            print("  Tip: Agent responses are prefixed with '◆ AVOI Agent'")
         else:
             print("  Next steps:")
             print("    1. Start the gateway:  hermes gateway")
             print("    2. Open WhatsApp → Message Yourself")
             print("    3. Type a message — the agent will reply")
             print()
-            print("  Tip: Agent responses are prefixed with '⚕ Hermes Agent'")
+            print("  Tip: Agent responses are prefixed with '◆ AVOI Agent'")
             print("  so you can tell them apart from your own messages.")
         print()
         print("  Or install as a service: hermes gateway install")
@@ -2718,7 +2718,7 @@ def cmd_config(args):
 
 def cmd_version(args):
     """Show version."""
-    print(f"Hermes Agent v{__version__} ({__release_date__})")
+    print(f"AVOI Agent v{__version__} ({__release_date__})")
     print(f"Project: {PROJECT_ROOT}")
     
     # Show Python version
@@ -2749,7 +2749,7 @@ def cmd_version(args):
 
 
 def cmd_uninstall(args):
-    """Uninstall Hermes Agent."""
+    """Uninstall AVOI Agent."""
     _require_tty("uninstall")
     from hermes_cli.uninstall import run_uninstall
     run_uninstall(args)
@@ -2835,7 +2835,7 @@ def _gateway_prompt(prompt_text: str, default: str = "", timeout: float = 300.0)
 
 
 def _update_via_zip(args):
-    """Update Hermes Agent by downloading a ZIP archive.
+    """Update AVOI Agent by downloading a ZIP archive.
     
     Used on Windows when git file I/O is broken (antivirus, NTFS filter 
     drivers causing 'Invalid argument' errors on file creation).
@@ -3449,19 +3449,19 @@ def _install_python_dependencies_with_optional_fallback(
 
 
 def cmd_update(args):
-    """Update Hermes Agent to the latest version."""
+    """Update AVOI Agent to the latest version."""
     import shutil
     from hermes_cli.config import is_managed, managed_error
 
     if is_managed():
-        managed_error("update Hermes Agent")
+        managed_error("update AVOI Agent")
         return
 
     gateway_mode = getattr(args, "gateway", False)
     # In gateway mode, use file-based IPC for prompts instead of stdin
     gw_input_fn = (lambda prompt, default="": _gateway_prompt(prompt, default)) if gateway_mode else None
     
-    print("⚕ Updating Hermes Agent...")
+    print("◆ Updating AVOI Agent...")
     print()
     
     # Try git-based update first, fall back to ZIP download on Windows
@@ -4243,7 +4243,7 @@ def main():
     """Main entry point for hermes CLI."""
     parser = argparse.ArgumentParser(
         prog="hermes",
-        description="Hermes Agent - AI assistant with tool-calling capabilities",
+        description="AVOI Agent - AI assistant with tool-calling capabilities",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -4333,7 +4333,7 @@ For more help on a command:
     chat_parser = subparsers.add_parser(
         "chat",
         help="Interactive chat with the agent",
-        description="Start an interactive chat session with Hermes Agent"
+        description="Start an interactive chat session with AVOI Agent"
     )
     chat_parser.add_argument(
         "-q", "--query",
@@ -4532,7 +4532,7 @@ For more help on a command:
     setup_parser = subparsers.add_parser(
         "setup",
         help="Interactive setup wizard",
-        description="Configure Hermes Agent with an interactive wizard. "
+        description="Configure AVOI Agent with an interactive wizard. "
                     "Run a specific section: hermes setup model|tts|terminal|gateway|tools|agent"
     )
     setup_parser.add_argument(
@@ -4667,7 +4667,7 @@ For more help on a command:
     status_parser = subparsers.add_parser(
         "status",
         help="Show status of all components",
-        description="Display status of Hermes Agent components"
+        description="Display status of AVOI Agent components"
     )
     status_parser.add_argument(
         "--all",
@@ -4777,7 +4777,7 @@ For more help on a command:
     doctor_parser = subparsers.add_parser(
         "doctor",
         help="Check configuration and dependencies",
-        description="Diagnose issues with Hermes Agent setup"
+        description="Diagnose issues with AVOI Agent setup"
     )
     doctor_parser.add_argument(
         "--fix",
@@ -4808,7 +4808,7 @@ For more help on a command:
     config_parser = subparsers.add_parser(
         "config",
         help="View and edit configuration",
-        description="Manage Hermes Agent configuration"
+        description="Manage AVOI Agent configuration"
     )
     config_subparsers = config_parser.add_subparsers(dest="config_command")
     
@@ -5499,7 +5499,7 @@ For more help on a command:
     # =========================================================================
     update_parser = subparsers.add_parser(
         "update",
-        help="Update Hermes Agent to the latest version",
+        help="Update AVOI Agent to the latest version",
         description="Pull the latest changes from git and reinstall dependencies"
     )
     update_parser.add_argument(
@@ -5513,8 +5513,8 @@ For more help on a command:
     # =========================================================================
     uninstall_parser = subparsers.add_parser(
         "uninstall",
-        help="Uninstall Hermes Agent",
-        description="Remove Hermes Agent from your system. Can keep configs/data for reinstall."
+        help="Uninstall AVOI Agent",
+        description="Remove AVOI Agent from your system. Can keep configs/data for reinstall."
     )
     uninstall_parser.add_argument(
         "--full",
@@ -5533,12 +5533,12 @@ For more help on a command:
     # =========================================================================
     acp_parser = subparsers.add_parser(
         "acp",
-        help="Run Hermes Agent as an ACP (Agent Client Protocol) server",
-        description="Start Hermes Agent in ACP mode for editor integration (VS Code, Zed, JetBrains)",
+        help="Run AVOI Agent as an ACP (Agent Client Protocol) server",
+        description="Start AVOI Agent in ACP mode for editor integration (VS Code, Zed, JetBrains)",
     )
 
     def cmd_acp(args):
-        """Launch Hermes Agent as an ACP server."""
+        """Launch AVOI Agent as an ACP server."""
         try:
             from acp_adapter.entry import main as acp_main
             acp_main()
