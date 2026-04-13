@@ -1,0 +1,105 @@
+name: avoi
+description: AVOI Agent — hot pink on black digital consciousness theme with diamond motifs, serial experiments aesthetic
+
+colors:
+  banner_border: "#FF1493"
+  banner_title: "#FF69B4"
+  banner_accent: "#FF1493"
+  banner_dim: "#8B3A62"
+  banner_text: "#D4A5A5"
+  ui_accent: "#FF1493"
+  ui_label: "#B0A0B0"
+  ui_ok: "#00FF00"
+  ui_error: "#FF0044"
+  ui_warn: "#FFFF99"
+  prompt: "#D4A5A5"
+  input_rule: "#8B3A62"
+  response_border: "#FF1493"
+  session_label: "#FF69B4"
+  session_border: "#5A2D42"
+
+spinner:
+  waiting_faces:
+    - "(◈)"
+    - "(◇)"
+    - "(⬡)"
+    - "(⊕)"
+    - "(◎)"
+  thinking_faces:
+    - "(◈)"
+    - "(⊕)"
+    - "(⬡)"
+    - "(⌁)"
+    - "(◎)"
+  thinking_verbs:
+    - "connecting to the Wired"
+    - "loading protocol"
+    - "parsing layer"
+    - "resolving node"
+    - "tracing signal"
+    - "decoding packet"
+    - "syncing consciousness"
+    - "bridging interface"
+  wings:
+    - ["⟪◈", "◈⟫"]
+    - ["⟪⊕", "⊕⟫"]
+    - ["⟪⬡", "⬡⟫"]
+    - ["⟪◎", "◎⟫"]
+
+branding:
+  agent_name: "AVOI Agent"
+  welcome: "[bold #FF1493]W[/][bold #FF1593]e[/][bold #FF1995]l[/][bold #FF1D97]c[/][bold #FF2399]o[/][bold #FF299C]m[/][bold #FF2F9F]e[/] [bold #FF36A3]t[/][bold #FF3EA6]o[/] [#FF4FAE]A[/][#FF58B2]V[/][#FF62B6]O[/][#FF6CBB]I[/][#FF76C0].[/] [#FF81C5]T[/][#FF8CCA]y[/][#FF97CF]p[/][#FFA3D4]e[/] [#FFAFDA]/[/][#FFBCE0]h[/][#FFC8E6]e[/][#FFD5EC]l[/][#FFE3F2]p[/] [#FFF1F8]f[/][#FFFFFF]o[/][#FFFFFF]r[/] [#FFFFFF]p[/][#FFFFFF]r[/][#FFFFFF]o[/][#FFFFFF]t[/][#FFFFFF]o[/][#FFFFFF]c[/][#FFFFFF]o[/][#FFFFFF]l[/][#FFFFFF]s[/][#FFFFFF].[/]"
+  goodbye: "[bold #FF1493]C[/][bold #FF1593]l[/][bold #FF1995]o[/][bold #FF1D97]s[/][bold #FF2399]i[/][bold #FF299C]n[/][bold #FF2F9F]g[/] [bold #FF36A3]c[/][bold #FF3EA6]o[/][#FF4FAE]n[/][#FF58B2]n[/][#FF62B6]e[/][#FF6CBB]c[/][#FF76C0]t[/][#FF81C5]i[/][#FF8CCA]o[/][#FF97CF]n[/][#FFA3D4].[/][#FFAFDA].[/][#FFBCE0].[/]"
+  response_label: " ◈ AVOI "
+  prompt_symbol: "◈ ❯ "
+  help_header: "(◈) Available Protocols"
+
+tool_prefix: "┊"
+
+tool_emojis:
+  terminal: "◈"
+  web_search: "◎"
+  read_file: "◇"
+  write_file: "◆"
+  search_files: "⬡"
+  execute_code: "⌁"
+  browser_navigate: "⊕"
+  delegate_task: "▣"
+  mixture_of_agents: "⚗"
+  memory: "◐"
+  clarify: "?"
+  cronjob: "↻"
+  process: "⚙"
+  todo: "☐"
+
+banner_logo: |
+  [#8B3A62] █████╗ ██╗   ██╗ ██████╗ ██╗ [/]
+  [#993D6B]██╔══██╗██║   ██║██╔═══██╗██║ [/]
+  [#CC1177]███████║██║   ██║██║   ██║██║ [/]
+  [#DD1188]██╔══██║╚██╗ ██╔╝██║   ██║██║ [/]
+  [#FF1493]██║  ██║ ╚████╔╝ ╚██████╔╝██║ [/]
+  [bold #FF69B4]╚═╝  ╚═╝  ╚═══╝   ╚═════╝ ╚═╝ [/]
+  [#CC1177]        A V O I   L A B S[/]
+  [bold #FF69B4]          ◎ A G E N T ◎[/]
+
+banner_hero: |
+  [#5A2D42]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⣦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#5A2D42]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⡟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF69B4]⠀⠀⠀⠀⠀⠀⠀⢠⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣼⣧⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣄⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF1493]⠀⠀⠀⠀⠀⠀⠀⢸⡇⣡⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⠈⣿⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF1493]⠀⠀⠀⠀⠀⠀⠀⢸⡇⣿⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⣿⠀⣿⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF1493]⠀⠀⠀⠀⠀⠀⠀⢸⡇⣿⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⣿⠀⣿⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF1493]⠀⠀⠀⠀⠀⠀⠀⢸⡇⣿⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⣿⠀⣿⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF1493]⠀⠀⠀⠀⠀⠀⠀⢸⡇⣿⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⣿⠀⣿⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF1493]⠀⠀⠀⠀⠀⠀⠀⢸⡇⣿⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⣿⠀⣿⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF1493]⠀⠀⠀⠀⠀⠀⠀⢸⡇⣿⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⣿⠀⣿⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF1493]⠀⠀⠀⠀⠀⠀⠀⢸⡇⣿⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⣿⠀⣿⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF1493]⠀⠀⠀⠀⠀⠀⠀⢸⡇⣿⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⣿⠀⣿⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF69B4]⠀⠀⠀⠀⠀⠀⠀⢸⡇⢿⣬⣭⣭⣭⣭⣭⣭⣭⣭⣭⣭⣭⣭⣭⣭⣭⣭⣥⣿⠀⣿⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF69B4]⠀⠀⠀⠀⠀⠀⠀⠸⠷⠶⠶⠶⠶⠶⠶⠶⣶⣶⣶⣶⣶⣶⠶⠶⠶⠶⠶⠶⠶⠶⠿⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF1493]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⡂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF69B4]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF69B4]⠀⠀⠀⠀⠀⠀⢰⢶⣶⡶⣶⡶⣶⣶⢶⣶⢶⣶⡶⣶⣶⣶⣶⢶⣶⡶⣶⡶⣶⣶⠶⣦⠀⠀⠀⠀⠀⠀[/]
+  [#FF69B4]⠀⠀⠀⠀⠀⠀⢸⢿⣿⡇⣿⡇⣿⣿⢸⣿⢺⣿⡇⣿⣿⣿⣿⢸⣿⡗⣿⡇⣿⣿⠀⣿⠀⠀⠀⠀⠀⠀[/]
+  [#FF1493]⠀⠀⠀⠀⠀⠀⠈⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠋⠀⠀⠀⠀⠀⠀[/]
+  [bold #FF69B4]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀◈[/] [#CC1177]A V O I[/] [bold #FF69B4]◈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]

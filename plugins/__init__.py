@@ -1,0 +1,1 @@
+# Avoi plugins package
