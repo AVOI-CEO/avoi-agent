@@ -2,6 +2,15 @@
 
 Instructions for AI coding assistants and developers working on the avoi-agent codebase.
 
+## Critical Rules (READ FIRST)
+
+1. **No breadcrumbs** — NEVER use hermes, HERMES, nous_, NOUS_, openclaw, OpenClaw, clawdbot, or moldbot in code, comments, commit messages, branch names, tags, or PR titles
+2. **Naming convention** — Always use `avoi_`, `AVOI_`, `avoi-` (see full table below)
+3. **Commit messages** — Use generic terms: "rebrand internal references" not "strip Hermes references", "upstream sync" not "Hermes update"
+4. **The only exceptions**: `"nous_portal"` key reads in `avoi_cli/auth.py` (backward compat) and this AGENTS.md file itself
+5. **Update ingestion** — When user says "check for updates", follow the Hermes Update Ingestion section below
+6. **Full context** — Read `/home/rahulmarshall/Notes/AVOI-CONTEXT.md` for complete project history and protocol
+
 ## Development Environment
 
 ```bash
