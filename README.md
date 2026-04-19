@@ -2,7 +2,6 @@
 # AVOI MIGO ◎
 
 <p align="center">
-  <a href="https://avoi-agent.AVOI-CEO.com/docs/"><img src="https://img.shields.io/badge/Docs-avoi--agent.AVOI-CEO.com-FFD700?style=for-the-badge" alt="Documentation"></a>
   <a href="https://discord.gg/AVOI"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
   <a href="https://github.com/AVOI/avoi-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
   <a href="https://AVOI-CEO.com"><img src="https://img.shields.io/badge/Built%20by-AVOI%20Research-blueviolet?style=for-the-badge" alt="Built by AVOI"></a>
