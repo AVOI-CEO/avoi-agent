@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "name": "avoi-agent",
+  "display_name": "avoi Agent",
+  "description": "AI agent by AVOI with 90+ tools, persistent memory, and multi-platform support",
+  "icon": "icon.svg",
+  "distribution": {
+    "type": "command",
+    "command": "avoi",
+    "args": ["acp"]
+  }
+}

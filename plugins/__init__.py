@@ -1,0 +1,1 @@
+# avoi plugins package
