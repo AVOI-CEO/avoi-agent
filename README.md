@@ -105,9 +105,9 @@ All documentation lives at **[avoi-agent.AVOI-CEO.com/docs](https://avoi-agent.A
 
 ---
 
-## Migrating from AVOI
+## Migrating from OpenClaw
 
-If you're coming from AVOI, avoi can automatically import your settings, memories, skills, and API keys.
+If you're coming from OpenClaw, MIGO can automatically import your settings, memories, skills, and API keys.
 
 **During first-time setup:** The setup wizard (`avoi setup`) automatically detects `~/.AVOI` and offers to migrate before configuration begins.
 
