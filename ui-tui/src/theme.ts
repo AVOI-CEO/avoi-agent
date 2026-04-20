@@ -47,6 +47,8 @@ export interface Theme {
   brand: ThemeBrand
   bannerLogo: string
   bannerHero: string
+  modelDisplayName: string
+  statusBarContextWidth: number
 }
 
 // ── Color math ───────────────────────────────────────────────────────
@@ -123,7 +125,9 @@ export const DEFAULT_THEME: Theme = {
   },
 
   bannerLogo: '',
-  bannerHero: ''
+  bannerHero: '',
+  modelDisplayName: '',
+  statusBarContextWidth: 10
 }
 
 // ── Skin → Theme ─────────────────────────────────────────────────────
@@ -134,7 +138,9 @@ export function fromSkin(
   bannerLogo = '',
   bannerHero = '',
   toolPrefix = '',
-  helpHeader = ''
+  helpHeader = '',
+  modelDisplayName = '',
+  statusBarContextWidth = ''
 ): Theme {
   const d = DEFAULT_THEME
   const c = (k: string) => colors[k]
@@ -188,6 +194,12 @@ export function fromSkin(
     },
 
     bannerLogo,
-    bannerHero
+    bannerHero,
+    modelDisplayName: modelDisplayName || branding.model_display_name || '',
+    statusBarContextWidth: statusBarContextWidth
+      ? parseInt(statusBarContextWidth, 10)
+      : branding.status_bar_context_width
+        ? parseInt(branding.status_bar_context_width, 10)
+        : d.statusBarContextWidth
   }
 }

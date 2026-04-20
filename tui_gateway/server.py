@@ -325,6 +325,8 @@ def resolve_skin() -> dict:
             "banner_hero": skin.banner_hero,
             "tool_prefix": skin.tool_prefix,
             "help_header": (skin.branding or {}).get("help_header", ""),
+            "model_display_name": (skin.branding or {}).get("model_display_name", ""),
+            "status_bar_context_width": (skin.branding or {}).get("status_bar_context_width", ""),
         }
     except Exception:
         return {}

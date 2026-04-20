@@ -102,6 +102,16 @@ def get_available_skills() -> Dict[str, List[str]]:
     return skills_by_category
 
 
+def get_available_skills_flat() -> List[Dict[str, str]]:
+    """Return skills as a flat list of {name, description} dicts."""
+    try:
+        from tools.skills_tool import _find_all_skills
+        all_skills = _find_all_skills()
+    except Exception:
+        return []
+    return [{"name": s["name"], "description": s.get("description", "")} for s in all_skills]
+
+
 # =========================================================================
 # Update check
 # =========================================================================
@@ -370,13 +380,21 @@ def build_welcome_banner(console: Console, model: str, cwd: str,
         left_lines.append(f"[dim {session_color}]Session: {session_id}[/]")
     left_content = "\n".join(left_lines)
 
-    right_lines = [f"[bold {accent}]Available Tools[/]"]
+    banner_sections = getattr(_bskin, "banner_sections", ["tools", "mcp", "skills", "summary"]) if _bskin else ["tools", "mcp", "skills", "summary"]
+    banner_tool_format = getattr(_bskin, "banner_tool_format", "toolset") if _bskin else "toolset"
+    tools_allowlist = getattr(_bskin, "banner_tools_allowlist", []) if _bskin else []
+    skills_allowlist = getattr(_bskin, "banner_skills_allowlist", []) if _bskin else []
+
     toolsets_dict: Dict[str, list] = {}
+    tool_descriptions: Dict[str, str] = {}
 
     for tool in tools:
         tool_name = tool["function"]["name"]
         toolset = _display_toolset_name(get_toolset_for_tool(tool_name) or "other")
         toolsets_dict.setdefault(toolset, []).append(tool_name)
+        desc = tool["function"].get("description", "")
+        if desc:
+            tool_descriptions[tool_name] = desc[:40] + ("..." if len(desc) > 40 else "")
 
     for item in unavailable_toolsets:
         toolset_id = item.get("id", item.get("name", "unknown"))
@@ -387,58 +405,83 @@ def build_welcome_banner(console: Console, model: str, cwd: str,
             if tool_name not in toolsets_dict[display_name]:
                 toolsets_dict[display_name].append(tool_name)
 
-    sorted_toolsets = sorted(toolsets_dict.keys())
-    display_toolsets = sorted_toolsets[:8]
-    remaining_toolsets = len(sorted_toolsets) - 8
+    right_lines = []
 
-    for toolset in display_toolsets:
-        tool_names = toolsets_dict[toolset]
-        colored_names = []
-        for name in sorted(tool_names):
-            if name in disabled_tools:
-                colored_names.append(f"[red]{name}[/]")
-            elif name in lazy_tools:
-                colored_names.append(f"[yellow]{name}[/]")
+    if "tools" in banner_sections:
+        tools_header = _bskin.get_branding("tools_header", "Available Tools") if _bskin else "Available Tools"
+        right_lines.append(f"[bold {accent}]{tools_header}[/]")
+
+        if banner_tool_format == "flat":
+            tool_emojis_map = getattr(_bskin, "tool_emojis", {}) if _bskin else {}
+            default_emoji = "•"
+            if tools_allowlist:
+                flat_names = [n for n in tools_allowlist
+                              if any(n in ts for ts in toolsets_dict.values())]
             else:
-                colored_names.append(f"[{text}]{name}[/]")
-
-        tools_str = ", ".join(colored_names)
-        if len(", ".join(sorted(tool_names))) > 45:
-            short_names = []
-            length = 0
-            for name in sorted(tool_names):
-                if length + len(name) + 2 > 42:
-                    short_names.append("...")
-                    break
-                short_names.append(name)
-                length += len(name) + 2
-            colored_names = []
-            for name in short_names:
-                if name == "...":
-                    colored_names.append("[dim]...[/]")
-                elif name in disabled_tools:
-                    colored_names.append(f"[red]{name}[/]")
+                flat_names = sorted({n for ts in toolsets_dict.values() for n in ts})
+            for name in flat_names:
+                emoji = tool_emojis_map.get(name, default_emoji)
+                desc = tool_descriptions.get(name, "")
+                desc_part = f" [dim {dim}]·[/] [dim {dim}]{desc}[/]" if desc else ""
+                if name in disabled_tools:
+                    right_lines.append(f"  [red]{emoji} {name}[/]{desc_part}")
                 elif name in lazy_tools:
-                    colored_names.append(f"[yellow]{name}[/]")
+                    right_lines.append(f"  [yellow]{emoji} {name}[/]{desc_part}")
                 else:
-                    colored_names.append(f"[{text}]{name}[/]")
-            tools_str = ", ".join(colored_names)
+                    right_lines.append(f"  [{text}]{emoji} {name}[/]{desc_part}")
+        else:
+            sorted_toolsets = sorted(toolsets_dict.keys())
+            display_toolsets = sorted_toolsets[:8]
+            remaining_toolsets = len(sorted_toolsets) - 8
 
-        right_lines.append(f"[dim {dim}]{toolset}:[/] {tools_str}")
+            for toolset in display_toolsets:
+                tool_names = toolsets_dict[toolset]
+                colored_names = []
+                for name in sorted(tool_names):
+                    if name in disabled_tools:
+                        colored_names.append(f"[red]{name}[/]")
+                    elif name in lazy_tools:
+                        colored_names.append(f"[yellow]{name}[/]")
+                    else:
+                        colored_names.append(f"[{text}]{name}[/]")
 
-    if remaining_toolsets > 0:
-        right_lines.append(f"[dim {dim}](and {remaining_toolsets} more toolsets...)[/]")
+                tools_str = ", ".join(colored_names)
+                if len(", ".join(sorted(tool_names))) > 45:
+                    short_names = []
+                    length = 0
+                    for name in sorted(tool_names):
+                        if length + len(name) + 2 > 42:
+                            short_names.append("...")
+                            break
+                        short_names.append(name)
+                        length += len(name) + 2
+                    colored_names = []
+                    for name in short_names:
+                        if name == "...":
+                            colored_names.append("[dim]...[/]")
+                        elif name in disabled_tools:
+                            colored_names.append(f"[red]{name}[/]")
+                        elif name in lazy_tools:
+                            colored_names.append(f"[yellow]{name}[/]")
+                        else:
+                            colored_names.append(f"[{text}]{name}[/]")
+                    tools_str = ", ".join(colored_names)
 
-    # MCP Servers section (only if configured)
+                right_lines.append(f"[dim {dim}]{toolset}:[/] {tools_str}")
+
+            if remaining_toolsets > 0:
+                right_lines.append(f"[dim {dim}](and {remaining_toolsets} more toolsets...)[/]")
+
     try:
         from tools.mcp_tool import get_mcp_status
         mcp_status = get_mcp_status()
     except Exception:
         mcp_status = []
 
-    if mcp_status:
+    if "mcp" in banner_sections and mcp_status:
         right_lines.append("")
-        right_lines.append(f"[bold {accent}]MCP Servers[/]")
+        mcp_header = _bskin.get_branding("mcp_header", "MCP Servers") if _bskin else "MCP Servers"
+        right_lines.append(f"[bold {accent}]{mcp_header}[/]")
         for srv in mcp_status:
             if srv["connected"]:
                 right_lines.append(
@@ -451,43 +494,69 @@ def build_welcome_banner(console: Console, model: str, cwd: str,
                     f"[red]— failed[/]"
                 )
 
-    right_lines.append("")
-    right_lines.append(f"[bold {accent}]Available Skills[/]")
-    skills_by_category = get_available_skills()
-    total_skills = sum(len(s) for s in skills_by_category.values())
+    if "skills" in banner_sections:
+        right_lines.append("")
+        skills_header = _bskin.get_branding("skills_header", "Available Skills") if _bskin else "Available Skills"
+        right_lines.append(f"[bold {accent}]{skills_header}[/]")
+        skills_by_category = get_available_skills()
+        total_skills = sum(len(s) for s in skills_by_category.values())
 
-    if skills_by_category:
-        for category in sorted(skills_by_category.keys()):
-            skill_names = sorted(skills_by_category[category])
-            if len(skill_names) > 8:
-                display_names = skill_names[:8]
-                skills_str = ", ".join(display_names) + f" +{len(skill_names) - 8} more"
+        if banner_tool_format == "flat":
+            all_skills = get_available_skills_flat()
+            skill_max = 0
+            if skills_allowlist:
+                by_name = {s["name"]: s for s in all_skills}
+                display_skills = [by_name[n] for n in skills_allowlist if n in by_name]
             else:
-                skills_str = ", ".join(skill_names)
-            if len(skills_str) > 50:
-                skills_str = skills_str[:47] + "..."
-            right_lines.append(f"[dim {dim}]{category}:[/] [{text}]{skills_str}[/]")
+                skill_max = getattr(_bskin, "banner_skill_max", 0) if _bskin else 0
+                display_skills = all_skills[:skill_max] if skill_max > 0 else all_skills
+            for skill in display_skills:
+                desc = skill.get("description", "")
+                if desc and len(desc) > 40:
+                    desc = desc[:40] + "..."
+                desc_part = f" [dim {dim}]·[/] [dim {dim}]{desc}[/]" if desc else ""
+                right_lines.append(f"  [{text}]🧩 {skill['name']}[/]{desc_part}")
+            if skill_max > 0 and len(all_skills) > skill_max:
+                right_lines.append(f"  [dim {dim}]+{len(all_skills) - skill_max} more[/]")
+        else:
+            if skills_by_category:
+                for category in sorted(skills_by_category.keys()):
+                    skill_names = sorted(skills_by_category[category])
+                    if len(skill_names) > 8:
+                        display_names = skill_names[:8]
+                        skills_str = ", ".join(display_names) + f" +{len(skill_names) - 8} more"
+                    else:
+                        skills_str = ", ".join(skill_names)
+                    if len(skills_str) > 50:
+                        skills_str = skills_str[:47] + "..."
+                    right_lines.append(f"[dim {dim}]{category}:[/] [{text}]{skills_str}[/]")
+            else:
+                right_lines.append(f"[dim {dim}]No skills installed[/]")
     else:
-        right_lines.append(f"[dim {dim}]No skills installed[/]")
+        total_skills = 0
 
-    right_lines.append("")
-    mcp_connected = sum(1 for s in mcp_status if s["connected"]) if mcp_status else 0
-    summary_parts = [f"{len(tools)} tools", f"{total_skills} skills"]
-    if mcp_connected:
-        summary_parts.append(f"{mcp_connected} MCP servers")
-    summary_parts.append("/help for commands")
-    # Show active profile name when not 'default'
-    try:
-        from avoi_cli.profiles import get_active_profile_name
-        _profile_name = get_active_profile_name()
-        if _profile_name and _profile_name != "default":
-            right_lines.append(f"[bold {accent}]Profile:[/] [{text}]{_profile_name}[/]")
-    except Exception:
-        pass  # Never break the banner over a profiles.py bug
+    if "summary" in banner_sections:
+        right_lines.append("")
+        mcp_connected = sum(1 for s in mcp_status if s["connected"]) if mcp_status else 0
+        tool_word = "systems" if banner_tool_format == "flat" else "tools"
+        shown_tools = len(tools_allowlist) if tools_allowlist else len(tools)
+        shown_skills = len(skills_allowlist) if skills_allowlist else total_skills
+        summary_parts = [f"{shown_tools} {tool_word}"]
+        if "skills" in banner_sections:
+            summary_parts.append(f"{shown_skills} skills")
+        if "mcp" in banner_sections and mcp_connected:
+            summary_parts.append(f"{mcp_connected} MCP servers")
+        summary_parts.append("/help for commands")
+        try:
+            from avoi_cli.profiles import get_active_profile_name
+            _profile_name = get_active_profile_name()
+            if _profile_name and _profile_name != "default":
+                right_lines.append(f"[bold {accent}]Profile:[/] [{text}]{_profile_name}[/]")
+        except Exception:
+            pass
 
-    right_lines.append(f"[dim {dim}]{' · '.join(summary_parts)}[/]")
+        right_lines.append(f"[dim {dim}]{' · '.join(summary_parts)}[/]")
 
-    # Update check — use prefetched result if available
     try:
         behind = get_update_result(timeout=0.5)
         if behind and behind > 0:
@@ -498,7 +567,7 @@ def build_welcome_banner(console: Console, model: str, cwd: str,
                 f"[dim yellow] — run [bold]{recommended_update_command()}[/bold] to update[/]"
             )
     except Exception:
-        pass  # Never break the banner over an update check
+        pass
 
     right_content = "\n".join(right_lines)
     layout_table.add_row(left_content, right_content)

@@ -66,3 +66,22 @@ def test_get_available_skills_null_category_becomes_general():
 
     assert "general" in result
     assert result["general"] == ["orphan-skill"]
+
+
+def test_get_available_skills_flat_returns_list_of_dicts():
+    with patch("tools.skills_tool._find_all_skills", return_value=list(_MOCK_SKILLS)):
+        from avoi_cli.banner import get_available_skills_flat
+        result = get_available_skills_flat()
+
+    assert isinstance(result, list)
+    assert len(result) == 3
+    assert result[0]["name"] == "skill-a"
+    assert result[0]["description"] == "A skill"
+
+
+def test_get_available_skills_flat_handles_import_failure():
+    with patch("tools.skills_tool._find_all_skills", side_effect=ImportError("boom")):
+        from avoi_cli.banner import get_available_skills_flat
+        result = get_available_skills_flat()
+
+    assert result == []

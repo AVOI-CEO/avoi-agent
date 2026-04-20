@@ -23,7 +23,7 @@ class TestSkinConfig:
         from avoi_cli.skin_engine import load_skin
         skin = load_skin("default")
         assert skin.name == "default"
-        assert skin.tool_prefix == "┊"
+        assert skin.tool_prefix == "│"
         assert "banner_title" in skin.colors
         assert "banner_border" in skin.colors
         assert "agent_name" in skin.branding
@@ -31,7 +31,7 @@ class TestSkinConfig:
     def test_get_color_with_fallback(self):
         from avoi_cli.skin_engine import load_skin
         skin = load_skin("default")
-        assert skin.get_color("banner_title") == "#FFD700"
+        assert skin.get_color("banner_title") == "#22C55E"
         assert skin.get_color("nonexistent", "#000") == "#000"
 
     def test_get_branding_with_fallback(self):
@@ -40,10 +40,13 @@ class TestSkinConfig:
         assert skin.get_branding("agent_name") == "avoi Agent"
         assert skin.get_branding("nonexistent", "fallback") == "fallback"
 
-    def test_get_spinner_wings_empty_for_default(self):
+    def test_get_spinner_wings_default_has_wings(self):
         from avoi_cli.skin_engine import load_skin
         skin = load_skin("default")
-        assert skin.get_spinner_wings() == []
+        wings = skin.get_spinner_wings()
+        assert len(wings) > 0
+        assert isinstance(wings[0], tuple)
+        assert len(wings[0]) == 2
 
 
 class TestBuiltinSkins:
@@ -133,6 +136,7 @@ class TestSkinManagement:
         skins = list_skins()
         names = [s["name"] for s in skins]
         assert "default" in names
+        assert "classic" in names
         assert "ares" in names
         assert "mono" in names
         assert "slate" in names
@@ -197,7 +201,7 @@ class TestUserSkins:
         assert skin.get_branding("agent_name") == "Custom Agent"
         assert skin.tool_prefix == "▸"
         # Should inherit defaults for unspecified colors
-        assert skin.get_color("banner_border") == "#CD7F32"  # from default
+        assert skin.get_color("banner_border") == "#3A3A3A"
 
     def test_list_skins_includes_user_skins(self, tmp_path, monkeypatch):
         from avoi_cli.skin_engine import list_skins
@@ -220,7 +224,7 @@ class TestUserSkins:
 class TestDisplayIntegration:
     def test_get_skin_tool_prefix_default(self):
         from agent.display import get_skin_tool_prefix
-        assert get_skin_tool_prefix() == "┊"
+        assert get_skin_tool_prefix() == "│"
 
     def test_get_skin_tool_prefix_custom(self):
         from avoi_cli.skin_engine import set_active_skin
@@ -239,14 +243,14 @@ class TestDisplayIntegration:
     def test_tool_message_default_prefix(self):
         from agent.display import get_cute_tool_message
         msg = get_cute_tool_message("terminal", {"command": "ls"}, 0.5)
-        assert msg.startswith("┊")
+        assert msg.startswith("│")
 
 
 class TestCliBrandingHelpers:
     def test_active_prompt_symbol_default(self):
         from avoi_cli.skin_engine import get_active_prompt_symbol
 
-        assert get_active_prompt_symbol() == "❯ "
+        assert get_active_prompt_symbol() == "◎ "
 
     def test_active_prompt_symbol_ares(self):
         from avoi_cli.skin_engine import set_active_skin, get_active_prompt_symbol

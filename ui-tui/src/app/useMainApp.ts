@@ -287,9 +287,9 @@ export function useMainApp(gw: GatewayClient) {
 
   // ── Terminal tab title ─────────────────────────────────────────────
   // Show model name + status so users can identify the avoi tab.
-  const shortModel = ui.info?.model?.replace(/^.*\//, '') ?? ''
   const titleStatus = ui.busy ? '⏳' : '✓'
-  const terminalTitle = shortModel ? `${titleStatus} ${shortModel} — avoi` : 'avoi'
+  const titleModel = ui.theme.modelDisplayName || 'avoi'
+  const terminalTitle = `${titleStatus} ${titleModel} — avoi`
   useTerminalTitle(terminalTitle)
 
   useEffect(() => {

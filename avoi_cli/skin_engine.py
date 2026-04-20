@@ -89,7 +89,8 @@ USAGE
 BUILT-IN SKINS
 ==============
 
-- ``default`` — Classic avoi gold/kawaii (the current look)
+- ``default`` — Command authority — phosphor green, hologram blue, ash steel
+- ``classic``  — Classic avoi gold/kawaii (the original look)
 - ``ares``    — Crimson/bronze war-god theme with custom spinner wings
 - ``mono``    — Clean grayscale monochrome
 - ``slate``   — Cool blue developer-focused theme
@@ -129,6 +130,11 @@ class SkinConfig:
     tool_emojis: Dict[str, str] = field(default_factory=dict)  # per-tool emoji overrides
     banner_logo: str = ""    # Rich-markup ASCII art logo (replaces avoi_AGENT_LOGO)
     banner_hero: str = ""    # Rich-markup hero art (replaces avoi_CADUCEUS)
+    banner_sections: List[str] = field(default_factory=lambda: ["tools", "mcp", "skills", "summary"])
+    banner_tool_format: str = "toolset"
+    banner_skill_max: int = 0
+    banner_tools_allowlist: List[str] = field(default_factory=list)
+    banner_skills_allowlist: List[str] = field(default_factory=list)
 
     def get_color(self, key: str, fallback: str = "") -> str:
         """Get a color value with fallback."""
@@ -155,7 +161,92 @@ class SkinConfig:
 _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
     "default": {
         "name": "default",
-        "description": "Classic avoi — gold and kawaii",
+        "description": "Command authority — phosphor green, hologram blue, ash steel",
+        "colors": {
+            "banner_border": "#3A3A3A",
+            "banner_title": "#22C55E",
+            "banner_accent": "#3B82F6",
+            "banner_dim": "#5A5A5A",
+            "banner_text": "#D2D0CE",
+            "ui_accent": "#22C55E",
+            "ui_label": "#3B82F6",
+            "ui_ok": "#22C55E",
+            "ui_error": "#FF3030",
+            "ui_warn": "#E35205",
+            "prompt": "#D2D0CE",
+            "input_rule": "#3A3A3A",
+            "response_border": "#22C55E",
+            "session_label": "#6B6966",
+            "session_border": "#2A2A2A",
+        },
+        "spinner": {
+            "waiting_faces": ["(■)", "(▪)", "(●)", "(◎)", "(●)", "(▪)"],
+            "thinking_faces": ["[◎]", "[●]", "[◉]", "[○]", "[◎]"],
+            "thinking_verbs": [
+                "SCANNING SECTOR", "TARGET ACQUIRED", "NEURAL SYNC",
+                "ENGAGING PROTOCOL", "LATTICE MAPPING", "STANDING BY",
+                "SIGNAL LOCKED", "DEPLOYING AGENT",
+            ],
+            "wings": [["⌖", "⌖"], ["◎", "◎"], ["⬡", "⬡"]],
+        },
+        "branding": {
+            "agent_name": "avoi Agent",
+            "welcome": "avoi PROTOCOL ACTIVE — AWAITING DIRECTIVE",
+            "goodbye": "TERMINATION SIGNAL — CONNECTION SEVERED",
+            "response_label": " ◉ avoi ",
+            "prompt_symbol": "◎ ",
+            "help_header": "◆ AVAILABLE DIRECTIVES",
+            "tools_header": "◆ ACTIVE SYSTEMS",
+            "skills_header": "◆ LOADED PROTOCOLS",
+            "mcp_header": "◆ EXTERNAL LINKS",
+            "model_display_name": "MIGO",
+            "status_bar_context_width": "30",
+        },
+        "tool_prefix": "│",
+        "tool_emojis": {
+            "terminal": "🖥️", "web_search": "🔍", "read_file": "📄",
+            "write_file": "✏️", "search_files": "🔎", "execute_code": "▶️",
+            "browser_navigate": "🌐", "delegate_task": "🤖", "memory": "🧠",
+            "clarify": "❓", "cronjob": "⏰", "process": "⚙️", "todo": "📝",
+        },
+        "banner_sections": ["tools", "mcp", "skills", "summary"],
+        "banner_tool_format": "flat",
+        "banner_tools_allowlist": [
+            "browser_navigate", "execute_code", "clarify", "todo", "cronjob",
+            "delegate_task", "read_file", "search_files", "write_file",
+            "memory", "process", "terminal", "web_search",
+        ],
+        "banner_skills_allowlist": [
+            "systematic-debugging", "test-driven-development",
+            "codebase-inspection", "github-code-review", "plan",
+        ],
+        "banner_logo": """[bold #4ADE80] █████╗ ██╗   ██╗ ██████╗ ██╗[/]   [bold #93C5FD]███╗   ███╗██╗ ██████╗  ██████╗ [/]
+[bold #34D96B]██╔══██╗██║   ██║██╔═══██╗██║[/]   [bold #60A5FA]████╗ ████║██║██╔════╝ ██╔═══██╗[/]
+[bold #22C55E]███████║██║   ██║██║   ██║██║[/]   [bold #3B82F6]██╔████╔██║██║██║  ███╗██║   ██║[/]
+[bold #16A34A]██╔══██║╚██╗ ██╔╝██║   ██║██║[/]   [bold #2563EB]██║╚██╔╝██║██║██║   ██║██║   ██║[/]
+[bold #15803D]██║  ██║ ╚████╔╝ ╚██████╔╝██║[/]   [bold #1D4ED8]██║ ╚═╝ ██║██║╚██████╔╝╚██████╔╝[/]
+[bold #14532D]╚═╝  ╚═╝  ╚═══╝   ╚═════╝ ╚═╝[/]   [bold #1E40AF]╚═╝     ╚═╝╚═╝ ╚═════╝  ╚═════╝ [/]
+[dim #5A5A5A]                       A V O I _ M I G O[/]""",
+        "banner_hero": """[#3A3A3A]╔═══════════════════════════════════════╗[/]
+[#3A3A3A]║[/]      [bold #22C55E]◉ avoi · COMMAND INTERFACE ◉[/]     [#3A3A3A]║[/]
+[#3A3A3A]╠═══════════════════════════════════════╣[/]
+[#3A3A3A]║                                       ║[/]
+[#3A3A3A]║[/]            [#3B82F6]+ T A R G E T +[/]            [#3A3A3A]║[/]
+[#3A3A3A]║                                       ║[/]
+[#3A3A3A]║[/]          [#3B82F6]┌────────┬────────┐[/]          [#3A3A3A]║[/]
+[#3A3A3A]║[/]          [#3B82F6]│        │        │[/]          [#3A3A3A]║[/]
+[#3A3A3A]║[/]          [#3B82F6]├────────┼────────┤[/]          [#3A3A3A]║[/]
+[#3A3A3A]║[/]          [#3B82F6]│        │        │[/]          [#3A3A3A]║[/]
+[#3A3A3A]║[/]          [#3B82F6]└────────┴────────┘[/]          [#3A3A3A]║[/]
+[#3A3A3A]║                                       ║[/]
+[#3A3A3A]╠═══════════════════════════════════════╣[/]
+[#3A3A3A]║[/]       [#5A5A5A]▓▓▓▓[/]   [bold #22C55E]avoi COMMAND[/]   [#5A5A5A]▓▓▓▓[/]      [#3A3A3A]║[/]
+[#3A3A3A]║[/]       [bold #22C55E]ENGAGE[/] [#5A5A5A]·[/] [bold #3B82F6]EXECUTE[/] [#5A5A5A]·[/] [bold #22C55E]EVOLVE[/]       [#3A3A3A]║[/]
+[#3A3A3A]╚═══════════════════════════════════════╝[/]""",
+    },
+    "classic": {
+        "name": "classic",
+        "description": "Classic avoi — gold and kawaii (the original look)",
         "colors": {
             "banner_border": "#CD7F32",
             "banner_title": "#FFD700",
@@ -173,9 +264,7 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
             "session_label": "#DAA520",
             "session_border": "#8B8682",
         },
-        "spinner": {
-            # Empty = use hardcoded defaults in display.py
-        },
+        "spinner": {},
         "branding": {
             "agent_name": "avoi Agent",
             "welcome": "Welcome to avoi Agent! Type your message or /help for commands.",
@@ -629,6 +718,11 @@ def _build_skin_config(data: Dict[str, Any]) -> SkinConfig:
         tool_emojis=data.get("tool_emojis", {}),
         banner_logo=data.get("banner_logo", ""),
         banner_hero=data.get("banner_hero", ""),
+        banner_sections=data.get("banner_sections", ["tools", "mcp", "skills", "summary"]),
+        banner_tool_format=data.get("banner_tool_format", "toolset"),
+        banner_skill_max=data.get("banner_skill_max", 0),
+        banner_tools_allowlist=data.get("banner_tools_allowlist", []),
+        banner_skills_allowlist=data.get("banner_skills_allowlist", []),
     )
 
 

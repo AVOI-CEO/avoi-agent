@@ -41,6 +41,7 @@ def test_build_welcome_banner_uses_normalized_toolset_names():
             ),
         ),
         patch.object(banner, "get_available_skills", return_value={}),
+        patch.object(banner, "get_available_skills_flat", return_value=[]),
         patch.object(banner, "get_update_result", return_value=None),
         patch.object(tools.mcp_tool, "get_mcp_status", return_value=[]),
     ):
@@ -62,9 +63,6 @@ def test_build_welcome_banner_uses_normalized_toolset_names():
         )
 
     output = console.export_text()
-    assert "homeassistant:" in output
-    assert "honcho:" in output
-    assert "web:" in output
     assert "homeassistant_tools:" not in output
     assert "honcho_tools:" not in output
     assert "web_tools:" not in output

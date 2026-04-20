@@ -48,7 +48,7 @@ function ctxBarColor(pct: number | undefined, t: Theme) {
   return t.color.statusGood
 }
 
-function ctxBar(pct: number | undefined, w = 10) {
+function ctxBar(pct: number | undefined, w = 20) {
   const p = Math.max(0, Math.min(100, pct ?? 0))
   const filled = Math.round((p / 100) * w)
 
@@ -105,6 +105,8 @@ export function StatusRule({
 }: StatusRuleProps) {
   const pct = usage.context_percent
   const barColor = ctxBarColor(pct, t)
+  const modelLabel = t.modelDisplayName || model.replace(/^.*\//, '')
+  const ctxBarWidth = t.statusBarContextWidth > 0 ? t.statusBarContextWidth : 20
 
   const ctxLabel = usage.context_max
     ? `${fmtK(usage.context_used ?? 0)}/${fmtK(usage.context_max)}`
@@ -112,16 +114,15 @@ export function StatusRule({
       ? `${fmtK(usage.total)} tok`
       : ''
 
-  const bar = usage.context_max ? ctxBar(pct) : ''
+  const bar = usage.context_max ? ctxBar(pct, ctxBarWidth) : ''
   const leftWidth = Math.max(12, cols - cwdLabel.length - 3)
 
   return (
     <Box>
       <Box flexShrink={1} width={leftWidth}>
         <Text color={t.color.bronze} wrap="truncate-end">
-          {'─ '}
-          {busy ? <FaceTicker color={statusColor} /> : <Text color={statusColor}>{status}</Text>}
-          <Text color={t.color.dim}> │ {model}</Text>
+          <Text color={statusColor}>◎</Text>
+          <Text color={t.color.dim}> {modelLabel}</Text>
           {ctxLabel ? <Text color={t.color.dim}> │ {ctxLabel}</Text> : null}
           {bar ? (
             <Text color={t.color.dim}>

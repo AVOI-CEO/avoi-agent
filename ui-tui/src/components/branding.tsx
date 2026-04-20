@@ -98,7 +98,7 @@ export function SessionPanel({ info, sid, t }: SessionPanelProps) {
           <Text />
 
           <Text color={t.color.amber}>
-            {info.model.split('/').pop()}
+            {t.modelDisplayName || info.model?.split('/').pop() || 'avoi'}
             <Text color={t.color.dim}> · AVOI</Text>
           </Text>
 

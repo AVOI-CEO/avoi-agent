@@ -1914,6 +1914,26 @@ class avoiCLI:
             return "class:status-bar-warn"
         return "class:status-bar-good"
 
+    def _get_skin_model_display_name(self) -> str:
+        try:
+            from avoi_cli.skin_engine import get_active_skin
+            name = get_active_skin().get_branding("model_display_name", "")
+            if name:
+                return name
+        except Exception:
+            pass
+        return ""
+
+    def _get_skin_context_bar_width(self) -> int:
+        try:
+            from avoi_cli.skin_engine import get_active_skin
+            val = get_active_skin().get_branding("status_bar_context_width", "")
+            if val:
+                return int(val)
+        except Exception:
+            pass
+        return 10
+
     def _build_context_bar(self, percent_used: Optional[int], width: int = 10) -> str:
         safe_percent = max(0, min(100, percent_used or 0))
         filled = round((safe_percent / 100) * width)
@@ -2111,11 +2131,12 @@ class avoiCLI:
             percent_label = f"{percent}%" if percent is not None else "--"
             duration_label = snapshot["duration"]
 
+            model_display = self._get_skin_model_display_name() or snapshot["model_short"]
             if width < 52:
-                text = f"◎ {snapshot['model_short']} · {duration_label}"
+                text = f"◎ {model_display} · {duration_label}"
                 return self._trim_status_bar_text(text, width)
             if width < 76:
-                parts = [f"◎ {snapshot['model_short']}", percent_label]
+                parts = [f"◎ {model_display}", percent_label]
                 parts.append(duration_label)
                 return self._trim_status_bar_text(" · ".join(parts), width)
 
@@ -2126,7 +2147,7 @@ class avoiCLI:
             else:
                 context_label = "ctx --"
 
-            parts = [f"◎ {snapshot['model_short']}", context_label, percent_label]
+            parts = [f"◎ {model_display}", context_label, percent_label]
             parts.append(duration_label)
             return self._trim_status_bar_text(" │ ".join(parts), width)
         except Exception:
@@ -2146,9 +2167,10 @@ class avoiCLI:
             duration_label = snapshot["duration"]
 
             if width < 52:
+                model_display = self._get_skin_model_display_name() or snapshot["model_short"]
                 frags = [
                     ("class:status-bar", " ◎ "),
-                    ("class:status-bar-strong", snapshot["model_short"]),
+                    ("class:status-bar-strong", model_display),
                     ("class:status-bar-dim", " · "),
                     ("class:status-bar-dim", duration_label),
                     ("class:status-bar", " "),
@@ -2156,10 +2178,11 @@ class avoiCLI:
             else:
                 percent = snapshot["context_percent"]
                 percent_label = f"{percent}%" if percent is not None else "--"
+                model_display = self._get_skin_model_display_name() or snapshot["model_short"]
                 if width < 76:
                     frags = [
                         ("class:status-bar", " ◎ "),
-                        ("class:status-bar-strong", snapshot["model_short"]),
+                        ("class:status-bar-strong", model_display),
                         ("class:status-bar-dim", " · "),
                         (self._status_bar_context_style(percent), percent_label),
                         ("class:status-bar-dim", " · "),
@@ -2175,13 +2198,29 @@ class avoiCLI:
                         context_label = "ctx --"
 
                     bar_style = self._status_bar_context_style(percent)
+                    skin_bar_max = self._get_skin_context_bar_width()
+                    fixed_width = (
+                        3  # " ◎ "
+                        + len(model_display)
+                        + 3  # " │ "
+                        + self._status_bar_display_width(context_label)
+                        + 3  # " │ "
+                        + 2  # "[" + "]" brackets around the bar
+                        + 1  # " " between bar and percent
+                        + self._status_bar_display_width(percent_label)
+                        + 3  # " │ "
+                        + self._status_bar_display_width(duration_label)
+                        + 1  # trailing " "
+                        + 2  # safety margin
+                    )
+                    bar_cells = max(5, min(skin_bar_max, width - fixed_width))
                     frags = [
                         ("class:status-bar", " ◎ "),
-                        ("class:status-bar-strong", snapshot["model_short"]),
+                        ("class:status-bar-strong", model_display),
                         ("class:status-bar-dim", " │ "),
                         ("class:status-bar-dim", context_label),
                         ("class:status-bar-dim", " │ "),
-                        (bar_style, self._build_context_bar(percent)),
+                        (bar_style, self._build_context_bar(percent, width=bar_cells)),
                         ("class:status-bar-dim", " "),
                         (bar_style, percent_label),
                         ("class:status-bar-dim", " │ "),
