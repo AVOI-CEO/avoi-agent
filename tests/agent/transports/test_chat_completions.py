@@ -81,10 +81,10 @@ class TestChatCompletionsBuildKwargs:
         )
         assert kw["extra_body"]["provider"] == {"only": ["openai"]}
 
-    def test_nous_tags(self, transport):
+    def test_avoi_tags(self, transport):
         msgs = [{"role": "user", "content": "Hi"}]
         kw = transport.build_kwargs(model="gpt-4o", messages=msgs, is_nous=True)
-        assert kw["extra_body"]["tags"] == ["product=hermes-agent"]
+        assert kw["extra_body"]["tags"] == ["product=avoi-agent"]
 
     def test_reasoning_default(self, transport):
         msgs = [{"role": "user", "content": "Hi"}]
@@ -94,7 +94,7 @@ class TestChatCompletionsBuildKwargs:
         )
         assert kw["extra_body"]["reasoning"] == {"enabled": True, "effort": "medium"}
 
-    def test_nous_omits_disabled_reasoning(self, transport):
+    def test_avoi_omits_disabled_reasoning(self, transport):
         msgs = [{"role": "user", "content": "Hi"}]
         kw = transport.build_kwargs(
             model="gpt-4o", messages=msgs,

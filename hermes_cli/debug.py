@@ -1,7 +1,7 @@
-"""``hermes debug`` — debug tools for Hermes Agent.
+"""``avoi debug`` — debug tools for AVOI Agent.
 
 Currently supports:
-    hermes debug share    Upload debug report (system info + logs) to a
+    avoi debug share    Upload debug report (system info + logs) to a
                           paste service and print a shareable URL.
 """
 
@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from hermes_constants import get_hermes_home
+from avoi_constants import get_avoi_home
 
 
 # ---------------------------------------------------------------------------
@@ -40,15 +40,15 @@ _AUTO_DELETE_SECONDS = 21600
 # ---------------------------------------------------------------------------
 
 def _pending_file() -> Path:
-    """Path to ``~/.hermes/pastes/pending.json``.
+    """Path to ``~/.avoi/pastes/pending.json``.
 
     Each entry: ``{"url": "...", "expire_at": <unix_ts>}``.  Scheduled
     DELETEs used to be handled by spawning a detached Python process per
     paste that slept for 6 hours; those accumulated forever if the user
-    ran ``hermes debug share`` repeatedly.  We now persist the schedule
+    ran ``avoi debug share`` repeatedly.  We now persist the schedule
     to disk and sweep expired entries on the next debug invocation.
     """
-    return get_hermes_home() / "pastes" / "pending.json"
+    return get_avoi_home() / "pastes" / "pending.json"
 
 
 def _load_pending() -> list[dict]:
@@ -76,7 +76,7 @@ def _save_pending(entries: list[dict]) -> None:
         tmp.write_text(json.dumps(entries, indent=2), encoding="utf-8")
         os.replace(tmp, path)
     except OSError:
-        # Non-fatal — worst case the user has to run ``hermes debug delete``
+        # Non-fatal — worst case the user has to run ``avoi debug delete``
         # manually.
         pass
 
@@ -106,7 +106,7 @@ def _sweep_expired_pastes(now: Optional[float] = None) -> tuple[int, int]:
 
     Returns ``(deleted, remaining)``.  Best-effort: failed deletes stay in
     the pending file and will be retried on the next sweep.  Silent —
-    intended to be called from every ``hermes debug`` invocation with
+    intended to be called from every ``avoi debug`` invocation with
     minimal noise.
     """
     entries = _load_pending()
@@ -175,7 +175,7 @@ Pastes auto-delete after 6 hours.
 _GATEWAY_PRIVACY_NOTICE = (
     "⚠️ **Privacy notice:** This uploads system info + recent log tails "
     "(may contain conversation fragments) to a public paste service. "
-    "Full logs are NOT included from the gateway — use `hermes debug share` "
+    "Full logs are NOT included from the gateway — use `avoi debug share` "
     "from the CLI for full log uploads.\n"
     "Pastes auto-delete after 6 hours."
 )
@@ -208,7 +208,7 @@ def delete_paste(url: str) -> bool:
     target = f"{_PASTE_RS_URL}{paste_id}"
     req = urllib.request.Request(
         target, method="DELETE",
-        headers={"User-Agent": "hermes-agent/debug-share"},
+        headers={"User-Agent": "avoi-agent/debug-share"},
     )
     with urllib.request.urlopen(req, timeout=30) as resp:
         return 200 <= resp.status < 300
@@ -219,12 +219,12 @@ def _schedule_auto_delete(urls: list[str], delay_seconds: int = _AUTO_DELETE_SEC
 
     Previously this spawned a detached Python subprocess per call that slept
     for 6 hours and then issued DELETE requests.  Those subprocesses leaked —
-    every ``hermes debug share`` invocation added ~20 MB of resident Python
+    every ``avoi debug share`` invocation added ~20 MB of resident Python
     interpreters that never exited until the sleep completed.
 
-    The replacement is stateless: we append to ``~/.hermes/pastes/pending.json``
+    The replacement is stateless: we append to ``~/.avoi/pastes/pending.json``
     and rely on opportunistic sweeps (``_sweep_expired_pastes``) called from
-    every ``hermes debug`` invocation.  If the user never runs ``hermes debug``
+    every ``avoi debug`` invocation.  If the user never runs ``avoi debug``
     again, paste.rs's own retention policy handles cleanup.
     """
     _record_pending(urls, delay_seconds=delay_seconds)
@@ -234,7 +234,7 @@ def _delete_hint(url: str) -> str:
     """Return a one-liner delete command for the given paste URL."""
     paste_id = _extract_paste_id(url)
     if paste_id:
-        return f"hermes debug delete {url}"
+        return f"avoi debug delete {url}"
     # dpaste.com — no API delete, expires on its own.
     return "(auto-expires per dpaste.com policy)"
 
@@ -249,7 +249,7 @@ def _upload_paste_rs(content: str) -> str:
         _PASTE_RS_URL, data=data, method="POST",
         headers={
             "Content-Type": "text/plain; charset=utf-8",
-            "User-Agent": "hermes-agent/debug-share",
+            "User-Agent": "avoi-agent/debug-share",
         },
     )
     with urllib.request.urlopen(req, timeout=30) as resp:
@@ -285,7 +285,7 @@ def _upload_dpaste_com(content: str, expiry_days: int = 7) -> str:
         _DPASTE_COM_URL, data=body, method="POST",
         headers={
             "Content-Type": f"multipart/form-data; boundary={boundary}",
-            "User-Agent": "hermes-agent/debug-share",
+            "User-Agent": "avoi-agent/debug-share",
         },
     )
     with urllib.request.urlopen(req, timeout=30) as resp:
@@ -335,10 +335,10 @@ class LogSnapshot:
 
 def _primary_log_path(log_name: str) -> Optional[Path]:
     """Where *log_name* would live if present. Doesn't check existence."""
-    from hermes_cli.logs import LOG_FILES
+    from avoi_cli.logs import LOG_FILES
 
     filename = LOG_FILES.get(log_name)
-    return (get_hermes_home() / "logs" / filename) if filename else None
+    return (get_avoi_home() / "logs" / filename) if filename else None
 
 
 def _resolve_log_path(log_name: str) -> Optional[Path]:
@@ -452,8 +452,8 @@ def _capture_default_log_snapshots(log_lines: int) -> dict[str, LogSnapshot]:
 # ---------------------------------------------------------------------------
 
 def _capture_dump() -> str:
-    """Run ``hermes dump`` and return its stdout as a string."""
-    from hermes_cli.dump import run_dump
+    """Run ``avoi dump`` and return its stdout as a string."""
+    from avoi_cli.dump import run_dump
 
     class _FakeArgs:
         show_keys = False
@@ -483,7 +483,7 @@ def collect_debug_report(
     log_lines
         Number of recent lines to include per log file.
     dump_text
-        Pre-captured dump output.  If empty, ``hermes dump`` is run
+        Pre-captured dump output.  If empty, ``avoi dump`` is run
         internally.
 
     Returns the report as a plain-text string ready for upload.
@@ -605,7 +605,7 @@ def run_debug_share(args):
     print(f"\n⏱  Pastes will auto-delete in 6 hours.")
 
     # Manual delete fallback
-    print(f"To delete now:  hermes debug delete <url>")
+    print(f"To delete now:  avoi debug delete <url>")
 
     print(f"\nShare these links with the Hermes team for support.")
 
@@ -614,8 +614,8 @@ def run_debug_delete(args):
     """Delete one or more paste URLs uploaded by /debug."""
     urls = getattr(args, "urls", [])
     if not urls:
-        print("Usage: hermes debug delete <url> [<url> ...]")
-        print("  Deletes paste.rs pastes uploaded by 'hermes debug share'.")
+        print("Usage: avoi debug delete <url> [<url> ...]")
+        print("  Deletes paste.rs pastes uploaded by 'avoi debug share'.")
         return
 
     for url in urls:
@@ -633,10 +633,10 @@ def run_debug_delete(args):
 
 def run_debug(args):
     """Route debug subcommands."""
-    # Opportunistic sweep of expired pastes on every ``hermes debug`` call.
+    # Opportunistic sweep of expired pastes on every ``avoi debug`` call.
     # Replaces the old per-paste sleeping subprocess that used to leak as
     # one orphaned Python interpreter per scheduled deletion.  Silent and
-    # best-effort — any failure is swallowed so ``hermes debug`` stays
+    # best-effort — any failure is swallowed so ``avoi debug`` stays
     # reliable even when offline.
     try:
         _sweep_expired_pastes()
@@ -650,7 +650,7 @@ def run_debug(args):
         run_debug_delete(args)
     else:
         # Default: show help
-        print("Usage: hermes debug <command>")
+        print("Usage: avoi debug <command>")
         print()
         print("Commands:")
         print("  share    Upload debug report to a paste service and print URL")

@@ -28,7 +28,7 @@ from typing import List, Dict, Any, Set, Optional
 
 # Shared tool list for CLI and all messaging platform toolsets.
 # Edit this once to update all platforms simultaneously.
-_HERMES_CORE_TOOLS = [
+_AVOI_CORE_TOOLS = [
     # Web
     "web_search", "web_extract",
     # Terminal + process management
@@ -260,7 +260,7 @@ TOOLSETS = {
     # which is gated on gateway running via its check_fn).
     # ==========================================================================
 
-    "hermes-acp": {
+    "avoi-acp": {
         "description": "Editor integration (VS Code, Zed, JetBrains) — coding-focused tools without messaging, audio, or clarify UI",
         "tools": [
             "web_search", "web_extract",
@@ -279,7 +279,7 @@ TOOLSETS = {
         "includes": []
     },
 
-    "hermes-api-server": {
+    "avoi-api-server": {
         "description": "OpenAI-compatible API server — full agent tools accessible via HTTP (no interactive UI tools like clarify or send_message)",
         "tools": [
             # Web
@@ -312,95 +312,95 @@ TOOLSETS = {
         "includes": []
     },
     
-    "hermes-cli": {
+    "avoi-cli": {
         "description": "Full interactive CLI toolset - all default tools plus cronjob management",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-cron": {
-        # Mirrors hermes-cli so cron's "default" toolset is the same set of
-        # core tools users see interactively — then `hermes tools` filters
+    "avoi-cron": {
+        # Mirrors avoi-cli so cron's "default" toolset is the same set of
+        # core tools users see interactively — then `avoi tools` filters
         # them down per the platform config. _DEFAULT_OFF_TOOLSETS (moa,
         # homeassistant, rl) are excluded by _get_platform_tools() unless
         # the user explicitly enables them.
-        "description": "Default cron toolset - same core tools as hermes-cli; gated by `hermes tools`",
-        "tools": _HERMES_CORE_TOOLS,
+        "description": "Default cron toolset - same core tools as avoi-cli; gated by `avoi tools`",
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-telegram": {
+    "avoi-telegram": {
         "description": "Telegram bot toolset - full access for personal use (terminal has safety checks)",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
     
-    "hermes-discord": {
+    "avoi-discord": {
         "description": "Discord bot toolset - full access (terminal has safety checks via dangerous command approval)",
-        "tools": _HERMES_CORE_TOOLS + [
+        "tools": _AVOI_CORE_TOOLS + [
             "discord",
             "discord_admin",
         ],
         "includes": []
     },
     
-    "hermes-whatsapp": {
+    "avoi-whatsapp": {
         "description": "WhatsApp bot toolset - similar to Telegram (personal messaging, more trusted)",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
     
-    "hermes-slack": {
+    "avoi-slack": {
         "description": "Slack bot toolset - full access for workspace use (terminal has safety checks)",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
     
-    "hermes-signal": {
+    "avoi-signal": {
         "description": "Signal bot toolset - encrypted messaging platform (full access)",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-bluebubbles": {
+    "avoi-bluebubbles": {
         "description": "BlueBubbles iMessage bot toolset - Apple iMessage via local BlueBubbles server",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-homeassistant": {
+    "avoi-homeassistant": {
         "description": "Home Assistant bot toolset - smart home event monitoring and control",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-email": {
+    "avoi-email": {
         "description": "Email bot toolset - interact with Hermes via email (IMAP/SMTP)",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-mattermost": {
+    "avoi-mattermost": {
         "description": "Mattermost bot toolset - self-hosted team messaging (full access)",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-matrix": {
+    "avoi-matrix": {
         "description": "Matrix bot toolset - decentralized encrypted messaging (full access)",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-dingtalk": {
+    "avoi-dingtalk": {
         "description": "DingTalk bot toolset - enterprise messaging platform (full access)",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-feishu": {
+    "avoi-feishu": {
         "description": "Feishu/Lark bot toolset - enterprise messaging via Feishu/Lark (full access)",
-        "tools": _HERMES_CORE_TOOLS + [
+        "tools": _AVOI_CORE_TOOLS + [
             "feishu_doc_read",
             "feishu_drive_list_comments",
             "feishu_drive_list_comment_replies",
@@ -410,46 +410,46 @@ TOOLSETS = {
         "includes": []
     },
 
-    "hermes-weixin": {
+    "avoi-weixin": {
         "description": "Weixin bot toolset - personal WeChat messaging via iLink (full access)",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-qqbot": {
+    "avoi-qqbot": {
         "description": "QQBot toolset - QQ messaging via Official Bot API v2 (full access)",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-wecom": {
+    "avoi-wecom": {
         "description": "WeCom bot toolset - enterprise WeChat messaging (full access)",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-wecom-callback": {
+    "avoi-wecom-callback": {
         "description": "WeCom callback toolset - enterprise self-built app messaging (full access)",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-sms": {
+    "avoi-sms": {
         "description": "SMS bot toolset - interact with Hermes via SMS (Twilio)",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-webhook": {
+    "avoi-webhook": {
         "description": "Webhook toolset - receive and process external webhook events",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _AVOI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-gateway": {
+    "avoi-gateway": {
         "description": "Gateway toolset - union of all messaging platform tools",
         "tools": [],
-        "includes": ["hermes-telegram", "hermes-discord", "hermes-whatsapp", "hermes-slack", "hermes-signal", "hermes-bluebubbles", "hermes-homeassistant", "hermes-email", "hermes-sms", "hermes-mattermost", "hermes-matrix", "hermes-dingtalk", "hermes-feishu", "hermes-wecom", "hermes-wecom-callback", "hermes-weixin", "hermes-qqbot", "hermes-webhook"]
+        "includes": ["avoi-telegram", "avoi-discord", "avoi-whatsapp", "avoi-slack", "avoi-signal", "avoi-bluebubbles", "avoi-homeassistant", "avoi-email", "avoi-sms", "avoi-mattermost", "avoi-matrix", "avoi-dingtalk", "avoi-feishu", "avoi-wecom", "avoi-wecom-callback", "avoi-weixin", "avoi-qqbot", "avoi-webhook"]
     }
 }
 

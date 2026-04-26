@@ -2,12 +2,12 @@
 name: codex
 description: Delegate coding tasks to OpenAI Codex CLI agent. Use for building features, refactoring, PR reviews, and batch issue fixing. Requires the codex CLI and a git repository.
 version: 1.0.0
-author: Hermes Agent
+author: AVOI Agent
 license: MIT
 metadata:
-  hermes:
+  avoi:
     tags: [Coding-Agent, Codex, OpenAI, Code-Review, Refactoring]
-    related_skills: [claude-code, hermes-agent]
+    related_skills: [claude-code, avoi-agent]
 ---
 
 # Codex CLI

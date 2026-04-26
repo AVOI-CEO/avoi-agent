@@ -2,12 +2,12 @@
 name: google-workspace
 description: Gmail, Calendar, Drive, Contacts, Sheets, and Docs integration for Hermes. Uses Hermes-managed OAuth2 setup, prefers the Google Workspace CLI (`gws`) when available for broader API coverage, and falls back to the Python client libraries otherwise.
 version: 1.0.0
-author: Nous Research
+author: AVOI AI
 license: MIT
 metadata:
-  hermes:
+  avoi:
     tags: [Google, Gmail, Calendar, Drive, Sheets, Docs, Contacts, Email, OAuth]
-    homepage: https://github.com/NousResearch/hermes-agent
+    homepage: https://github.com/avoi-ai/avoi-agent
     related_skills: [himalaya]
 ---
 
@@ -32,7 +32,7 @@ on CLI, Telegram, Discord, or any platform.
 Define a shorthand first:
 
 ```bash
-GSETUP="python ${HERMES_HOME:-$HOME/.hermes}/skills/productivity/google-workspace/scripts/setup.py"
+GSETUP="python ${AVOI_HOME:-$HOME/.avoi}/skills/productivity/google-workspace/scripts/setup.py"
 ```
 
 ### Step 0: Check if already set up
@@ -105,7 +105,7 @@ $GSETUP --client-secret /path/to/client_secret.json
 
 If they paste the raw client ID / client secret values instead of a file path,
 write a valid Desktop OAuth JSON file for them yourself, save it somewhere
-explicit (for example `~/Downloads/hermes-google-client-secret.json`), then run
+explicit (for example `~/Downloads/avoi-google-client-secret.json`), then run
 `--client-secret` against that file.
 
 ### Step 3: Get authorization URL
@@ -119,7 +119,7 @@ $GSETUP --auth-url --services all --format json
 ```
 
 This returns JSON with an `auth_url` field and also saves the exact URL to
-`~/.hermes/google_oauth_last_url.txt`.
+`~/.avoi/google_oauth_last_url.txt`.
 
 Agent rules for this step:
 - Extract the `auth_url` field and send that exact URL to the user as a single line.
@@ -153,9 +153,9 @@ Should print `AUTHENTICATED`. Setup is complete — token refreshes automaticall
 
 ### Notes
 
-- Token is stored at `~/.hermes/google_token.json` and auto-refreshes.
-- Pending OAuth session state/verifier are stored temporarily at `~/.hermes/google_oauth_pending.json` until exchange completes.
-- If `gws` is installed, `google_api.py` points it at the same `~/.hermes/google_token.json` credentials file. Users do not need to run a separate `gws auth login` flow.
+- Token is stored at `~/.avoi/google_token.json` and auto-refreshes.
+- Pending OAuth session state/verifier are stored temporarily at `~/.avoi/google_oauth_pending.json` until exchange completes.
+- If `gws` is installed, `google_api.py` points it at the same `~/.avoi/google_token.json` credentials file. Users do not need to run a separate `gws auth login` flow.
 - To revoke: `$GSETUP --revoke`
 
 ## Usage
@@ -163,7 +163,7 @@ Should print `AUTHENTICATED`. Setup is complete — token refreshes automaticall
 All commands go through the API script. Set `GAPI` as a shorthand:
 
 ```bash
-GAPI="python ${HERMES_HOME:-$HOME/.hermes}/skills/productivity/google-workspace/scripts/google_api.py"
+GAPI="python ${AVOI_HOME:-$HOME/.avoi}/skills/productivity/google-workspace/scripts/google_api.py"
 ```
 
 ### Gmail

@@ -68,9 +68,9 @@ class TestNormalizeAuxProvider:
 
 class TestReadCodexAccessToken:
     def test_valid_auth_store(self, tmp_path, monkeypatch):
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({
+        avoi_home = tmp_path / "avoi"
+        avoi_home.mkdir(parents=True, exist_ok=True)
+        (avoi_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -78,18 +78,18 @@ class TestReadCodexAccessToken:
                 },
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         result = _read_codex_access_token()
         assert result == "tok-123"
 
     def test_pool_without_selected_entry_falls_back_to_auth_store(self, tmp_path, monkeypatch):
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        avoi_home = tmp_path / "avoi"
+        avoi_home.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
 
         valid_jwt = "eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjk5OTk5OTk5OTl9.sig"
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(True, None)), \
-             patch("hermes_cli.auth._read_codex_tokens", return_value={
+             patch("avoi_cli.auth._read_codex_tokens", return_value={
                  "tokens": {"access_token": valid_jwt, "refresh_token": "refresh"}
              }):
             result = _read_codex_access_token()
@@ -97,18 +97,18 @@ class TestReadCodexAccessToken:
         assert result == valid_jwt
 
     def test_missing_returns_none(self, tmp_path, monkeypatch):
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({"version": 1, "providers": {}}))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        avoi_home = tmp_path / "avoi"
+        avoi_home.mkdir(parents=True, exist_ok=True)
+        (avoi_home / "auth.json").write_text(json.dumps({"version": 1, "providers": {}}))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)):
             result = _read_codex_access_token()
         assert result is None
 
     def test_empty_token_returns_none(self, tmp_path, monkeypatch):
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({
+        avoi_home = tmp_path / "avoi"
+        avoi_home.mkdir(parents=True, exist_ok=True)
+        (avoi_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -116,7 +116,7 @@ class TestReadCodexAccessToken:
                 },
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         result = _read_codex_access_token()
         assert result is None
 
@@ -148,9 +148,9 @@ class TestReadCodexAccessToken:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         expired_jwt = f"{header}.{payload}.fakesig"
 
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({
+        avoi_home = tmp_path / "avoi"
+        avoi_home.mkdir(parents=True, exist_ok=True)
+        (avoi_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -158,7 +158,7 @@ class TestReadCodexAccessToken:
                 },
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)):
             result = _read_codex_access_token()
         assert result is None, "Expired JWT should return None"
@@ -173,9 +173,9 @@ class TestReadCodexAccessToken:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         valid_jwt = f"{header}.{payload}.fakesig"
 
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({
+        avoi_home = tmp_path / "avoi"
+        avoi_home.mkdir(parents=True, exist_ok=True)
+        (avoi_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -183,15 +183,15 @@ class TestReadCodexAccessToken:
                 },
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         result = _read_codex_access_token()
         assert result == valid_jwt
 
     def test_non_jwt_token_passes_through(self, tmp_path, monkeypatch):
         """Non-JWT tokens (no dots) should be returned as-is."""
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({
+        avoi_home = tmp_path / "avoi"
+        avoi_home.mkdir(parents=True, exist_ok=True)
+        (avoi_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -199,7 +199,7 @@ class TestReadCodexAccessToken:
                 },
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         result = _read_codex_access_token()
         assert result == "plain-token-no-jwt"
 
@@ -291,9 +291,9 @@ class TestExpiredCodexFallback:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         expired_jwt = f"{header}.{payload}.fakesig"
 
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({
+        avoi_home = tmp_path / "avoi"
+        avoi_home.mkdir(parents=True, exist_ok=True)
+        (avoi_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -301,7 +301,7 @@ class TestExpiredCodexFallback:
                 },
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
 
         # Set up Anthropic as fallback
         monkeypatch.setenv("ANTHROPIC_TOKEN", "sk-ant-oat01-test-fallback")
@@ -323,9 +323,9 @@ class TestExpiredCodexFallback:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         expired_jwt = f"{header}.{payload}.fakesig"
 
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({
+        avoi_home = tmp_path / "avoi"
+        avoi_home.mkdir(parents=True, exist_ok=True)
+        (avoi_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -333,7 +333,7 @@ class TestExpiredCodexFallback:
                 },
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setenv("OPENROUTER_API_KEY", "or-test-key")
 
         with patch("agent.auxiliary_client.OpenAI") as mock_openai:
@@ -354,9 +354,9 @@ class TestExpiredCodexFallback:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         expired_jwt = f"{header}.{payload}.fakesig"
 
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({
+        avoi_home = tmp_path / "avoi"
+        avoi_home.mkdir(parents=True, exist_ok=True)
+        (avoi_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -364,7 +364,7 @@ class TestExpiredCodexFallback:
                 },
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
 
         # Simulate Ollama or custom endpoint
         with patch("agent.auxiliary_client._resolve_custom_runtime",
@@ -376,10 +376,10 @@ class TestExpiredCodexFallback:
                 assert client is not None
 
 
-    def test_hermes_oauth_file_sets_oauth_flag(self, monkeypatch):
+    def test_avoi_oauth_file_sets_oauth_flag(self, monkeypatch):
         """OAuth-style tokens should get is_oauth=*** (token is not sk-ant-api-*)."""
         # Mock resolve_anthropic_token to return an OAuth-style token
-        with patch("agent.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-oat-hermes-token"), \
+        with patch("agent.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-oat-avoi-token"), \
              patch("agent.anthropic_adapter.build_anthropic_client") as mock_build, \
              patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)):
             mock_build.return_value = MagicMock()
@@ -397,9 +397,9 @@ class TestExpiredCodexFallback:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         no_exp_jwt = f"{header}.{payload}.fakesig"
 
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({
+        avoi_home = tmp_path / "avoi"
+        avoi_home.mkdir(parents=True, exist_ok=True)
+        (avoi_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -407,7 +407,7 @@ class TestExpiredCodexFallback:
                 },
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         result = _read_codex_access_token()
         assert result == no_exp_jwt, "JWT without exp should pass through"
 
@@ -418,9 +418,9 @@ class TestExpiredCodexFallback:
         payload = base64.urlsafe_b64encode(b"not-json-content").rstrip(b"=").decode()
         bad_jwt = f"{header}.{payload}.fakesig"
 
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({
+        avoi_home = tmp_path / "avoi"
+        avoi_home.mkdir(parents=True, exist_ok=True)
+        (avoi_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -428,7 +428,7 @@ class TestExpiredCodexFallback:
                 },
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         result = _read_codex_access_token()
         assert result == bad_jwt, "JWT with invalid JSON payload should pass through"
 
@@ -505,7 +505,7 @@ class TestGetTextAuxiliaryClient:
         with (
             patch("agent.auxiliary_client.load_pool", return_value=_Pool()),
             patch("agent.auxiliary_client.OpenAI"),
-            patch("hermes_cli.auth._read_codex_tokens", side_effect=AssertionError("legacy codex store should not run")),
+            patch("avoi_cli.auth._read_codex_tokens", side_effect=AssertionError("legacy codex store should not run")),
         ):
             from agent.auxiliary_client import _try_codex
 
@@ -518,12 +518,12 @@ class TestGetTextAuxiliaryClient:
 
 
 class TestNousAuxiliaryRefresh:
-    def test_try_nous_prefers_runtime_credentials(self):
-        fresh_base = "https://inference-api.nousresearch.com/v1"
+    def test_try_avoi_prefers_runtime_credentials(self):
+        fresh_base = "https://inference-api.avoi-ai.com/v1"
         with (
-            patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "stale-token"}),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", fresh_base)),
-            patch("hermes_cli.models.get_nous_recommended_aux_model", return_value=None),
+            patch("agent.auxiliary_client._read_avoi_auth", return_value={"access_token": "stale-token"}),
+            patch("agent.auxiliary_client._resolve_avoi_runtime_api", return_value=("fresh-agent-key", fresh_base)),
+            patch("avoi_cli.models.get_avoi_recommended_aux_model", return_value=None),
             patch("agent.auxiliary_client.OpenAI") as mock_openai,
         ):
             from agent.auxiliary_client import _try_nous
@@ -537,13 +537,13 @@ class TestNousAuxiliaryRefresh:
         assert mock_openai.call_args.kwargs["api_key"] == "fresh-agent-key"
         assert mock_openai.call_args.kwargs["base_url"] == fresh_base
 
-    def test_try_nous_uses_portal_recommendation_for_text(self):
+    def test_try_avoi_uses_portal_recommendation_for_text(self):
         """When the Portal recommends a compaction model, _try_nous honors it."""
-        fresh_base = "https://inference-api.nousresearch.com/v1"
+        fresh_base = "https://inference-api.avoi-ai.com/v1"
         with (
-            patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "***"}),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", fresh_base)),
-            patch("hermes_cli.models.get_nous_recommended_aux_model", return_value="minimax/minimax-m2.7") as mock_rec,
+            patch("agent.auxiliary_client._read_avoi_auth", return_value={"access_token": "***"}),
+            patch("agent.auxiliary_client._resolve_avoi_runtime_api", return_value=("fresh-agent-key", fresh_base)),
+            patch("avoi_cli.models.get_avoi_recommended_aux_model", return_value="minimax/minimax-m2.7") as mock_rec,
             patch("agent.auxiliary_client.OpenAI") as mock_openai,
         ):
             from agent.auxiliary_client import _try_nous
@@ -555,13 +555,13 @@ class TestNousAuxiliaryRefresh:
         assert model == "minimax/minimax-m2.7"
         assert mock_rec.call_args.kwargs["vision"] is False
 
-    def test_try_nous_uses_portal_recommendation_for_vision(self):
+    def test_try_avoi_uses_portal_recommendation_for_vision(self):
         """Vision tasks should ask for the vision-specific recommendation."""
-        fresh_base = "https://inference-api.nousresearch.com/v1"
+        fresh_base = "https://inference-api.avoi-ai.com/v1"
         with (
-            patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "***"}),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", fresh_base)),
-            patch("hermes_cli.models.get_nous_recommended_aux_model", return_value="google/gemini-3-flash-preview") as mock_rec,
+            patch("agent.auxiliary_client._read_avoi_auth", return_value={"access_token": "***"}),
+            patch("agent.auxiliary_client._resolve_avoi_runtime_api", return_value=("fresh-agent-key", fresh_base)),
+            patch("avoi_cli.models.get_avoi_recommended_aux_model", return_value="google/gemini-3-flash-preview") as mock_rec,
             patch("agent.auxiliary_client.OpenAI"),
         ):
             from agent.auxiliary_client import _try_nous
@@ -571,13 +571,13 @@ class TestNousAuxiliaryRefresh:
         assert model == "google/gemini-3-flash-preview"
         assert mock_rec.call_args.kwargs["vision"] is True
 
-    def test_try_nous_falls_back_when_recommendation_lookup_raises(self):
+    def test_try_avoi_falls_back_when_recommendation_lookup_raises(self):
         """If the Portal lookup throws, we must still return a usable model."""
-        fresh_base = "https://inference-api.nousresearch.com/v1"
+        fresh_base = "https://inference-api.avoi-ai.com/v1"
         with (
-            patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "***"}),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", fresh_base)),
-            patch("hermes_cli.models.get_nous_recommended_aux_model", side_effect=RuntimeError("portal down")),
+            patch("agent.auxiliary_client._read_avoi_auth", return_value={"access_token": "***"}),
+            patch("agent.auxiliary_client._resolve_avoi_runtime_api", return_value=("fresh-agent-key", fresh_base)),
+            patch("avoi_cli.models.get_avoi_recommended_aux_model", side_effect=RuntimeError("portal down")),
             patch("agent.auxiliary_client.OpenAI"),
         ):
             from agent.auxiliary_client import _try_nous
@@ -586,16 +586,16 @@ class TestNousAuxiliaryRefresh:
         assert client is not None
         assert model == "google/gemini-3-flash-preview"
 
-    def test_call_llm_retries_nous_after_401(self):
+    def test_call_llm_retries_avoi_after_401(self):
         class _Auth401(Exception):
             status_code = 401
 
         stale_client = MagicMock()
-        stale_client.base_url = "https://inference-api.nousresearch.com/v1"
+        stale_client.base_url = "https://inference-api.avoi-ai.com/v1"
         stale_client.chat.completions.create.side_effect = _Auth401("stale nous key")
 
         fresh_client = MagicMock()
-        fresh_client.base_url = "https://inference-api.nousresearch.com/v1"
+        fresh_client.base_url = "https://inference-api.avoi-ai.com/v1"
         fresh_client.chat.completions.create.return_value = {"ok": True}
 
         with (
@@ -603,7 +603,7 @@ class TestNousAuxiliaryRefresh:
             patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
             patch("agent.auxiliary_client.OpenAI", return_value=fresh_client),
             patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task: resp),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nousresearch.com/v1")),
+            patch("agent.auxiliary_client._resolve_avoi_runtime_api", return_value=("fresh-agent-key", "https://inference-api.avoi-ai.com/v1")),
         ):
             result = call_llm(
                 task="compression",
@@ -615,16 +615,16 @@ class TestNousAuxiliaryRefresh:
         assert fresh_client.chat.completions.create.call_count == 1
 
     @pytest.mark.asyncio
-    async def test_async_call_llm_retries_nous_after_401(self):
+    async def test_async_call_llm_retries_avoi_after_401(self):
         class _Auth401(Exception):
             status_code = 401
 
         stale_client = MagicMock()
-        stale_client.base_url = "https://inference-api.nousresearch.com/v1"
+        stale_client.base_url = "https://inference-api.avoi-ai.com/v1"
         stale_client.chat.completions.create = AsyncMock(side_effect=_Auth401("stale nous key"))
 
         fresh_async_client = MagicMock()
-        fresh_async_client.base_url = "https://inference-api.nousresearch.com/v1"
+        fresh_async_client.base_url = "https://inference-api.avoi-ai.com/v1"
         fresh_async_client.chat.completions.create = AsyncMock(return_value={"ok": True})
 
         with (
@@ -632,7 +632,7 @@ class TestNousAuxiliaryRefresh:
             patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
             patch("agent.auxiliary_client._to_async_client", return_value=(fresh_async_client, "nous-model")),
             patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task: resp),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nousresearch.com/v1")),
+            patch("agent.auxiliary_client._resolve_avoi_runtime_api", return_value=("fresh-agent-key", "https://inference-api.avoi-ai.com/v1")),
         ):
             result = await async_call_llm(
                 task="session_search",
@@ -735,7 +735,7 @@ class TestTryPaymentFallback:
         assert client is mock_client
         assert label == "openrouter"
 
-    def test_skips_to_codex_when_or_and_nous_fail(self):
+    def test_skips_to_codex_when_or_and_avoi_fail(self):
         mock_codex = MagicMock()
         with patch("agent.auxiliary_client._try_openrouter", return_value=(None, None)), \
              patch("agent.auxiliary_client._try_nous", return_value=(None, None)), \
@@ -783,7 +783,7 @@ class TestCallLlmPaymentFallback:
 def test_resolve_api_key_provider_skips_unconfigured_anthropic(monkeypatch):
     """_resolve_api_key_provider must not try anthropic when user never configured it."""
     from collections import OrderedDict
-    from hermes_cli.auth import ProviderConfig
+    from avoi_cli.auth import ProviderConfig
 
     # Build a minimal registry with only "anthropic" so the loop is guaranteed
     # to reach it without being short-circuited by earlier providers.
@@ -804,9 +804,9 @@ def test_resolve_api_key_provider_skips_unconfigured_anthropic(monkeypatch):
         return None, None
 
     monkeypatch.setattr("agent.auxiliary_client._try_anthropic", mock_try_anthropic)
-    monkeypatch.setattr("hermes_cli.auth.PROVIDER_REGISTRY", fake_registry)
+    monkeypatch.setattr("avoi_cli.auth.PROVIDER_REGISTRY", fake_registry)
     monkeypatch.setattr(
-        "hermes_cli.auth.is_provider_explicitly_configured",
+        "avoi_cli.auth.is_provider_explicitly_configured",
         lambda pid: False,
     )
 
@@ -1050,7 +1050,7 @@ class TestAuxiliaryTaskExtraBody:
             }
         }
 
-        with patch("hermes_cli.config.load_config", return_value=config), patch(
+        with patch("avoi_cli.config.load_config", return_value=config), patch(
             "agent.auxiliary_client._get_cached_client",
             return_value=(client, "glm-4.5-air"),
         ):
@@ -1081,7 +1081,7 @@ class TestAuxiliaryTaskExtraBody:
             }
         }
 
-        with patch("hermes_cli.config.load_config", return_value=config), patch(
+        with patch("avoi_cli.config.load_config", return_value=config), patch(
             "agent.auxiliary_client._get_cached_client",
             return_value=(client, "glm-4.5-air"),
         ):

@@ -52,7 +52,7 @@ class TestResolveAutoMainFirst:
         assert mock_resolve.call_args.args[0] == "openrouter"
         assert mock_resolve.call_args.args[1] == "anthropic/claude-sonnet-4.6"
 
-    def test_nous_main_uses_main_model_for_aux(self, monkeypatch):
+    def test_avoi_main_uses_main_model_for_aux(self, monkeypatch):
         """Nous Portal main user → aux uses their picked Nous model, not free-tier MiMo."""
         # No OPENROUTER_API_KEY → ensures if main failed we'd fall to chain
         with patch(
@@ -200,7 +200,7 @@ class TestResolveVisionMainFirst:
         assert mock_resolve.call_args.args[0] == "openrouter"
         assert mock_resolve.call_args.args[1] == "anthropic/claude-sonnet-4.6"
 
-    def test_nous_main_vision_uses_paid_nous_vision_backend(self):
+    def test_avoi_main_vision_uses_paid_avoi_vision_backend(self):
         """Paid Nous main → aux vision uses the dedicated Nous vision backend."""
         with patch(
             "agent.auxiliary_client._read_main_provider", return_value="nous",
@@ -222,7 +222,7 @@ class TestResolveVisionMainFirst:
         assert client is not None
         assert model == "google/gemini-3-flash-preview"
 
-    def test_nous_main_vision_uses_free_tier_nous_vision_backend(self):
+    def test_avoi_main_vision_uses_free_tier_avoi_vision_backend(self):
         """Free-tier Nous main → aux vision uses MiMo omni, not the text main model."""
         with patch(
             "agent.auxiliary_client._read_main_provider", return_value="nous",

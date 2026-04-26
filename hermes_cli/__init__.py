@@ -1,14 +1,14 @@
 """
-Hermes CLI - Unified command-line interface for Hermes Agent.
+Hermes CLI - Unified command-line interface for AVOI Agent.
 
 Provides subcommands for:
-- hermes chat          - Interactive chat (same as ./hermes)
-- hermes gateway       - Run gateway in foreground
-- hermes gateway start - Start gateway service
-- hermes gateway stop  - Stop gateway service  
-- hermes setup         - Interactive setup wizard
-- hermes status        - Show status of all components
-- hermes cron          - Manage cron jobs
+- avoi chat          - Interactive chat (same as ./avoi)
+- avoi gateway       - Run gateway in foreground
+- avoi gateway start - Start gateway service
+- avoi gateway stop  - Stop gateway service  
+- avoi setup         - Interactive setup wizard
+- avoi status        - Show status of all components
+- avoi cron          - Manage cron jobs
 """
 
 __version__ = "0.11.0"

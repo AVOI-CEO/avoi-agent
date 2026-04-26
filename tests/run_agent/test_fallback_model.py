@@ -319,30 +319,30 @@ class TestTryActivateFallback:
             assert agent._try_activate_fallback() is False
             assert agent._fallback_activated is False
 
-    def test_activates_nous_fallback(self):
+    def test_activates_avoi_fallback(self):
         """Nous Portal fallback should use OAuth credentials and chat_completions mode."""
         agent = _make_agent(
-            fallback_model={"provider": "nous", "model": "nous-hermes-3"},
+            fallback_model={"provider": "nous", "model": "nous-avoi-3"},
         )
         mock_client = _mock_resolve(
             api_key="nous-agent-key-abc",
-            base_url="https://inference-api.nousresearch.com/v1",
+            base_url="https://inference-api.avoi-ai.com/v1",
         )
         with patch(
             "agent.auxiliary_client.resolve_provider_client",
-            return_value=(mock_client, "nous-hermes-3"),
+            return_value=(mock_client, "nous-avoi-3"),
         ):
             result = agent._try_activate_fallback()
             assert result is True
-            assert agent.model == "nous-hermes-3"
+            assert agent.model == "nous-avoi-3"
             assert agent.provider == "nous"
             assert agent.api_mode == "chat_completions"
             assert agent.client is mock_client
 
-    def test_nous_fallback_fails_gracefully_without_login(self):
+    def test_avoi_fallback_fails_gracefully_without_login(self):
         """Nous fallback should return False if not logged in."""
         agent = _make_agent(
-            fallback_model={"provider": "nous", "model": "nous-hermes-3"},
+            fallback_model={"provider": "nous", "model": "nous-avoi-3"},
         )
         with patch(
             "agent.auxiliary_client.resolve_provider_client",

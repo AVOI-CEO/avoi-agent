@@ -27,9 +27,9 @@ from agent.credential_pool import (
     list_custom_pool_providers,
     load_pool,
 )
-import hermes_cli.auth as auth_mod
-from hermes_cli.auth import PROVIDER_REGISTRY
-from hermes_constants import OPENROUTER_BASE_URL
+import avoi_cli.auth as auth_mod
+from avoi_cli.auth import PROVIDER_REGISTRY
+from avoi_constants import OPENROUTER_BASE_URL
 
 
 # Providers that support OAuth login in addition to API keys.
@@ -39,7 +39,7 @@ _OAUTH_CAPABLE_PROVIDERS = {"anthropic", "nous", "openai-codex", "qwen-oauth", "
 def _get_custom_provider_names() -> list:
     """Return list of (display_name, pool_key, provider_key) tuples."""
     try:
-        from hermes_cli.config import get_compatible_custom_providers, load_config
+        from avoi_cli.config import get_compatible_custom_providers, load_config
 
         config = load_config()
     except Exception:
@@ -181,7 +181,7 @@ def auth_add_command(args) -> None:
     # Matches the Codex device_code re-link pattern that predates this.
     if not provider.startswith(CUSTOM_POOL_PREFIX):
         try:
-            from hermes_cli.auth import (
+            from avoi_cli.auth import (
                 _load_auth_store,
                 unsuppress_credential_source,
             )
@@ -221,7 +221,7 @@ def auth_add_command(args) -> None:
     if provider == "anthropic":
         from agent import anthropic_adapter as anthropic_mod
 
-        creds = anthropic_mod.run_hermes_oauth_login_pure()
+        creds = anthropic_mod.run_avoi_oauth_login_pure()
         if not creds:
             raise SystemExit("Anthropic OAuth login did not return credentials.")
         label = (getattr(args, "label", None) or "").strip() or label_from_token(
@@ -234,7 +234,7 @@ def auth_add_command(args) -> None:
             label=label,
             auth_type=AUTH_TYPE_OAUTH,
             priority=0,
-            source=f"{SOURCE_MANUAL}:hermes_pkce",
+            source=f"{SOURCE_MANUAL}:avoi_pkce",
             access_token=creds["access_token"],
             refresh_token=creds.get("refresh_token"),
             expires_at_ms=creds.get("expires_at_ms"),
@@ -245,7 +245,7 @@ def auth_add_command(args) -> None:
         return
 
     if provider == "nous":
-        creds = auth_mod._nous_device_code_login(
+        creds = auth_mod._avoi_device_code_login(
             portal_base_url=getattr(args, "portal_url", None),
             inference_base_url=getattr(args, "inference_url", None),
             client_id=getattr(args, "client_id", None),
@@ -260,7 +260,7 @@ def auth_add_command(args) -> None:
         # helper embeds this into providers.nous so that label_from_token
         # doesn't overwrite it on every subsequent load_pool("nous").
         custom_label = (getattr(args, "label", None) or "").strip() or None
-        entry = auth_mod.persist_nous_credentials(creds, label=custom_label)
+        entry = auth_mod.persist_avoi_credentials(creds, label=custom_label)
         shown_label = entry.label if entry is not None else label_from_token(
             creds.get("access_token", ""), _oauth_default_label(provider, 1),
         )
@@ -268,7 +268,7 @@ def auth_add_command(args) -> None:
         return
 
     if provider == "openai-codex":
-        # Clear any existing suppression marker so a re-link after `hermes auth
+        # Clear any existing suppression marker so a re-link after `avoi auth
         # remove openai-codex` works without the new tokens being skipped.
         auth_mod.unsuppress_credential_source(provider, "device_code")
         creds = auth_mod._codex_device_code_login()
@@ -333,7 +333,7 @@ def auth_add_command(args) -> None:
         print(f'Added {provider} OAuth credential #{len(pool.entries())}: "{entry.label}"')
         return
 
-    raise SystemExit(f"`hermes auth add {provider}` is not implemented for auth type {requested_type} yet.")
+    raise SystemExit(f"`avoi auth add {provider}` is not implemented for auth type {requested_type} yet.")
 
 
 def auth_list_command(args) -> None:
@@ -384,7 +384,7 @@ def auth_remove_command(args) -> None:
     # user-facing output here so every source behaves identically from
     # the user's perspective.
     from agent.credential_sources import find_removal_step
-    from hermes_cli.auth import suppress_credential_source
+    from avoi_cli.auth import suppress_credential_source
 
     step = find_removal_step(provider, removed.source)
     if step is None:
@@ -411,7 +411,7 @@ def auth_reset_command(args) -> None:
 def auth_status_command(args) -> None:
     provider = _normalize_provider(getattr(args, "provider", "") or "")
     if not provider:
-        raise SystemExit("Provider is required. Example: `hermes auth status spotify`.")
+        raise SystemExit("Provider is required. Example: `avoi auth status spotify`.")
     status = auth_mod.get_auth_status(provider)
     if not status.get("logged_in"):
         reason = status.get("error")
@@ -447,7 +447,7 @@ def auth_spotify_command(args) -> None:
 
 
 def _interactive_auth() -> None:
-    """Interactive credential pool management when `hermes auth` is called bare."""
+    """Interactive credential pool management when `avoi auth` is called bare."""
     # Show current pool status first
     print("Credential Pool Status")
     print("=" * 50)
@@ -618,7 +618,7 @@ def _interactive_strategy() -> None:
         print("Invalid choice.")
         return
 
-    from hermes_cli.config import load_config, save_config
+    from avoi_cli.config import load_config, save_config
     cfg = load_config()
     pool_strategies = cfg.get("credential_pool_strategies") or {}
     if not isinstance(pool_strategies, dict):

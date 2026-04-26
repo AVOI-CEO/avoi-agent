@@ -10,7 +10,7 @@ This is an eval-only environment (not a training environment). It is designed to
 be run via the `evaluate` subcommand:
 
     python environments/terminalbench2_env.py evaluate \\
-        --env.dataset_name NousResearch/terminal-bench-2
+        --env.dataset_name avoi-ai/terminal-bench-2
 
 The evaluate flow:
     1. setup()     -- Loads the TB2 dataset from HuggingFace
@@ -58,7 +58,7 @@ from atroposlib.envs.base import EvalHandlingEnum
 from atroposlib.envs.server_handling.server_manager import APIServerConfig
 
 from environments.agent_loop import AgentResult, HermesAgentLoop
-from environments.hermes_base_env import HermesAgentBaseEnv, HermesAgentEnvConfig
+from environments.avoi_base_env import HermesAgentBaseEnv, HermesAgentEnvConfig
 from environments.tool_context import ToolContext
 from tools.terminal_tool import (
     register_task_env_overrides,
@@ -83,7 +83,7 @@ class TerminalBench2EvalConfig(HermesAgentEnvConfig):
 
     # --- Dataset ---
     dataset_name: str = Field(
-        default="NousResearch/terminal-bench-2",
+        default="avoi-ai/terminal-bench-2",
         description="HuggingFace dataset containing TB2 tasks.",
     )
 
@@ -289,7 +289,7 @@ class TerminalBench2EvalEnv(HermesAgentBaseEnv):
             steps_per_eval=1,
             total_steps=1,
 
-            tokenizer_name="NousResearch/Hermes-3-Llama-3.1-8B",
+            tokenizer_name="avoi-ai/Hermes-3-Llama-3.1-8B",
             use_wandb=True,
             wandb_name="terminal-bench-2",
             ensure_scores_are_not_same=False,  # Binary rewards may all be 0 or 1
@@ -792,7 +792,7 @@ class TerminalBench2EvalEnv(HermesAgentBaseEnv):
         (same pattern as GPQA and other Atropos eval envs). Each task is
         wrapped with a wall-clock timeout so hung tasks auto-fail.
 
-        Suppresses noisy Modal/terminal output (HERMES_QUIET) so the tqdm
+        Suppresses noisy Modal/terminal output (AVOI_QUIET) so the tqdm
         bar stays visible.
         """
         start_time = time.time()

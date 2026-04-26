@@ -2,7 +2,7 @@
 
 Reported during TUI v2 blitz retest: the ``/resume`` modal inside a TUI
 session only surfaced ``tui``/``cli`` rows, hiding telegram sessions users
-could still resume directly via ``hermes --tui --resume <id>``.
+could still resume directly via ``avoi --tui --resume <id>``.
 
 The fix widens the picker to a curated allowlist of user-facing sources
 (tui/cli + chat adapters) while still filtering internal/system sources.

@@ -2,12 +2,12 @@
 name: blackbox
 description: Delegate coding tasks to Blackbox AI CLI agent. Multi-model agent with built-in judge that runs tasks through multiple LLMs and picks the best result. Requires the blackbox CLI and a Blackbox AI API key.
 version: 1.0.0
-author: Hermes Agent (Nous Research)
+author: AVOI Agent (AVOI AI)
 license: MIT
 metadata:
-  hermes:
+  avoi:
     tags: [Coding-Agent, Blackbox, Multi-Agent, Judge, Multi-Model]
-    related_skills: [claude-code, codex, hermes-agent]
+    related_skills: [claude-code, codex, avoi-agent]
 ---
 
 # Blackbox CLI

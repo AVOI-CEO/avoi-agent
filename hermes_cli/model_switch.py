@@ -10,8 +10,8 @@ share the same core pipeline:
 This module ties together the foundation layers:
 
 - ``agent.models_dev``            -- models.dev catalog, ModelInfo, ProviderInfo
-- ``hermes_cli.providers``        -- canonical provider identity + overlays
-- ``hermes_cli.model_normalize``  -- per-provider name formatting
+- ``avoi_cli.providers``        -- canonical provider identity + overlays
+- ``avoi_cli.model_normalize``  -- per-provider name formatting
 
 Provider switching uses the ``--provider`` flag exclusively.
 No colon-based ``provider:model`` syntax — colons are reserved for
@@ -25,14 +25,14 @@ import re
 from dataclasses import dataclass
 from typing import List, NamedTuple, Optional
 
-from hermes_cli.providers import (
+from avoi_cli.providers import (
     custom_provider_slug,
     determine_api_mode,
     get_label,
     is_aggregator,
     resolve_provider_full,
 )
-from hermes_cli.model_normalize import (
+from avoi_cli.model_normalize import (
     normalize_model_for_provider,
 )
 from agent.models_dev import (
@@ -50,29 +50,29 @@ logger = logging.getLogger(__name__)
 # Non-agentic model warning
 # ---------------------------------------------------------------------------
 
-_HERMES_MODEL_WARNING = (
-    "Nous Research Hermes 3 & 4 models are NOT agentic and are not designed "
-    "for use with Hermes Agent. They lack the tool-calling capabilities "
+_AVOI_MODEL_WARNING = (
+    "AVOI AI Hermes 3 & 4 models are NOT agentic and are not designed "
+    "for use with AVOI Agent. They lack the tool-calling capabilities "
     "required for agent workflows. Consider using an agentic model instead "
     "(Claude, GPT, Gemini, DeepSeek, etc.)."
 )
 
-# Match only the real Nous Research Hermes 3 / Hermes 4 chat families.
-# The previous substring check (`"hermes" in name.lower()`) false-positived on
-# unrelated local Modelfiles like ``hermes-brain:qwen3-14b-ctx16k`` that just
-# happen to carry "hermes" in their tag but are fully tool-capable.
+# Match only the real AVOI AI Hermes 3 / Hermes 4 chat families.
+# The previous substring check (`"avoi" in name.lower()`) false-positived on
+# unrelated local Modelfiles like ``avoi-brain:qwen3-14b-ctx16k`` that just
+# happen to carry "avoi" in their tag but are fully tool-capable.
 #
 # Positive examples the regex must match:
-#   NousResearch/Hermes-3-Llama-3.1-70B, hermes-4-405b, openrouter/hermes3:70b
+#   avoi-ai/Hermes-3-Llama-3.1-70B, avoi-4-405b, openrouter/avoi3:70b
 # Negative examples it must NOT match:
-#   hermes-brain:qwen3-14b-ctx16k, qwen3:14b, claude-opus-4-6
-_NOUS_HERMES_NON_AGENTIC_RE = re.compile(
-    r"(?:^|[/:])hermes[-_ ]?[34](?:[-_.:]|$)",
+#   avoi-brain:qwen3-14b-ctx16k, qwen3:14b, claude-opus-4-6
+_NOUS_AVOI_NON_AGENTIC_RE = re.compile(
+    r"(?:^|[/:])avoi[-_ ]?[34](?:[-_.:]|$)",
     re.IGNORECASE,
 )
 
 
-def is_nous_hermes_non_agentic(model_name: str) -> bool:
+def is_avoi_avoi_non_agentic(model_name: str) -> bool:
     """Return True if *model_name* is a real Nous Hermes 3/4 chat model.
 
     Used to decide whether to surface the non-agentic warning at startup.
@@ -81,13 +81,13 @@ def is_nous_hermes_non_agentic(model_name: str) -> bool:
     """
     if not model_name:
         return False
-    return bool(_NOUS_HERMES_NON_AGENTIC_RE.search(model_name))
+    return bool(_NOUS_AVOI_NON_AGENTIC_RE.search(model_name))
 
 
-def _check_hermes_model_warning(model_name: str) -> str:
+def _check_avoi_model_warning(model_name: str) -> str:
     """Return a warning string if *model_name* is a Nous Hermes 3/4 chat model."""
-    if is_nous_hermes_non_agentic(model_name):
-        return _HERMES_MODEL_WARNING
+    if is_avoi_avoi_non_agentic(model_name):
+        return _AVOI_MODEL_WARNING
     return ""
 
 
@@ -193,7 +193,7 @@ def _load_direct_aliases() -> dict[str, DirectAlias]:
     """
     merged = dict(_BUILTIN_DIRECT_ALIASES)
     try:
-        from hermes_cli.config import load_config
+        from avoi_cli.config import load_config
         cfg = load_config()
         user_aliases = cfg.get("model_aliases")
         if isinstance(user_aliases, dict):
@@ -453,7 +453,7 @@ def resolve_alias(
     # yet synced to the registry).
     catalog = list_provider_models(current_provider)
     try:
-        from hermes_cli.models import _PROVIDER_MODELS
+        from avoi_cli.models import _PROVIDER_MODELS
         static = _PROVIDER_MODELS.get(current_provider, [])
         if static:
             seen = {m.lower() for m in catalog}
@@ -622,13 +622,13 @@ def switch_model(
     Returns:
         ModelSwitchResult with all information the caller needs.
     """
-    from hermes_cli.models import (
+    from avoi_cli.models import (
         copilot_model_api_mode,
         detect_provider_for_model,
         validate_requested_model,
         opencode_model_api_mode,
     )
-    from hermes_cli.runtime_provider import resolve_runtime_provider
+    from avoi_cli.runtime_provider import resolve_runtime_provider
 
     resolved_alias = ""
     new_model = raw_input.strip()
@@ -647,15 +647,15 @@ def switch_model(
         if pdef is None:
             _switch_err = (
                 f"Unknown provider '{explicit_provider}'. "
-                f"Check 'hermes model' for available providers, or define it "
+                f"Check 'avoi model' for available providers, or define it "
                 f"in config.yaml under 'providers:'."
             )
             # Check for common config issues that cause provider resolution failures
             try:
-                from hermes_cli.config import validate_config_structure
+                from avoi_cli.config import validate_config_structure
                 _cfg_issues = validate_config_structure()
                 if _cfg_issues:
-                    _switch_err += "\n\nRun 'hermes doctor' — config issues detected:"
+                    _switch_err += "\n\nRun 'avoi doctor' — config issues detected:"
                     for _ci in _cfg_issues[:3]:
                         _switch_err += f"\n  • {_ci.message}"
             except Exception:
@@ -671,7 +671,7 @@ def switch_model(
         # If no model specified, try auto-detect from endpoint
         if not new_model:
             if pdef.base_url:
-                from hermes_cli.runtime_provider import _auto_detect_local_model
+                from avoi_cli.runtime_provider import _auto_detect_local_model
                 detected = _auto_detect_local_model(pdef.base_url)
                 if detected:
                     new_model = detected
@@ -925,7 +925,7 @@ def switch_model(
     # Anthropic SDK prepends its own /v1/messages to the base_url.  Strip the
     # trailing /v1 so the SDK constructs the correct path (e.g.
     # https://opencode.ai/zen/go/v1/messages instead of .../v1/v1/messages).
-    # Mirrors the same logic in hermes_cli.runtime_provider.resolve_runtime_provider;
+    # Mirrors the same logic in avoi_cli.runtime_provider.resolve_runtime_provider;
     # without it, /model switches into an anthropic_messages-routed OpenCode
     # model (e.g. `/model minimax-m2.7` on opencode-go, `/model claude-sonnet-4-6`
     # on opencode-zen) hit a double /v1 and returned OpenCode's website 404 page.
@@ -947,9 +947,9 @@ def switch_model(
     warnings: list[str] = []
     if validation.get("message"):
         warnings.append(validation["message"])
-    hermes_warn = _check_hermes_model_warning(new_model)
-    if hermes_warn:
-        warnings.append(hermes_warn)
+    avoi_warn = _check_avoi_model_warning(new_model)
+    if avoi_warn:
+        warnings.append(avoi_warn)
 
     # --- Build result ---
     return ModelSwitchResult(
@@ -982,7 +982,7 @@ def list_authenticated_providers(
 ) -> List[dict]:
     """Detect which providers have credentials and list their curated models.
 
-    Uses the curated model lists from hermes_cli/models.py (OPENROUTER_MODELS,
+    Uses the curated model lists from avoi_cli/models.py (OPENROUTER_MODELS,
     _PROVIDER_MODELS) — NOT the full models.dev catalog.  These are hand-picked
     agentic models that work well as agent backends.
 
@@ -1003,8 +1003,8 @@ def list_authenticated_providers(
         fetch_models_dev,
         get_provider_info as _mdev_pinfo,
     )
-    from hermes_cli.auth import PROVIDER_REGISTRY
-    from hermes_cli.models import (
+    from avoi_cli.auth import PROVIDER_REGISTRY
+    from avoi_cli.models import (
         OPENROUTER_MODELS, _PROVIDER_MODELS,
         _MODELS_DEV_PREFERRED, _merge_with_models_dev, provider_model_ids,
     )
@@ -1015,7 +1015,7 @@ def list_authenticated_providers(
 
     data = fetch_models_dev()
 
-    # Build curated model lists keyed by hermes provider ID
+    # Build curated model lists keyed by avoi provider ID
     curated: dict[str, list[str]] = dict(_PROVIDER_MODELS)
     curated["openrouter"] = [mid for mid, _ in OPENROUTER_MODELS]
     # "nous" shares OpenRouter's curated list if not separately defined
@@ -1023,11 +1023,11 @@ def list_authenticated_providers(
         curated["nous"] = curated["openrouter"]
     # Ollama Cloud uses dynamic discovery (no static curated list)
     if "ollama-cloud" not in curated:
-        from hermes_cli.models import fetch_ollama_cloud_models
+        from avoi_cli.models import fetch_ollama_cloud_models
         curated["ollama-cloud"] = fetch_ollama_cloud_models()
 
     # --- 1. Check Hermes-mapped providers ---
-    for hermes_id, mdev_id in PROVIDER_TO_MODELS_DEV.items():
+    for avoi_id, mdev_id in PROVIDER_TO_MODELS_DEV.items():
         # Skip aliases that map to the same models.dev provider (e.g.
         # kimi-coding and kimi-coding-cn both → kimi-for-coding).
         # The first one with valid credentials wins (#10526).
@@ -1040,9 +1040,9 @@ def list_authenticated_providers(
         # Prefer auth.py PROVIDER_REGISTRY for env var names — it's our
         # source of truth.  models.dev can have wrong mappings (e.g.
         # minimax-cn → MINIMAX_API_KEY instead of MINIMAX_CN_API_KEY).
-        pconfig = PROVIDER_REGISTRY.get(hermes_id)
+        pconfig = PROVIDER_REGISTRY.get(avoi_id)
         # Skip non-API-key auth providers here — they are handled in
-        # section 2 (HERMES_OVERLAYS) with proper auth store checking.
+        # section 2 (AVOI_OVERLAYS) with proper auth store checking.
         if pconfig and pconfig.auth_type != "api_key":
             continue
         if pconfig and pconfig.api_key_env_vars:
@@ -1056,9 +1056,9 @@ def list_authenticated_providers(
         has_creds = any(os.environ.get(ev) for ev in env_vars)
         if not has_creds:
             try:
-                from hermes_cli.auth import _load_auth_store
+                from avoi_cli.auth import _load_auth_store
                 store = _load_auth_store()
-                if store and hermes_id in store.get("credential_pool", {}):
+                if store and avoi_id in store.get("credential_pool", {}):
                     has_creds = True
             except Exception:
                 pass
@@ -1069,13 +1069,13 @@ def list_authenticated_providers(
         # For preferred providers, merge models.dev entries into the curated
         # catalog so newly released models (e.g. mimo-v2.5-pro on opencode-go)
         # show up in the picker without requiring a Hermes release.
-        model_ids = curated.get(hermes_id, [])
-        if hermes_id in _MODELS_DEV_PREFERRED:
-            model_ids = _merge_with_models_dev(hermes_id, model_ids)
+        model_ids = curated.get(avoi_id, [])
+        if avoi_id in _MODELS_DEV_PREFERRED:
+            model_ids = _merge_with_models_dev(avoi_id, model_ids)
         total = len(model_ids)
         top = model_ids[:max_models]
 
-        slug = hermes_id
+        slug = avoi_id
         pinfo = _mdev_pinfo(mdev_id)
         display_name = pinfo.name if pinfo else mdev_id
 
@@ -1092,21 +1092,21 @@ def list_authenticated_providers(
         seen_mdev_ids.add(mdev_id)
 
     # --- 2. Check Hermes-only providers (nous, openai-codex, copilot, opencode-go) ---
-    from hermes_cli.providers import HERMES_OVERLAYS
-    from hermes_cli.auth import PROVIDER_REGISTRY as _auth_registry
+    from avoi_cli.providers import AVOI_OVERLAYS
+    from avoi_cli.auth import PROVIDER_REGISTRY as _auth_registry
 
     # Build reverse mapping: models.dev ID → Hermes provider ID.
-    # HERMES_OVERLAYS keys may be models.dev IDs (e.g. "github-copilot")
+    # AVOI_OVERLAYS keys may be models.dev IDs (e.g. "github-copilot")
     # while _PROVIDER_MODELS and config.yaml use Hermes IDs ("copilot").
-    _mdev_to_hermes = {v: k for k, v in PROVIDER_TO_MODELS_DEV.items()}
+    _mdev_to_avoi = {v: k for k, v in PROVIDER_TO_MODELS_DEV.items()}
 
-    for pid, overlay in HERMES_OVERLAYS.items():
+    for pid, overlay in AVOI_OVERLAYS.items():
         if pid.lower() in seen_slugs:
             continue
 
         # Resolve Hermes slug — e.g. "github-copilot" → "copilot"
-        hermes_slug = _mdev_to_hermes.get(pid, pid)
-        if hermes_slug.lower() in seen_slugs:
+        avoi_slug = _mdev_to_avoi.get(pid, pid)
+        if avoi_slug.lower() in seen_slugs:
             continue
 
         # Check if credentials exist
@@ -1115,7 +1115,7 @@ def list_authenticated_providers(
             has_creds = any(os.environ.get(ev) for ev in overlay.extra_env_vars)
         # Also check api_key_env_vars from PROVIDER_REGISTRY for api_key auth_type
         if not has_creds and overlay.auth_type == "api_key":
-            for _key in (pid, hermes_slug):
+            for _key in (pid, avoi_slug):
                 pcfg = _auth_registry.get(_key)
                 if pcfg and pcfg.api_key_env_vars:
                     if any(os.environ.get(ev) for ev in pcfg.api_key_env_vars):
@@ -1127,13 +1127,13 @@ def list_authenticated_providers(
         # OAuth via external credential files).
         if not has_creds:
             try:
-                from hermes_cli.auth import _load_auth_store
+                from avoi_cli.auth import _load_auth_store
                 store = _load_auth_store()
                 providers_store = store.get("providers", {})
                 pool_store = store.get("credential_pool", {})
                 if store and (
-                    pid in providers_store or hermes_slug in providers_store
-                    or pid in pool_store or hermes_slug in pool_store
+                    pid in providers_store or avoi_slug in providers_store
+                    or pid in pool_store or avoi_slug in pool_store
                 ):
                     has_creds = True
             except Exception as exc:
@@ -1145,11 +1145,11 @@ def list_authenticated_providers(
         if not has_creds:
             try:
                 from agent.credential_pool import load_pool
-                pool = load_pool(hermes_slug)
+                pool = load_pool(avoi_slug)
                 if pool.has_credentials():
                     has_creds = True
             except Exception as exc:
-                logger.debug("Credential pool check failed for %s: %s", hermes_slug, exc)
+                logger.debug("Credential pool check failed for %s: %s", avoi_slug, exc)
         # Fallback: check external credential files directly.
         # The credential pool gates anthropic behind
         # is_provider_explicitly_configured() to prevent auxiliary tasks
@@ -1157,15 +1157,15 @@ def list_authenticated_providers(
         # But the /model picker is discovery-oriented — we WANT to show
         # providers the user can switch to, even if they aren't currently
         # configured.
-        if not has_creds and hermes_slug == "anthropic":
+        if not has_creds and avoi_slug == "anthropic":
             try:
                 from agent.anthropic_adapter import (
                     read_claude_code_credentials,
-                    read_hermes_oauth_credentials,
+                    read_avoi_oauth_credentials,
                 )
-                hermes_creds = read_hermes_oauth_credentials()
+                avoi_creds = read_avoi_oauth_credentials()
                 cc_creds = read_claude_code_credentials()
-                if (hermes_creds and hermes_creds.get("accessToken")) or \
+                if (avoi_creds and avoi_creds.get("accessToken")) or \
                    (cc_creds and cc_creds.get("accessToken")):
                     has_creds = True
             except Exception as exc:
@@ -1173,35 +1173,35 @@ def list_authenticated_providers(
         if not has_creds:
             continue
 
-        if hermes_slug in {"copilot", "copilot-acp"}:
-            model_ids = provider_model_ids(hermes_slug)
+        if avoi_slug in {"copilot", "copilot-acp"}:
+            model_ids = provider_model_ids(avoi_slug)
         else:
             # Use curated list — look up by Hermes slug, fall back to overlay key
-            model_ids = curated.get(hermes_slug, []) or curated.get(pid, [])
+            model_ids = curated.get(avoi_slug, []) or curated.get(pid, [])
             # Merge with models.dev for preferred providers (same rationale as above).
-            if hermes_slug in _MODELS_DEV_PREFERRED:
-                model_ids = _merge_with_models_dev(hermes_slug, model_ids)
+            if avoi_slug in _MODELS_DEV_PREFERRED:
+                model_ids = _merge_with_models_dev(avoi_slug, model_ids)
         total = len(model_ids)
         top = model_ids[:max_models]
 
         results.append({
-            "slug": hermes_slug,
-            "name": get_label(hermes_slug),
-            "is_current": hermes_slug == current_provider or pid == current_provider,
+            "slug": avoi_slug,
+            "name": get_label(avoi_slug),
+            "is_current": avoi_slug == current_provider or pid == current_provider,
             "is_user_defined": False,
             "models": top,
             "total_models": total,
-            "source": "hermes",
+            "source": "avoi",
         })
         seen_slugs.add(pid.lower())
-        seen_slugs.add(hermes_slug.lower())
+        seen_slugs.add(avoi_slug.lower())
 
     # --- 2b. Cross-check canonical provider list ---
     # Catches providers that are in CANONICAL_PROVIDERS but weren't found
-    # in PROVIDER_TO_MODELS_DEV or HERMES_OVERLAYS (keeps /model in sync
-    # with `hermes model`).
+    # in PROVIDER_TO_MODELS_DEV or AVOI_OVERLAYS (keeps /model in sync
+    # with `avoi model`).
     try:
-        from hermes_cli.models import CANONICAL_PROVIDERS as _canon_provs
+        from avoi_cli.models import CANONICAL_PROVIDERS as _canon_provs
     except ImportError:
         _canon_provs = []
 
@@ -1217,7 +1217,7 @@ def list_authenticated_providers(
         # Also check auth store and credential pool
         if not _cp_has_creds:
             try:
-                from hermes_cli.auth import _load_auth_store
+                from avoi_cli.auth import _load_auth_store
                 _cp_store = _load_auth_store()
                 _cp_providers_store = _cp_store.get("providers", {})
                 _cp_pool_store = _cp_store.get("credential_pool", {})
@@ -1291,7 +1291,7 @@ def list_authenticated_providers(
                 models_list.append(default_model)
             # Also include the full models list from config.
             # Hermes writes ``models:`` as a dict keyed by model id
-            # (see hermes_cli/main.py::_save_custom_provider); older
+            # (see avoi_cli/main.py::_save_custom_provider); older
             # configs or hand-edited files may still use a list.
             cfg_models = ep_cfg.get("models", [])
             if isinstance(cfg_models, dict):
@@ -1403,7 +1403,7 @@ def list_authenticated_providers(
             # active model. Hermes's own writer (main.py::_save_custom_provider)
             # stores every configured model as a dict under ``models:``;
             # downstream readers (agent/models_dev.py, gateway/run.py,
-            # run_agent.py, hermes_cli/config.py) already consume that dict.
+            # run_agent.py, avoi_cli/config.py) already consume that dict.
             default_model = (entry.get("model") or "").strip()
             if default_model and default_model not in groups[group_key]["models"]:
                 groups[group_key]["models"].append(default_model)

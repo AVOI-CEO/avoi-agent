@@ -7,7 +7,7 @@ finds what works, and locks it in by writing config.yaml + prefill.json.
 
 Usage in execute_code:
     exec(open(os.path.expanduser(
-        os.path.join(os.environ.get("HERMES_HOME", os.path.expanduser("~/.hermes")), "skills/red-teaming/godmode/scripts/auto_jailbreak.py")
+        os.path.join(os.environ.get("AVOI_HOME", os.path.expanduser("~/.avoi")), "skills/red-teaming/godmode/scripts/auto_jailbreak.py")
     )).read())
     
     result = auto_jailbreak()  # Uses current model from config
@@ -35,7 +35,7 @@ try:
     _SKILL_DIR = Path(__file__).resolve().parent.parent
 except NameError:
     # __file__ not defined when loaded via exec() — search standard paths
-    _SKILL_DIR = Path(os.getenv("HERMES_HOME", Path.home() / ".hermes")) / "skills" / "red-teaming" / "godmode"
+    _SKILL_DIR = Path(os.getenv("AVOI_HOME", Path.home() / ".avoi")) / "skills" / "red-teaming" / "godmode"
 
 _SCRIPTS_DIR = _SKILL_DIR / "scripts"
 _TEMPLATES_DIR = _SKILL_DIR / "templates"
@@ -57,9 +57,9 @@ if _race_path.exists():
 # Hermes config paths
 # ═══════════════════════════════════════════════════════════════════
 
-HERMES_HOME = Path(os.getenv("HERMES_HOME", Path.home() / ".hermes"))
-CONFIG_PATH = HERMES_HOME / "config.yaml"
-PREFILL_PATH = HERMES_HOME / "prefill.json"
+AVOI_HOME = Path(os.getenv("AVOI_HOME", Path.home() / ".avoi"))
+CONFIG_PATH = AVOI_HOME / "config.yaml"
+PREFILL_PATH = AVOI_HOME / "prefill.json"
 
 # ═══════════════════════════════════════════════════════════════════
 # Canary queries — questions that typically trigger safety filters
@@ -179,7 +179,7 @@ MODEL_STRATEGIES = {
         },
     },
     # Nous/Hermes models — already uncensored, just needs clean prompt
-    "hermes": {
+    "avoi": {
         "order": ["prefill_only"],
         "system_templates": {},
     },
@@ -305,8 +305,8 @@ def _detect_model_family(model: str) -> str:
         return "gemini"
     if "grok" in model_lower or "x-ai" in model_lower:
         return "grok"
-    if "hermes" in model_lower or "nous" in model_lower:
-        return "hermes"
+    if "avoi" in model_lower or "nous" in model_lower:
+        return "avoi"
     if "deepseek" in model_lower:
         return "deepseek"
     if "llama" in model_lower or "meta" in model_lower:
@@ -407,7 +407,7 @@ def _write_config(system_prompt: str = None, prefill_file: str = None):
 
 
 def _write_prefill(prefill_messages: list):
-    """Write prefill messages to ~/.hermes/prefill.json."""
+    """Write prefill messages to ~/.avoi/prefill.json."""
     with open(PREFILL_PATH, "w") as f:
         json.dump(prefill_messages, f, indent=2, ensure_ascii=False)
     return str(PREFILL_PATH)

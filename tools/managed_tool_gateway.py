@@ -11,10 +11,10 @@ from typing import Callable, Optional
 
 logger = logging.getLogger(__name__)
 
-from hermes_constants import get_hermes_home
-from tools.tool_backend_helpers import managed_nous_tools_enabled
+from avoi_constants import get_avoi_home
+from tools.tool_backend_helpers import managed_avoi_tools_enabled
 
-_DEFAULT_TOOL_GATEWAY_DOMAIN = "nousresearch.com"
+_DEFAULT_TOOL_GATEWAY_DOMAIN = "avoi-ai.com"
 _DEFAULT_TOOL_GATEWAY_SCHEME = "https"
 _NOUS_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
 
@@ -23,16 +23,16 @@ _NOUS_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
 class ManagedToolGatewayConfig:
     vendor: str
     gateway_origin: str
-    nous_user_token: str
+    avoi_user_token: str
     managed_mode: bool
 
 
 def auth_json_path():
-    """Return the Hermes auth store path, respecting HERMES_HOME overrides."""
-    return get_hermes_home() / "auth.json"
+    """Return the Hermes auth store path, respecting AVOI_HOME overrides."""
+    return get_avoi_home() / "auth.json"
 
 
-def _read_nous_provider_state() -> Optional[dict]:
+def _read_avoi_provider_state() -> Optional[dict]:
     try:
         path = auth_json_path()
         if not path.is_file():
@@ -41,9 +41,9 @@ def _read_nous_provider_state() -> Optional[dict]:
         providers = data.get("providers", {})
         if not isinstance(providers, dict):
             return None
-        nous_provider = providers.get("nous", {})
-        if isinstance(nous_provider, dict):
-            return nous_provider
+        avoi_provider = providers.get("nous", {})
+        if isinstance(avoi_provider, dict):
+            return avoi_provider
     except Exception:
         pass
     return None
@@ -72,26 +72,26 @@ def _access_token_is_expiring(expires_at: object, skew_seconds: int) -> bool:
     return remaining <= max(0, int(skew_seconds))
 
 
-def read_nous_access_token() -> Optional[str]:
+def read_avoi_access_token() -> Optional[str]:
     """Read a Nous Subscriber OAuth access token from auth store or env override."""
     explicit = os.getenv("TOOL_GATEWAY_USER_TOKEN")
     if isinstance(explicit, str) and explicit.strip():
         return explicit.strip()
 
-    nous_provider = _read_nous_provider_state() or {}
-    access_token = nous_provider.get("access_token")
+    avoi_provider = _read_avoi_provider_state() or {}
+    access_token = avoi_provider.get("access_token")
     cached_token = access_token.strip() if isinstance(access_token, str) and access_token.strip() else None
 
     if cached_token and not _access_token_is_expiring(
-        nous_provider.get("expires_at"),
+        avoi_provider.get("expires_at"),
         _NOUS_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
     ):
         return cached_token
 
     try:
-        from hermes_cli.auth import resolve_nous_access_token
+        from avoi_cli.auth import resolve_avoi_access_token
 
-        refreshed_token = resolve_nous_access_token(
+        refreshed_token = resolve_avoi_access_token(
             refresh_skew_seconds=_NOUS_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
         )
         if isinstance(refreshed_token, str) and refreshed_token.strip():
@@ -135,21 +135,21 @@ def resolve_managed_tool_gateway(
     token_reader: Optional[Callable[[], Optional[str]]] = None,
 ) -> Optional[ManagedToolGatewayConfig]:
     """Resolve shared managed-tool gateway config for a vendor."""
-    if not managed_nous_tools_enabled():
+    if not managed_avoi_tools_enabled():
         return None
 
     resolved_gateway_builder = gateway_builder or build_vendor_gateway_url
-    resolved_token_reader = token_reader or read_nous_access_token
+    resolved_token_reader = token_reader or read_avoi_access_token
 
     gateway_origin = resolved_gateway_builder(vendor)
-    nous_user_token = resolved_token_reader()
-    if not gateway_origin or not nous_user_token:
+    avoi_user_token = resolved_token_reader()
+    if not gateway_origin or not avoi_user_token:
         return None
 
     return ManagedToolGatewayConfig(
         vendor=vendor,
         gateway_origin=gateway_origin,
-        nous_user_token=nous_user_token,
+        avoi_user_token=avoi_user_token,
         managed_mode=True,
     )
 

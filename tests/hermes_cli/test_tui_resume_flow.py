@@ -21,7 +21,7 @@ def _args(**overrides):
 
 @pytest.fixture
 def main_mod(monkeypatch):
-    import hermes_cli.main as mod
+    import avoi_cli.main as mod
 
     monkeypatch.setattr(mod, "_has_any_provider_configured", lambda: True)
     return mod
@@ -138,17 +138,17 @@ def test_launch_tui_exports_model_and_provider(monkeypatch, main_mod):
     monkeypatch.setattr(main_mod.subprocess, "call", fake_call)
 
     with pytest.raises(SystemExit):
-        main_mod._launch_tui(model="nous/hermes-test", provider="nous")
+        main_mod._launch_tui(model="nous/avoi-test", provider="nous")
 
     env = captured["env"]
-    assert env["HERMES_MODEL"] == "nous/hermes-test"
-    assert env["HERMES_INFERENCE_MODEL"] == "nous/hermes-test"
-    assert env["HERMES_TUI_PROVIDER"] == "nous"
-    assert env["HERMES_INFERENCE_PROVIDER"] == "nous"
+    assert env["AVOI_MODEL"] == "nous/avoi-test"
+    assert env["AVOI_INFERENCE_MODEL"] == "nous/avoi-test"
+    assert env["AVOI_TUI_PROVIDER"] == "nous"
+    assert env["AVOI_INFERENCE_PROVIDER"] == "nous"
 
 
 def test_print_tui_exit_summary_includes_resume_and_token_totals(monkeypatch, capsys):
-    import hermes_cli.main as main_mod
+    import avoi_cli.main as main_mod
 
     class _FakeDB:
         def get_session(self, session_id):
@@ -168,12 +168,12 @@ def test_print_tui_exit_summary_includes_resume_and_token_totals(monkeypatch, ca
         def close(self):
             return None
 
-    monkeypatch.setitem(sys.modules, "hermes_state", types.SimpleNamespace(SessionDB=lambda: _FakeDB()))
+    monkeypatch.setitem(sys.modules, "avoi_state", types.SimpleNamespace(SessionDB=lambda: _FakeDB()))
 
     main_mod._print_tui_exit_summary("20260409_000001_abc123")
     out = capsys.readouterr().out
 
     assert "Resume this session with:" in out
-    assert "hermes --tui --resume 20260409_000001_abc123" in out
-    assert 'hermes --tui -c "demo title"' in out
+    assert "avoi --tui --resume 20260409_000001_abc123" in out
+    assert 'avoi --tui -c "demo title"' in out
     assert "Tokens:         21 (in 10, out 6, cache 4, reasoning 1)" in out

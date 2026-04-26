@@ -1,7 +1,7 @@
 """Unit tests for tools/tool_backend_helpers.py.
 
 Tests cover:
-- managed_nous_tools_enabled() subscription-based gate
+- managed_avoi_tools_enabled() subscription-based gate
 - normalize_browser_cloud_provider() coercion
 - coerce_modal_mode() / normalize_modal_mode() validation
 - has_direct_modal_credentials() detection
@@ -19,7 +19,7 @@ import pytest
 from tools.tool_backend_helpers import (
     coerce_modal_mode,
     has_direct_modal_credentials,
-    managed_nous_tools_enabled,
+    managed_avoi_tools_enabled,
     normalize_browser_cloud_provider,
     normalize_modal_mode,
     resolve_modal_backend_state,
@@ -32,47 +32,47 @@ def _raise_import():
 
 
 # ---------------------------------------------------------------------------
-# managed_nous_tools_enabled
+# managed_avoi_tools_enabled
 # ---------------------------------------------------------------------------
 class TestManagedNousToolsEnabled:
     """Subscription-based gate: True for paid Nous subscribers."""
 
     def test_disabled_when_not_logged_in(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.auth.get_nous_auth_status",
+            "avoi_cli.auth.get_avoi_auth_status",
             lambda: {},
         )
-        assert managed_nous_tools_enabled() is False
+        assert managed_avoi_tools_enabled() is False
 
     def test_disabled_for_free_tier(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.auth.get_nous_auth_status",
+            "avoi_cli.auth.get_avoi_auth_status",
             lambda: {"logged_in": True},
         )
         monkeypatch.setattr(
-            "hermes_cli.models.check_nous_free_tier",
+            "avoi_cli.models.check_avoi_free_tier",
             lambda: True,
         )
-        assert managed_nous_tools_enabled() is False
+        assert managed_avoi_tools_enabled() is False
 
     def test_enabled_for_paid_subscriber(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.auth.get_nous_auth_status",
+            "avoi_cli.auth.get_avoi_auth_status",
             lambda: {"logged_in": True},
         )
         monkeypatch.setattr(
-            "hermes_cli.models.check_nous_free_tier",
+            "avoi_cli.models.check_avoi_free_tier",
             lambda: False,
         )
-        assert managed_nous_tools_enabled() is True
+        assert managed_avoi_tools_enabled() is True
 
     def test_returns_false_on_exception(self, monkeypatch):
         """Should never crash — returns False on any exception."""
         monkeypatch.setattr(
-            "hermes_cli.auth.get_nous_auth_status",
+            "avoi_cli.auth.get_avoi_auth_status",
             _raise_import,
         )
-        assert managed_nous_tools_enabled() is False
+        assert managed_avoi_tools_enabled() is False
 
 
 # ---------------------------------------------------------------------------
@@ -196,11 +196,11 @@ class TestResolveModalBackendState:
     """Full matrix of direct vs managed Modal backend selection."""
 
     @staticmethod
-    def _resolve(monkeypatch, mode, *, has_direct, managed_ready, nous_enabled=False):
+    def _resolve(monkeypatch, mode, *, has_direct, managed_ready, avoi_enabled=False):
         """Helper to call resolve_modal_backend_state with feature flag control."""
         monkeypatch.setattr(
-            "tools.tool_backend_helpers.managed_nous_tools_enabled",
-            lambda: nous_enabled,
+            "tools.tool_backend_helpers.managed_avoi_tools_enabled",
+            lambda: avoi_enabled,
         )
         return resolve_modal_backend_state(
             mode, has_direct=has_direct, managed_ready=managed_ready
@@ -209,47 +209,47 @@ class TestResolveModalBackendState:
     # --- auto mode ---
 
     def test_auto_prefers_managed_when_available(self, monkeypatch):
-        result = self._resolve(monkeypatch, "auto", has_direct=True, managed_ready=True, nous_enabled=True)
+        result = self._resolve(monkeypatch, "auto", has_direct=True, managed_ready=True, avoi_enabled=True)
         assert result["selected_backend"] == "managed"
 
     def test_auto_falls_back_to_direct(self, monkeypatch):
-        result = self._resolve(monkeypatch, "auto", has_direct=True, managed_ready=False, nous_enabled=True)
+        result = self._resolve(monkeypatch, "auto", has_direct=True, managed_ready=False, avoi_enabled=True)
         assert result["selected_backend"] == "direct"
 
     def test_auto_no_backends_available(self, monkeypatch):
         result = self._resolve(monkeypatch, "auto", has_direct=False, managed_ready=False)
         assert result["selected_backend"] is None
 
-    def test_auto_managed_ready_but_nous_disabled(self, monkeypatch):
-        result = self._resolve(monkeypatch, "auto", has_direct=True, managed_ready=True, nous_enabled=False)
+    def test_auto_managed_ready_but_avoi_disabled(self, monkeypatch):
+        result = self._resolve(monkeypatch, "auto", has_direct=True, managed_ready=True, avoi_enabled=False)
         assert result["selected_backend"] == "direct"
 
-    def test_auto_nothing_when_only_managed_and_nous_disabled(self, monkeypatch):
-        result = self._resolve(monkeypatch, "auto", has_direct=False, managed_ready=True, nous_enabled=False)
+    def test_auto_nothing_when_only_managed_and_avoi_disabled(self, monkeypatch):
+        result = self._resolve(monkeypatch, "auto", has_direct=False, managed_ready=True, avoi_enabled=False)
         assert result["selected_backend"] is None
 
     # --- direct mode ---
 
     def test_direct_selects_direct_when_available(self, monkeypatch):
-        result = self._resolve(monkeypatch, "direct", has_direct=True, managed_ready=True, nous_enabled=True)
+        result = self._resolve(monkeypatch, "direct", has_direct=True, managed_ready=True, avoi_enabled=True)
         assert result["selected_backend"] == "direct"
 
     def test_direct_none_when_no_credentials(self, monkeypatch):
-        result = self._resolve(monkeypatch, "direct", has_direct=False, managed_ready=True, nous_enabled=True)
+        result = self._resolve(monkeypatch, "direct", has_direct=False, managed_ready=True, avoi_enabled=True)
         assert result["selected_backend"] is None
 
     # --- managed mode ---
 
     def test_managed_selects_managed_when_ready_and_enabled(self, monkeypatch):
-        result = self._resolve(monkeypatch, "managed", has_direct=True, managed_ready=True, nous_enabled=True)
+        result = self._resolve(monkeypatch, "managed", has_direct=True, managed_ready=True, avoi_enabled=True)
         assert result["selected_backend"] == "managed"
 
     def test_managed_none_when_not_ready(self, monkeypatch):
-        result = self._resolve(monkeypatch, "managed", has_direct=True, managed_ready=False, nous_enabled=True)
+        result = self._resolve(monkeypatch, "managed", has_direct=True, managed_ready=False, avoi_enabled=True)
         assert result["selected_backend"] is None
 
-    def test_managed_blocked_when_nous_disabled(self, monkeypatch):
-        result = self._resolve(monkeypatch, "managed", has_direct=True, managed_ready=True, nous_enabled=False)
+    def test_managed_blocked_when_avoi_disabled(self, monkeypatch):
+        result = self._resolve(monkeypatch, "managed", has_direct=True, managed_ready=True, avoi_enabled=False)
         assert result["selected_backend"] is None
         assert result["managed_mode_blocked"] is True
 

@@ -1,11 +1,11 @@
 """
-MCP Server Management CLI — ``hermes mcp`` subcommand.
+MCP Server Management CLI — ``avoi mcp`` subcommand.
 
-Implements ``hermes mcp add/remove/list/test/configure`` for interactive
+Implements ``avoi mcp add/remove/list/test/configure`` for interactive
 MCP server lifecycle management (issue #690 Phase 2).
 
 Relies on tools/mcp_tool.py for connection/discovery and keeps
-configuration in ~/.hermes/config.yaml under the ``mcp_servers`` key.
+configuration in ~/.avoi/config.yaml under the ``mcp_servers`` key.
 """
 
 import asyncio
@@ -15,15 +15,15 @@ import re
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
-from hermes_cli.config import (
+from avoi_cli.config import (
     load_config,
     save_config,
     get_env_value,
     save_env_value,
-    get_hermes_home,  # noqa: F401 — used by test mocks
+    get_avoi_home,  # noqa: F401 — used by test mocks
 )
-from hermes_cli.colors import Colors, color
-from hermes_constants import display_hermes_home
+from avoi_cli.colors import Colors, color
+from avoi_constants import display_avoi_home
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ def _confirm(question: str, default: bool = True) -> bool:
 
 
 def _prompt(question: str, *, password: bool = False, default: str = "") -> str:
-    from hermes_cli.cli_output import prompt as _shared_prompt
+    from avoi_cli.cli_output import prompt as _shared_prompt
     return _shared_prompt(question, default=default, password=password)
 
 
@@ -214,7 +214,7 @@ def _unwrap_exception_group(exc: BaseException) -> Exception:
     return RuntimeError(str(exc))
 
 
-# ─── hermes mcp add ──────────────────────────────────────────────────────────
+# ─── avoi mcp add ──────────────────────────────────────────────────────────
 
 def cmd_mcp_add(args):
     """Add a new MCP server with discovery-first tool selection."""
@@ -249,9 +249,9 @@ def cmd_mcp_add(args):
     if not url and not command:
         _error("Must specify --url <endpoint>, --command <cmd>, or --preset <name>")
         _info("Examples:")
-        _info('  hermes mcp add ink --url "https://mcp.ml.ink/mcp"')
-        _info('  hermes mcp add github --command npx --args @modelcontextprotocol/server-github')
-        _info('  hermes mcp add myserver --preset mypreset')
+        _info('  avoi mcp add ink --url "https://mcp.ml.ink/mcp"')
+        _info('  avoi mcp add github --command npx --args @modelcontextprotocol/server-github')
+        _info('  avoi mcp add myserver --preset mypreset')
         return
 
     # Check if server already exists
@@ -315,7 +315,7 @@ def cmd_mcp_add(args):
                     api_key = _prompt("API key / Bearer token", password=True)
                     if api_key:
                         save_env_value(env_key, api_key)
-                        _success(f"Saved to {display_hermes_home()}/.env as {env_key}")
+                        _success(f"Saved to {display_avoi_home()}/.env as {env_key}")
 
                 # Set header with env var interpolation
                 if api_key or existing_key:
@@ -336,7 +336,7 @@ def cmd_mcp_add(args):
             server_config["enabled"] = False
             _save_mcp_server(name, server_config)
             _success(f"Saved '{name}' to config (disabled)")
-            _info("Fix the issue, then: hermes mcp test " + name)
+            _info("Fix the issue, then: avoi mcp test " + name)
         return
 
     if not tools:
@@ -372,7 +372,7 @@ def cmd_mcp_add(args):
 
     if choice in ("s", "select"):
         # Interactive tool selection
-        from hermes_cli.curses_ui import curses_checklist
+        from avoi_cli.curses_ui import curses_checklist
 
         labels = [f"{t[0]}  —  {t[1]}" for t in tools]
         pre_selected = set(range(len(tools)))
@@ -403,11 +403,11 @@ def cmd_mcp_add(args):
     _save_mcp_server(name, server_config)
 
     print()
-    _success(f"Saved '{name}' to {display_hermes_home()}/config.yaml ({tool_count}/{total} tools enabled)")
+    _success(f"Saved '{name}' to {display_avoi_home()}/config.yaml ({tool_count}/{total} tools enabled)")
     _info("Start a new session to use these tools.")
 
 
-# ─── hermes mcp remove ───────────────────────────────────────────────────────
+# ─── avoi mcp remove ───────────────────────────────────────────────────────
 
 def cmd_mcp_remove(args):
     """Remove an MCP server from config."""
@@ -430,7 +430,7 @@ def cmd_mcp_remove(args):
 
     # Clean up OAuth tokens if they exist — route through MCPOAuthManager so
     # any provider instance cached in the current process (e.g. from an
-    # earlier `hermes mcp test` in the same session) is evicted too.
+    # earlier `avoi mcp test` in the same session) is evicted too.
     try:
         from tools.mcp_oauth_manager import get_manager
         get_manager().remove(name)
@@ -439,7 +439,7 @@ def cmd_mcp_remove(args):
         pass
 
 
-# ─── hermes mcp list ──────────────────────────────────────────────────────────
+# ─── avoi mcp list ──────────────────────────────────────────────────────────
 
 def cmd_mcp_list(args=None):
     """List all configured MCP servers."""
@@ -450,8 +450,8 @@ def cmd_mcp_list(args=None):
         _info("No MCP servers configured.")
         print()
         _info("Add one with:")
-        _info('  hermes mcp add <name> --url <endpoint>')
-        _info('  hermes mcp add <name> --command <cmd> --args <args...>')
+        _info('  avoi mcp add <name> --url <endpoint>')
+        _info('  avoi mcp add <name> --command <cmd> --args <args...>')
         print()
         return
 
@@ -508,7 +508,7 @@ def cmd_mcp_list(args=None):
     print()
 
 
-# ─── hermes mcp test ──────────────────────────────────────────────────────────
+# ─── avoi mcp test ──────────────────────────────────────────────────────────
 
 def cmd_mcp_test(args):
     """Test connection to an MCP server."""
@@ -579,7 +579,7 @@ def _interpolate_value(value: str) -> str:
     return re.sub(r"\$\{(\w+)\}", _replace, value)
 
 
-# ─── hermes mcp login ────────────────────────────────────────────────────────
+# ─── avoi mcp login ────────────────────────────────────────────────────────
 
 def cmd_mcp_login(args):
     """Force re-authentication for an OAuth-based MCP server.
@@ -610,7 +610,7 @@ def cmd_mcp_login(args):
         return
     if server_config.get("auth") != "oauth":
         _error(f"Server '{name}' is not configured for OAuth (auth={server_config.get('auth')})")
-        _info("Use `hermes mcp remove` + `hermes mcp add` to reconfigure auth.")
+        _info("Use `avoi mcp remove` + `avoi mcp add` to reconfigure auth.")
         return
 
     # Wipe both disk and in-memory cache so the next probe forces a fresh
@@ -636,13 +636,13 @@ def cmd_mcp_login(args):
         _error(f"Authentication failed: {exc}")
 
 
-# ─── hermes mcp configure ────────────────────────────────────────────────────
+# ─── avoi mcp configure ────────────────────────────────────────────────────
 
 def cmd_mcp_configure(args):
     """Reconfigure which tools are enabled for an existing MCP server."""
     import sys as _sys
     if not _sys.stdin.isatty():
-        print("Error: 'hermes mcp configure' requires an interactive terminal.", file=_sys.stderr)
+        print("Error: 'avoi mcp configure' requires an interactive terminal.", file=_sys.stderr)
         _sys.exit(1)
     name = args.name
     servers = _get_mcp_servers()
@@ -700,7 +700,7 @@ def cmd_mcp_configure(args):
     print()
 
     # Interactive checklist
-    from hermes_cli.curses_ui import curses_checklist
+    from avoi_cli.curses_ui import curses_checklist
 
     labels = [f"{t[0]}  —  {t[1]}" for t in all_tools]
 
@@ -738,7 +738,7 @@ def cmd_mcp_configure(args):
 # ─── Dispatcher ───────────────────────────────────────────────────────────────
 
 def mcp_command(args):
-    """Main dispatcher for ``hermes mcp`` subcommands."""
+    """Main dispatcher for ``avoi mcp`` subcommands."""
     action = getattr(args, "mcp_action", None)
 
     if action == "serve":
@@ -765,13 +765,13 @@ def mcp_command(args):
         # No subcommand — show list
         cmd_mcp_list()
         print(color("  Commands:", Colors.CYAN))
-        _info("hermes mcp serve                              Run as MCP server")
-        _info("hermes mcp add <name> --url <endpoint>        Add an MCP server")
-        _info("hermes mcp add <name> --command <cmd>         Add a stdio server")
-        _info("hermes mcp add <name> --preset <preset>       Add from a known preset")
-        _info("hermes mcp remove <name>                      Remove a server")
-        _info("hermes mcp list                               List servers")
-        _info("hermes mcp test <name>                        Test connection")
-        _info("hermes mcp configure <name>                   Toggle tools")
-        _info("hermes mcp login <name>                       Re-authenticate OAuth")
+        _info("avoi mcp serve                              Run as MCP server")
+        _info("avoi mcp add <name> --url <endpoint>        Add an MCP server")
+        _info("avoi mcp add <name> --command <cmd>         Add a stdio server")
+        _info("avoi mcp add <name> --preset <preset>       Add from a known preset")
+        _info("avoi mcp remove <name>                      Remove a server")
+        _info("avoi mcp list                               List servers")
+        _info("avoi mcp test <name>                        Test connection")
+        _info("avoi mcp configure <name>                   Toggle tools")
+        _info("avoi mcp login <name>                       Re-authenticate OAuth")
         print()

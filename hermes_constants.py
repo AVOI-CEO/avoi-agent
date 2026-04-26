@@ -1,4 +1,4 @@
-"""Shared constants for Hermes Agent.
+"""Shared constants for AVOI Agent.
 
 Import-safe module with no dependencies — can be imported from anywhere
 without risk of circular imports.
@@ -8,40 +8,40 @@ import os
 from pathlib import Path
 
 
-def get_hermes_home() -> Path:
-    """Return the Hermes home directory (default: ~/.hermes).
+def get_avoi_home() -> Path:
+    """Return the Hermes home directory (default: ~/.avoi).
 
-    Reads HERMES_HOME env var, falls back to ~/.hermes.
+    Reads AVOI_HOME env var, falls back to ~/.avoi.
     This is the single source of truth — all other copies should import this.
     """
-    val = os.environ.get("HERMES_HOME", "").strip()
-    return Path(val) if val else Path.home() / ".hermes"
+    val = os.environ.get("AVOI_HOME", "").strip()
+    return Path(val) if val else Path.home() / ".avoi"
 
 
-def get_default_hermes_root() -> Path:
+def get_default_avoi_root() -> Path:
     """Return the root Hermes directory for profile-level operations.
 
-    In standard deployments this is ``~/.hermes``.
+    In standard deployments this is ``~/.avoi``.
 
-    In Docker or custom deployments where ``HERMES_HOME`` points outside
-    ``~/.hermes`` (e.g. ``/opt/data``), returns ``HERMES_HOME`` directly
+    In Docker or custom deployments where ``AVOI_HOME`` points outside
+    ``~/.avoi`` (e.g. ``/opt/data``), returns ``AVOI_HOME`` directly
     — that IS the root.
 
-    In profile mode where ``HERMES_HOME`` is ``<root>/profiles/<name>``,
+    In profile mode where ``AVOI_HOME`` is ``<root>/profiles/<name>``,
     returns ``<root>`` so that ``profile list`` can see all profiles.
-    Works both for standard (``~/.hermes/profiles/coder``) and Docker
+    Works both for standard (``~/.avoi/profiles/coder``) and Docker
     (``/opt/data/profiles/coder``) layouts.
 
     Import-safe — no dependencies beyond stdlib.
     """
-    native_home = Path.home() / ".hermes"
-    env_home = os.environ.get("HERMES_HOME", "")
+    native_home = Path.home() / ".avoi"
+    env_home = os.environ.get("AVOI_HOME", "")
     if not env_home:
         return native_home
     env_path = Path(env_home)
     try:
         env_path.resolve().relative_to(native_home.resolve())
-        # HERMES_HOME is under ~/.hermes (normal or profile mode)
+        # AVOI_HOME is under ~/.avoi (normal or profile mode)
         return native_home
     except ValueError:
         pass
@@ -53,7 +53,7 @@ def get_default_hermes_root() -> Path:
     if env_path.parent.name == "profiles":
         return env_path.parent.parent
 
-    # Not a profile path — HERMES_HOME itself is the root
+    # Not a profile path — AVOI_HOME itself is the root
     return env_path
 
 
@@ -61,17 +61,17 @@ def get_optional_skills_dir(default: Path | None = None) -> Path:
     """Return the optional-skills directory, honoring package-manager wrappers.
 
     Packaged installs may ship ``optional-skills`` outside the Python package
-    tree and expose it via ``HERMES_OPTIONAL_SKILLS``.
+    tree and expose it via ``AVOI_OPTIONAL_SKILLS``.
     """
-    override = os.getenv("HERMES_OPTIONAL_SKILLS", "").strip()
+    override = os.getenv("AVOI_OPTIONAL_SKILLS", "").strip()
     if override:
         return Path(override)
     if default is not None:
         return default
-    return get_hermes_home() / "optional-skills"
+    return get_avoi_home() / "optional-skills"
 
 
-def get_hermes_dir(new_subpath: str, old_name: str) -> Path:
+def get_avoi_dir(new_subpath: str, old_name: str) -> Path:
     """Resolve a Hermes subdirectory with backward compatibility.
 
     New installs get the consolidated layout (e.g. ``cache/images``).
@@ -79,33 +79,33 @@ def get_hermes_dir(new_subpath: str, old_name: str) -> Path:
     keep using it — no migration required.
 
     Args:
-        new_subpath: Preferred path relative to HERMES_HOME (e.g. ``"cache/images"``).
-        old_name: Legacy path relative to HERMES_HOME (e.g. ``"image_cache"``).
+        new_subpath: Preferred path relative to AVOI_HOME (e.g. ``"cache/images"``).
+        old_name: Legacy path relative to AVOI_HOME (e.g. ``"image_cache"``).
 
     Returns:
         Absolute ``Path`` — old location if it exists on disk, otherwise the new one.
     """
-    home = get_hermes_home()
+    home = get_avoi_home()
     old_path = home / old_name
     if old_path.exists():
         return old_path
     return home / new_subpath
 
 
-def display_hermes_home() -> str:
-    """Return a user-friendly display string for the current HERMES_HOME.
+def display_avoi_home() -> str:
+    """Return a user-friendly display string for the current AVOI_HOME.
 
     Uses ``~/`` shorthand for readability::
 
-        default:  ``~/.hermes``
-        profile:  ``~/.hermes/profiles/coder``
-        custom:   ``/opt/hermes-custom``
+        default:  ``~/.avoi``
+        profile:  ``~/.avoi/profiles/coder``
+        custom:   ``/opt/avoi-custom``
 
     Use this in **user-facing** print/log messages instead of hardcoding
-    ``~/.hermes``.  For code that needs a real ``Path``, use
-    :func:`get_hermes_home` instead.
+    ``~/.avoi``.  For code that needs a real ``Path``, use
+    :func:`get_avoi_home` instead.
     """
-    home = get_hermes_home()
+    home = get_avoi_home()
     try:
         return "~/" + str(home.relative_to(Path.home()))
     except ValueError:
@@ -115,7 +115,7 @@ def display_hermes_home() -> str:
 def get_subprocess_home() -> str | None:
     """Return a per-profile HOME directory for subprocesses, or None.
 
-    When ``{HERMES_HOME}/home/`` exists on disk, subprocesses should use it
+    When ``{AVOI_HOME}/home/`` exists on disk, subprocesses should use it
     as ``HOME`` so system tools (git, ssh, gh, npm …) write their configs
     inside the Hermes data directory instead of the OS-level ``/root`` or
     ``~/``.  This provides:
@@ -129,10 +129,10 @@ def get_subprocess_home() -> str | None:
     Activation is directory-based: if the ``home/`` subdirectory doesn't
     exist, returns ``None`` and behavior is unchanged.
     """
-    hermes_home = os.getenv("HERMES_HOME")
-    if not hermes_home:
+    avoi_home = os.getenv("AVOI_HOME")
+    if not avoi_home:
         return None
-    profile_home = os.path.join(hermes_home, "home")
+    profile_home = os.path.join(avoi_home, "home")
     if os.path.isdir(profile_home):
         return profile_home
     return None
@@ -225,23 +225,23 @@ def is_container() -> bool:
 
 
 def get_config_path() -> Path:
-    """Return the path to ``config.yaml`` under HERMES_HOME.
+    """Return the path to ``config.yaml`` under AVOI_HOME.
 
-    Replaces the ``get_hermes_home() / "config.yaml"`` pattern repeated
-    in 7+ files (skill_utils.py, hermes_logging.py, hermes_time.py, etc.).
+    Replaces the ``get_avoi_home() / "config.yaml"`` pattern repeated
+    in 7+ files (skill_utils.py, avoi_logging.py, avoi_time.py, etc.).
     """
-    return get_hermes_home() / "config.yaml"
+    return get_avoi_home() / "config.yaml"
 
 
 def get_skills_dir() -> Path:
-    """Return the path to the skills directory under HERMES_HOME."""
-    return get_hermes_home() / "skills"
+    """Return the path to the skills directory under AVOI_HOME."""
+    return get_avoi_home() / "skills"
 
 
 
 def get_env_path() -> Path:
-    """Return the path to the ``.env`` file under HERMES_HOME."""
-    return get_hermes_home() / ".env"
+    """Return the path to the ``.env`` file under AVOI_HOME."""
+    return get_avoi_home() / ".env"
 
 
 # ─── Network Preferences ─────────────────────────────────────────────────────
@@ -269,7 +269,7 @@ def apply_ipv4_preference(force: bool = False) -> None:
     import socket
 
     # Guard against double-patching
-    if getattr(socket.getaddrinfo, "_hermes_ipv4_patched", False):
+    if getattr(socket.getaddrinfo, "_avoi_ipv4_patched", False):
         return
 
     _original_getaddrinfo = socket.getaddrinfo
@@ -285,7 +285,7 @@ def apply_ipv4_preference(force: bool = False) -> None:
                 return _original_getaddrinfo(host, port, family, type, proto, flags)
         return _original_getaddrinfo(host, port, family, type, proto, flags)
 
-    _ipv4_getaddrinfo._hermes_ipv4_patched = True  # type: ignore[attr-defined]
+    _ipv4_getaddrinfo._avoi_ipv4_patched = True  # type: ignore[attr-defined]
     socket.getaddrinfo = _ipv4_getaddrinfo  # type: ignore[assignment]
 
 

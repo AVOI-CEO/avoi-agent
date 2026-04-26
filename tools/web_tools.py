@@ -3,7 +3,7 @@
 Standalone Web Tools Module
 
 This module provides generic web tools that work with multiple backend providers.
-Backend is selected during ``hermes tools`` setup (web.backend in config.yaml).
+Backend is selected during ``avoi tools`` setup (web.backend in config.yaml).
 When available, Hermes can route Firecrawl calls through a Nous-hosted tool-gateway
 for Nous Subscribers only.
 
@@ -56,10 +56,10 @@ from agent.auxiliary_client import (
 from tools.debug_helpers import DebugSession
 from tools.managed_tool_gateway import (
     build_vendor_gateway_url,
-    read_nous_access_token as _read_nous_access_token,
+    read_avoi_access_token as _read_avoi_access_token,
     resolve_managed_tool_gateway,
 )
-from tools.tool_backend_helpers import managed_nous_tools_enabled, prefers_gateway
+from tools.tool_backend_helpers import managed_avoi_tools_enabled, prefers_gateway
 from tools.url_safety import is_safe_url
 from tools.website_policy import check_website_access
 
@@ -73,9 +73,9 @@ def _has_env(name: str) -> bool:
     return bool(val and val.strip())
 
 def _load_web_config() -> dict:
-    """Load the ``web:`` section from ~/.hermes/config.yaml."""
+    """Load the ``web:`` section from ~/.avoi/config.yaml."""
     try:
-        from hermes_cli.config import load_config
+        from avoi_cli.config import load_config
         return load_config().get("web", {})
     except (ImportError, Exception):
         return {}
@@ -83,7 +83,7 @@ def _load_web_config() -> dict:
 def _get_backend() -> str:
     """Determine which web backend to use.
 
-    Reads ``web.backend`` from config.yaml (set by ``hermes tools``).
+    Reads ``web.backend`` from config.yaml (set by ``avoi tools``).
     Falls back to whichever API key is present for users who configured
     keys manually without running setup.
     """
@@ -149,7 +149,7 @@ def _get_firecrawl_gateway_url() -> str:
 
 def _is_tool_gateway_ready() -> bool:
     """Return True when gateway URL and a Nous Subscriber token are available."""
-    return resolve_managed_tool_gateway("firecrawl", token_reader=_read_nous_access_token) is not None
+    return resolve_managed_tool_gateway("firecrawl", token_reader=_read_avoi_access_token) is not None
 
 
 def _has_direct_firecrawl_config() -> bool:
@@ -163,17 +163,17 @@ def _raise_web_backend_configuration_error() -> None:
         "Web tools are not configured. "
         "Set FIRECRAWL_API_KEY for cloud Firecrawl or set FIRECRAWL_API_URL for a self-hosted Firecrawl instance."
     )
-    if managed_nous_tools_enabled():
+    if managed_avoi_tools_enabled():
         message += (
             " With your Nous subscription you can also use the Tool Gateway — "
-            "run `hermes tools` and select Nous Subscription as the web provider."
+            "run `avoi tools` and select Nous Subscription as the web provider."
         )
     raise ValueError(message)
 
 
 def _firecrawl_backend_help_suffix() -> str:
     """Return optional managed-gateway guidance for Firecrawl help text."""
-    if not managed_nous_tools_enabled():
+    if not managed_avoi_tools_enabled():
         return ""
     return (
         ", or use the Nous Tool Gateway via your subscription "
@@ -190,7 +190,7 @@ def _web_requires_env() -> list[str]:
         "FIRECRAWL_API_KEY",
         "FIRECRAWL_API_URL",
     ]
-    if managed_nous_tools_enabled():
+    if managed_avoi_tools_enabled():
         requires.extend(
             [
                 "FIRECRAWL_GATEWAY_URL",
@@ -217,20 +217,20 @@ def _get_firecrawl_client():
     else:
         managed_gateway = resolve_managed_tool_gateway(
             "firecrawl",
-            token_reader=_read_nous_access_token,
+            token_reader=_read_avoi_access_token,
         )
         if managed_gateway is None:
             logger.error("Firecrawl client initialization failed: missing direct config and tool-gateway auth.")
             _raise_web_backend_configuration_error()
 
         kwargs = {
-            "api_key": managed_gateway.nous_user_token,
+            "api_key": managed_gateway.avoi_user_token,
             "api_url": managed_gateway.gateway_origin,
         }
         client_config = (
             "tool-gateway",
             kwargs["api_url"],
-            managed_gateway.nous_user_token,
+            managed_gateway.avoi_user_token,
         )
 
     if _firecrawl_client is not None and _firecrawl_client_config == client_config:
@@ -444,13 +444,13 @@ def _extract_scrape_payload(scrape_result: Any) -> Dict[str, Any]:
 
 DEFAULT_MIN_LENGTH_FOR_SUMMARIZATION = 5000
 
-def _is_nous_auxiliary_client(client: Any) -> bool:
+def _is_avoi_auxiliary_client(client: Any) -> bool:
     """Return True when the resolved auxiliary backend is Nous Portal."""
     from urllib.parse import urlparse
 
     base_url = str(getattr(client, "base_url", "") or "")
     host = (urlparse(base_url).hostname or "").lower()
-    return host == "nousresearch.com" or host.endswith(".nousresearch.com")
+    return host == "avoi-ai.com" or host.endswith(".avoi-ai.com")
 
 
 def _resolve_web_extract_auxiliary(model: Optional[str] = None) -> tuple[Optional[Any], Optional[str], Dict[str, Any]]:
@@ -460,9 +460,9 @@ def _resolve_web_extract_auxiliary(model: Optional[str] = None) -> tuple[Optiona
     effective_model = model or configured_model or default_model
 
     extra_body: Dict[str, Any] = {}
-    if client is not None and _is_nous_auxiliary_client(client):
+    if client is not None and _is_avoi_auxiliary_client(client):
         from agent.auxiliary_client import get_auxiliary_extra_body
-        extra_body = get_auxiliary_extra_body() or {"tags": ["product=hermes-agent"]}
+        extra_body = get_auxiliary_extra_body() or {"tags": ["product=avoi-agent"]}
 
     return client, effective_model, extra_body
 
@@ -890,7 +890,7 @@ def _get_exa_client():
                 "Get your API key at https://exa.ai"
             )
         _exa_client = Exa(api_key=api_key)
-        _exa_client.headers["x-exa-integration"] = "hermes-agent"
+        _exa_client.headers["x-exa-integration"] = "avoi-agent"
     return _exa_client
 
 
@@ -1947,7 +1947,7 @@ if __name__ == "__main__":
     tool_gateway_available = _is_tool_gateway_ready()
     firecrawl_key_available = bool(os.getenv("FIRECRAWL_API_KEY", "").strip())
     firecrawl_url_available = bool(os.getenv("FIRECRAWL_API_URL", "").strip())
-    nous_available = check_auxiliary_model()
+    avoi_available = check_auxiliary_model()
     default_summarizer_model = _get_default_summarizer_model()
 
     if web_available:
@@ -1975,7 +1975,7 @@ if __name__ == "__main__":
             f"{_firecrawl_backend_help_suffix()}"
         )
 
-    if not nous_available:
+    if not avoi_available:
         print("❌ No auxiliary model available for LLM content processing")
         print("Set OPENROUTER_API_KEY, configure Nous Portal, or set OPENAI_BASE_URL + OPENAI_API_KEY")
         print("⚠️  Without an auxiliary model, LLM content processing will be disabled")
@@ -1987,7 +1987,7 @@ if __name__ == "__main__":
 
     print("🛠️  Web tools ready for use!")
     
-    if nous_available:
+    if avoi_available:
         print(f"🧠 LLM content processing available with {default_summarizer_model}")
         print(f"   Default min length for processing: {DEFAULT_MIN_LENGTH_FOR_SUMMARIZATION} chars")
     
@@ -2011,7 +2011,7 @@ if __name__ == "__main__":
     print("      crawl_data = await web_crawl_tool('example.com', 'Find docs')")
     print("  asyncio.run(main())")
     
-    if nous_available:
+    if avoi_available:
         print("\nLLM-enhanced usage:")
         print("  # Content automatically processed for pages >5000 chars (default)")
         print("  content = await web_extract_tool(['https://python.org/about/'])")

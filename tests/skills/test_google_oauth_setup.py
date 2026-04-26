@@ -243,66 +243,66 @@ class TestExchangeAuthCode:
 
 
 class TestHermesConstantsFallback:
-    """Tests for _hermes_home.py fallback when hermes_constants is unavailable."""
+    """Tests for _avoi_home.py fallback when avoi_constants is unavailable."""
 
     HELPER_PATH = (
         Path(__file__).resolve().parents[2]
-        / "skills/productivity/google-workspace/scripts/_hermes_home.py"
+        / "skills/productivity/google-workspace/scripts/_avoi_home.py"
     )
 
     def _load_helper(self, monkeypatch):
-        """Load _hermes_home.py with hermes_constants blocked."""
-        monkeypatch.setitem(sys.modules, "hermes_constants", None)
-        spec = importlib.util.spec_from_file_location("_hermes_home_test", self.HELPER_PATH)
+        """Load _avoi_home.py with avoi_constants blocked."""
+        monkeypatch.setitem(sys.modules, "avoi_constants", None)
+        spec = importlib.util.spec_from_file_location("_avoi_home_test", self.HELPER_PATH)
         module = importlib.util.module_from_spec(spec)
         assert spec.loader is not None
         spec.loader.exec_module(module)
         return module
 
-    def test_fallback_uses_hermes_home_env_var(self, monkeypatch, tmp_path):
-        """When hermes_constants is missing, HERMES_HOME comes from env var."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "custom-hermes"))
+    def test_fallback_uses_avoi_home_env_var(self, monkeypatch, tmp_path):
+        """When avoi_constants is missing, AVOI_HOME comes from env var."""
+        monkeypatch.setenv("AVOI_HOME", str(tmp_path / "custom-avoi"))
         module = self._load_helper(monkeypatch)
-        assert module.get_hermes_home() == tmp_path / "custom-hermes"
+        assert module.get_avoi_home() == tmp_path / "custom-avoi"
 
-    def test_fallback_defaults_to_dot_hermes(self, monkeypatch):
-        """When hermes_constants is missing and HERMES_HOME unset, default to ~/.hermes."""
-        monkeypatch.delenv("HERMES_HOME", raising=False)
+    def test_fallback_defaults_to_dot_avoi(self, monkeypatch):
+        """When avoi_constants is missing and AVOI_HOME unset, default to ~/.avoi."""
+        monkeypatch.delenv("AVOI_HOME", raising=False)
         module = self._load_helper(monkeypatch)
-        assert module.get_hermes_home() == Path.home() / ".hermes"
+        assert module.get_avoi_home() == Path.home() / ".avoi"
 
-    def test_fallback_ignores_empty_hermes_home(self, monkeypatch):
-        """Empty/whitespace HERMES_HOME is treated as unset."""
-        monkeypatch.setenv("HERMES_HOME", "  ")
+    def test_fallback_ignores_empty_avoi_home(self, monkeypatch):
+        """Empty/whitespace AVOI_HOME is treated as unset."""
+        monkeypatch.setenv("AVOI_HOME", "  ")
         module = self._load_helper(monkeypatch)
-        assert module.get_hermes_home() == Path.home() / ".hermes"
+        assert module.get_avoi_home() == Path.home() / ".avoi"
 
-    def test_fallback_display_hermes_home_shortens_path(self, monkeypatch):
-        """Fallback display_hermes_home() uses ~/ shorthand like the real one."""
-        monkeypatch.delenv("HERMES_HOME", raising=False)
+    def test_fallback_display_avoi_home_shortens_path(self, monkeypatch):
+        """Fallback display_avoi_home() uses ~/ shorthand like the real one."""
+        monkeypatch.delenv("AVOI_HOME", raising=False)
         module = self._load_helper(monkeypatch)
-        assert module.display_hermes_home() == "~/.hermes"
+        assert module.display_avoi_home() == "~/.avoi"
 
-    def test_fallback_display_hermes_home_profile_path(self, monkeypatch):
-        """Fallback display_hermes_home() handles profile paths under ~/."""
-        monkeypatch.setenv("HERMES_HOME", str(Path.home() / ".hermes/profiles/coder"))
+    def test_fallback_display_avoi_home_profile_path(self, monkeypatch):
+        """Fallback display_avoi_home() handles profile paths under ~/."""
+        monkeypatch.setenv("AVOI_HOME", str(Path.home() / ".avoi/profiles/coder"))
         module = self._load_helper(monkeypatch)
-        assert module.display_hermes_home() == "~/.hermes/profiles/coder"
+        assert module.display_avoi_home() == "~/.avoi/profiles/coder"
 
-    def test_fallback_display_hermes_home_custom_path(self, monkeypatch):
-        """Fallback display_hermes_home() returns full path for non-home locations."""
-        monkeypatch.setenv("HERMES_HOME", "/opt/hermes-custom")
+    def test_fallback_display_avoi_home_custom_path(self, monkeypatch):
+        """Fallback display_avoi_home() returns full path for non-home locations."""
+        monkeypatch.setenv("AVOI_HOME", "/opt/avoi-custom")
         module = self._load_helper(monkeypatch)
-        assert module.display_hermes_home() == "/opt/hermes-custom"
+        assert module.display_avoi_home() == "/opt/avoi-custom"
 
-    def test_delegates_to_hermes_constants_when_available(self):
-        """When hermes_constants IS importable, _hermes_home delegates to it."""
+    def test_delegates_to_avoi_constants_when_available(self):
+        """When avoi_constants IS importable, _avoi_home delegates to it."""
         spec = importlib.util.spec_from_file_location(
-            "_hermes_home_happy", self.HELPER_PATH
+            "_avoi_home_happy", self.HELPER_PATH
         )
         module = importlib.util.module_from_spec(spec)
         assert spec.loader is not None
         spec.loader.exec_module(module)
-        import hermes_constants
-        assert module.get_hermes_home is hermes_constants.get_hermes_home
-        assert module.display_hermes_home is hermes_constants.display_hermes_home
+        import avoi_constants
+        assert module.get_avoi_home is avoi_constants.get_avoi_home
+        assert module.display_avoi_home is avoi_constants.display_avoi_home

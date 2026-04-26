@@ -3,7 +3,7 @@
 Image Generation Tools Module
 
 Provides image generation via FAL.ai. Multiple FAL models are supported and
-selectable via ``hermes tools`` → Image Generation; the active model is
+selectable via ``avoi tools`` → Image Generation; the active model is
 persisted to ``image_gen.model`` in ``config.yaml``.
 
 Architecture:
@@ -35,7 +35,7 @@ from tools.debug_helpers import DebugSession
 from tools.managed_tool_gateway import resolve_managed_tool_gateway
 from tools.tool_backend_helpers import (
     fal_key_is_configured,
-    managed_nous_tools_enabled,
+    managed_avoi_tools_enabled,
     prefers_gateway,
 )
 
@@ -419,14 +419,14 @@ def _get_managed_fal_client(managed_gateway):
 
     client_config = (
         managed_gateway.gateway_origin.rstrip("/"),
-        managed_gateway.nous_user_token,
+        managed_gateway.avoi_user_token,
     )
     with _managed_fal_client_lock:
         if _managed_fal_client is not None and _managed_fal_client_config == client_config:
             return _managed_fal_client
 
         _managed_fal_client = _ManagedFalSyncClient(
-            key=managed_gateway.nous_user_token,
+            key=managed_gateway.avoi_user_token,
             queue_run_origin=managed_gateway.gateway_origin,
         )
         _managed_fal_client_config = client_config
@@ -459,7 +459,7 @@ def _submit_fal_request(model: str, arguments: Dict[str, Any]):
                 f"(HTTP {status}). This model may not yet be enabled on "
                 f"the Nous Portal's FAL proxy. Either:\n"
                 f"  • Set FAL_KEY in your environment to use FAL.ai directly, or\n"
-                f"  • Pick a different model via `hermes tools` → Image Generation."
+                f"  • Pick a different model via `avoi tools` → Image Generation."
             ) from exc
         raise
 
@@ -493,7 +493,7 @@ def _resolve_fal_model() -> tuple:
     """
     model_id = ""
     try:
-        from hermes_cli.config import load_config
+        from avoi_cli.config import load_config
         cfg = load_config()
         img_cfg = cfg.get("image_gen") if isinstance(cfg, dict) else None
         if isinstance(img_cfg, dict):
@@ -661,7 +661,7 @@ def image_generate_tool(
 
         if not (fal_key_is_configured() or _resolve_managed_fal_gateway()):
             message = "FAL_KEY environment variable not set"
-            if managed_nous_tools_enabled():
+            if managed_avoi_tools_enabled():
                 message += " and managed FAL gateway is unavailable"
             raise ValueError(message)
 
@@ -782,7 +782,7 @@ def check_image_generation_requirements() -> bool:
     2. Any plugin-registered provider whose ``is_available()`` returns True.
 
     Plugins win only when the in-tree FAL path is NOT ready, which matches
-    the historical behavior: shipping hermes with a FAL key configured
+    the historical behavior: shipping avoi with a FAL key configured
     should still expose the tool. The active selection among ready
     providers is resolved per-call by ``image_gen.provider``.
     """
@@ -796,7 +796,7 @@ def check_image_generation_requirements() -> bool:
     # Probe plugin providers. Discovery is idempotent and cheap.
     try:
         from agent.image_gen_registry import list_providers
-        from hermes_cli.plugins import _ensure_plugins_discovered
+        from avoi_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         for provider in list_providers():
@@ -888,7 +888,7 @@ def _read_configured_image_provider():
     for other features but never asked for OpenAI image gen).
     """
     try:
-        from hermes_cli.config import load_config
+        from avoi_cli.config import load_config
         cfg = load_config()
         section = cfg.get("image_gen") if isinstance(cfg, dict) else None
         if isinstance(section, dict):
@@ -919,7 +919,7 @@ def _dispatch_to_plugin_provider(prompt: str, aspect_ratio: str):
         # Import locally so plugin discovery isn't triggered just by
         # importing this module (tests rely on that).
         from agent.image_gen_registry import get_provider
-        from hermes_cli.plugins import _ensure_plugins_discovered
+        from avoi_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         provider = get_provider(configured)
@@ -943,7 +943,7 @@ def _dispatch_to_plugin_provider(prompt: str, aspect_ratio: str):
             "image": None,
             "error": (
                 f"image_gen.provider='{configured}' is set but no plugin "
-                f"registered that name. Run `hermes plugins list` to see "
+                f"registered that name. Run `avoi plugins list` to see "
                 f"available image gen backends."
             ),
             "error_type": "provider_not_registered",

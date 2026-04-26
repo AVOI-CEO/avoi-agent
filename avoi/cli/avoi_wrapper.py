@@ -18,8 +18,8 @@ def main():
     # Print AVOI branding
     print_banner()
 
-    # Launch the agent CLI (same as the 'hermes' command)
-    from hermes_cli.main import main as cli_main
+    # Launch the agent CLI (same as the 'avoi' command)
+    from avoi_cli.main import main as cli_main
     cli_main()
 
 

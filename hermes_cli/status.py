@@ -1,7 +1,7 @@
 """
-Status command for hermes CLI.
+Status command for avoi CLI.
 
-Shows the status of all Hermes Agent components.
+Shows the status of all AVOI Agent components.
 """
 
 import os
@@ -11,14 +11,14 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
-from hermes_cli.auth import AuthError, resolve_provider
-from hermes_cli.colors import Colors, color
-from hermes_cli.config import get_env_path, get_env_value, get_hermes_home, load_config
-from hermes_cli.models import provider_label
-from hermes_cli.nous_subscription import get_nous_subscription_features
-from hermes_cli.runtime_provider import resolve_requested_provider
-from hermes_constants import OPENROUTER_MODELS_URL
-from tools.tool_backend_helpers import managed_nous_tools_enabled
+from avoi_cli.auth import AuthError, resolve_provider
+from avoi_cli.colors import Colors, color
+from avoi_cli.config import get_env_path, get_env_value, get_avoi_home, load_config
+from avoi_cli.models import provider_label
+from avoi_cli.avoi_subscription import get_avoi_subscription_features
+from avoi_cli.runtime_provider import resolve_requested_provider
+from avoi_constants import OPENROUTER_MODELS_URL
+from tools.tool_backend_helpers import managed_avoi_tools_enabled
 
 def check_mark(ok: bool) -> str:
     if ok:
@@ -79,17 +79,17 @@ def _effective_provider_label() -> str:
     return provider_label(effective)
 
 
-from hermes_constants import is_termux as _is_termux
+from avoi_constants import is_termux as _is_termux
 
 
 def show_status(args):
-    """Show status of all Hermes Agent components."""
+    """Show status of all AVOI Agent components."""
     show_all = getattr(args, 'all', False)
     deep = getattr(args, 'deep', False)
     
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.CYAN))
-    print(color("│                 ⚕ Hermes Agent Status                  │", Colors.CYAN))
+    print(color("│                 ⚕ AVOI Agent Status                  │", Colors.CYAN))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.CYAN))
     
     # =========================================================================
@@ -142,7 +142,7 @@ def show_status(args):
         display = redact_key(value) if not show_all else value
         print(f"  {name:<12}  {check_mark(has_key)} {display}")
 
-    from hermes_cli.auth import get_anthropic_key
+    from avoi_cli.auth import get_anthropic_key
     anthropic_value = get_anthropic_key()
     anthropic_display = redact_key(anthropic_value) if not show_all else anthropic_value
     print(f"  {'Anthropic':<12}  {check_mark(bool(anthropic_value))} {anthropic_display}")
@@ -154,41 +154,41 @@ def show_status(args):
     print(color("◆ Auth Providers", Colors.CYAN, Colors.BOLD))
 
     try:
-        from hermes_cli.auth import get_nous_auth_status, get_codex_auth_status, get_qwen_auth_status
-        nous_status = get_nous_auth_status()
+        from avoi_cli.auth import get_avoi_auth_status, get_codex_auth_status, get_qwen_auth_status
+        avoi_status = get_avoi_auth_status()
         codex_status = get_codex_auth_status()
         qwen_status = get_qwen_auth_status()
     except Exception:
-        nous_status = {}
+        avoi_status = {}
         codex_status = {}
         qwen_status = {}
 
-    nous_logged_in = bool(nous_status.get("logged_in"))
-    nous_error = nous_status.get("error")
-    nous_label = "logged in" if nous_logged_in else "not logged in (run: hermes auth add nous --type oauth)"
+    avoi_logged_in = bool(avoi_status.get("logged_in"))
+    avoi_error = avoi_status.get("error")
+    avoi_label = "logged in" if avoi_logged_in else "not logged in (run: avoi auth add nous --type oauth)"
     print(
-        f"  {'Nous Portal':<12}  {check_mark(nous_logged_in)} "
-        f"{nous_label}"
+        f"  {'Nous Portal':<12}  {check_mark(avoi_logged_in)} "
+        f"{avoi_label}"
     )
-    portal_url = nous_status.get("portal_base_url") or "(unknown)"
-    access_exp = _format_iso_timestamp(nous_status.get("access_expires_at"))
-    key_exp = _format_iso_timestamp(nous_status.get("agent_key_expires_at"))
-    refresh_label = "yes" if nous_status.get("has_refresh_token") else "no"
-    if nous_logged_in or portal_url != "(unknown)" or nous_error:
+    portal_url = avoi_status.get("portal_base_url") or "(unknown)"
+    access_exp = _format_iso_timestamp(avoi_status.get("access_expires_at"))
+    key_exp = _format_iso_timestamp(avoi_status.get("agent_key_expires_at"))
+    refresh_label = "yes" if avoi_status.get("has_refresh_token") else "no"
+    if avoi_logged_in or portal_url != "(unknown)" or avoi_error:
         print(f"    Portal URL: {portal_url}")
-    if nous_logged_in or nous_status.get("access_expires_at"):
+    if avoi_logged_in or avoi_status.get("access_expires_at"):
         print(f"    Access exp: {access_exp}")
-    if nous_logged_in or nous_status.get("agent_key_expires_at"):
+    if avoi_logged_in or avoi_status.get("agent_key_expires_at"):
         print(f"    Key exp:    {key_exp}")
-    if nous_logged_in or nous_status.get("has_refresh_token"):
+    if avoi_logged_in or avoi_status.get("has_refresh_token"):
         print(f"    Refresh:    {refresh_label}")
-    if nous_error and not nous_logged_in:
-        print(f"    Error:      {nous_error}")
+    if avoi_error and not avoi_logged_in:
+        print(f"    Error:      {avoi_error}")
 
     codex_logged_in = bool(codex_status.get("logged_in"))
     print(
         f"  {'OpenAI Codex':<12}  {check_mark(codex_logged_in)} "
-        f"{'logged in' if codex_logged_in else 'not logged in (run: hermes model)'}"
+        f"{'logged in' if codex_logged_in else 'not logged in (run: avoi model)'}"
     )
     codex_auth_file = codex_status.get("auth_store")
     if codex_auth_file:
@@ -217,11 +217,11 @@ def show_status(args):
     # =========================================================================
     # Nous Subscription Features
     # =========================================================================
-    if managed_nous_tools_enabled():
-        features = get_nous_subscription_features(config)
+    if managed_avoi_tools_enabled():
+        features = get_avoi_subscription_features(config)
         print()
         print(color("◆ Nous Tool Gateway", Colors.CYAN, Colors.BOLD))
-        if not features.nous_auth_present:
+        if not features.avoi_auth_present:
             print("  Nous Portal   ✗ not logged in")
         else:
             print("  Nous Portal   ✓ managed tools available")
@@ -231,21 +231,21 @@ def show_status(args):
             elif feature.active:
                 current = feature.current_provider or "configured provider"
                 state = f"active via {current}"
-            elif feature.included_by_default and features.nous_auth_present:
+            elif feature.included_by_default and features.avoi_auth_present:
                 state = "included by subscription, not currently selected"
-            elif feature.key == "modal" and features.nous_auth_present:
+            elif feature.key == "modal" and features.avoi_auth_present:
                 state = "available via subscription (optional)"
             else:
                 state = "not configured"
             print(f"  {feature.label:<15} {check_mark(feature.available or feature.active or feature.managed_by_nous)} {state}")
-    elif nous_logged_in:
+    elif avoi_logged_in:
         # Logged into Nous but on the free tier — show upgrade nudge
         print()
         print(color("◆ Nous Tool Gateway", Colors.CYAN, Colors.BOLD))
         print("  Your free-tier Nous account does not include Tool Gateway access.")
         print("  Upgrade your subscription to unlock managed web, image, TTS, and browser tools.")
         try:
-            portal_url = nous_status.get("portal_base_url", "").rstrip("/")
+            portal_url = avoi_status.get("portal_base_url", "").rstrip("/")
             if portal_url:
                 print(f"  Upgrade: {portal_url}")
         except Exception:
@@ -271,7 +271,7 @@ def show_status(args):
             if key_val:
                 break
         configured = bool(key_val)
-        label = "configured" if configured else "not configured (run: hermes model)"
+        label = "configured" if configured else "not configured (run: avoi model)"
         print(f"  {pname:<16} {check_mark(configured)} {label}")
 
     # =========================================================================
@@ -283,7 +283,7 @@ def show_status(args):
     terminal_env = os.getenv("TERMINAL_ENV", "")
     if not terminal_env:
         # Fall back to config file value when env var isn't set
-        # (hermes status doesn't go through cli.py's config loading)
+        # (avoi status doesn't go through cli.py's config loading)
         try:
             _cfg = load_config()
             terminal_env = _cfg.get("terminal", {}).get("backend", "local")
@@ -353,7 +353,7 @@ def show_status(args):
     print(color("◆ Gateway Service", Colors.CYAN, Colors.BOLD))
 
     try:
-        from hermes_cli.gateway import get_gateway_runtime_snapshot, _format_gateway_pids
+        from avoi_cli.gateway import get_gateway_runtime_snapshot, _format_gateway_pids
 
         snapshot = get_gateway_runtime_snapshot()
         is_running = snapshot.running
@@ -364,7 +364,7 @@ def show_status(args):
         if snapshot.has_process_service_mismatch:
             print("  Service:      installed but not managing the current running gateway")
         elif _is_termux() and not snapshot.gateway_pids:
-            print("  Start with:   hermes gateway")
+            print("  Start with:   avoi gateway")
             print("  Note:         Android may stop background jobs when Termux is suspended")
         elif snapshot.service_installed and not snapshot.service_running:
             print("  Service:      installed but stopped")
@@ -388,7 +388,7 @@ def show_status(args):
     print()
     print(color("◆ Scheduled Jobs", Colors.CYAN, Colors.BOLD))
     
-    jobs_file = get_hermes_home() / "cron" / "jobs.json"
+    jobs_file = get_avoi_home() / "cron" / "jobs.json"
     if jobs_file.exists():
         import json
         try:
@@ -408,7 +408,7 @@ def show_status(args):
     print()
     print(color("◆ Sessions", Colors.CYAN, Colors.BOLD))
     
-    sessions_file = get_hermes_home() / "sessions" / "sessions.json"
+    sessions_file = get_avoi_home() / "sessions" / "sessions.json"
     if sessions_file.exists():
         import json
         try:
@@ -458,6 +458,6 @@ def show_status(args):
     
     print()
     print(color("─" * 60, Colors.DIM))
-    print(color("  Run 'hermes doctor' for detailed diagnostics", Colors.DIM))
-    print(color("  Run 'hermes setup' to configure", Colors.DIM))
+    print(color("  Run 'avoi doctor' for detailed diagnostics", Colors.DIM))
+    print(color("  Run 'avoi setup' to configure", Colors.DIM))
     print()

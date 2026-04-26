@@ -10,7 +10,7 @@ This is a library module (not an agent tool). It provides:
   - HubLockFile: Track provenance of installed hub skills
   - Hub state directory management (quarantine, audit log, taps, index cache)
 
-Used by hermes_cli/skills_hub.py for CLI commands and the /skills slash command.
+Used by avoi_cli/skills_hub.py for CLI commands and the /skills slash command.
 """
 
 import hashlib
@@ -25,7 +25,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from hermes_constants import get_hermes_home
+from avoi_constants import get_avoi_home
 from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse, urlunparse
 
@@ -43,8 +43,8 @@ logger = logging.getLogger(__name__)
 # Paths
 # ---------------------------------------------------------------------------
 
-HERMES_HOME = get_hermes_home()
-SKILLS_DIR = HERMES_HOME / "skills"
+AVOI_HOME = get_avoi_home()
+SKILLS_DIR = AVOI_HOME / "skills"
 HUB_DIR = SKILLS_DIR / ".hub"
 LOCK_FILE = HUB_DIR / "lock.json"
 QUARANTINE_DIR = HUB_DIR / "quarantine"
@@ -396,9 +396,9 @@ class GitHubSource(SkillSource):
         tags = []
         metadata = fm.get("metadata", {})
         if isinstance(metadata, dict):
-            hermes_meta = metadata.get("hermes", {})
-            if isinstance(hermes_meta, dict):
-                tags = hermes_meta.get("tags", [])
+            avoi_meta = metadata.get("avoi", {})
+            if isinstance(avoi_meta, dict):
+                tags = avoi_meta.get("tags", [])
         if not tags:
             raw_tags = fm.get("tags", [])
             tags = raw_tags if isinstance(raw_tags, list) else []
@@ -2127,7 +2127,7 @@ class LobeHubSource(SkillSource):
             f"name: {identifier}",
             f"description: {description[:500]}",
             "metadata:",
-            "  hermes:",
+            "  avoi:",
             f"    tags: [{', '.join(str(t) for t in tag_list)}]",
             "  lobehub:",
             "    source: lobehub",
@@ -2155,14 +2155,14 @@ class OptionalSkillSource(SkillSource):
     """
     Fetch skills from the optional-skills/ directory shipped with the repo.
 
-    These skills are official (maintained by Nous Research) but not activated
+    These skills are official (maintained by AVOI AI) but not activated
     by default — they don't appear in the system prompt and aren't copied to
-    ~/.hermes/skills/ during setup.  They are discoverable via the Skills Hub
+    ~/.avoi/skills/ during setup.  They are discoverable via the Skills Hub
     (search / install / inspect) and labelled "official" with "builtin" trust.
     """
 
     def __init__(self):
-        from hermes_constants import get_optional_skills_dir
+        from avoi_constants import get_optional_skills_dir
 
         self._optional_dir = get_optional_skills_dir(
             Path(__file__).parent.parent / "optional-skills"
@@ -2286,9 +2286,9 @@ class OptionalSkillSource(SkillSource):
             tags = []
             meta_block = fm.get("metadata", {})
             if isinstance(meta_block, dict):
-                hermes_meta = meta_block.get("hermes", {})
-                if isinstance(hermes_meta, dict):
-                    tags = hermes_meta.get("tags", [])
+                avoi_meta = meta_block.get("avoi", {})
+                if isinstance(avoi_meta, dict):
+                    tags = avoi_meta.get("tags", [])
 
             rel_path = str(parent.relative_to(self._optional_dir))
 
@@ -2703,30 +2703,30 @@ def check_for_skill_updates(
 # Hermes centralized index source
 # ---------------------------------------------------------------------------
 
-HERMES_INDEX_URL = "https://hermes-agent.nousresearch.com/docs/api/skills-index.json"
-HERMES_INDEX_CACHE_FILE = INDEX_CACHE_DIR / "hermes-index.json"
-HERMES_INDEX_TTL = 6 * 3600  # 6 hours
+AVOI_INDEX_URL = "https://avoi-agent.avoi-ai.com/docs/api/skills-index.json"
+AVOI_INDEX_CACHE_FILE = INDEX_CACHE_DIR / "avoi-index.json"
+AVOI_INDEX_TTL = 6 * 3600  # 6 hours
 
 
-def _load_hermes_index() -> Optional[dict]:
+def _load_avoi_index() -> Optional[dict]:
     """Fetch the centralized skills index, with local cache.
 
     The index is a JSON file hosted on the docs site, rebuilt daily by CI.
-    We cache it locally for HERMES_INDEX_TTL seconds to avoid repeated
+    We cache it locally for AVOI_INDEX_TTL seconds to avoid repeated
     downloads within a session.
     """
     # Check local cache
-    if HERMES_INDEX_CACHE_FILE.exists():
+    if AVOI_INDEX_CACHE_FILE.exists():
         try:
-            age = time.time() - HERMES_INDEX_CACHE_FILE.stat().st_mtime
-            if age < HERMES_INDEX_TTL:
-                return json.loads(HERMES_INDEX_CACHE_FILE.read_text())
+            age = time.time() - AVOI_INDEX_CACHE_FILE.stat().st_mtime
+            if age < AVOI_INDEX_TTL:
+                return json.loads(AVOI_INDEX_CACHE_FILE.read_text())
         except (OSError, json.JSONDecodeError):
             pass
 
     # Fetch from docs site
     try:
-        resp = httpx.get(HERMES_INDEX_URL, timeout=15, follow_redirects=True)
+        resp = httpx.get(AVOI_INDEX_URL, timeout=15, follow_redirects=True)
         if resp.status_code != 200:
             logger.debug("Hermes index fetch returned %d", resp.status_code)
             return _load_stale_index_cache()
@@ -2741,8 +2741,8 @@ def _load_hermes_index() -> Optional[dict]:
 
     # Cache locally
     try:
-        HERMES_INDEX_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
-        HERMES_INDEX_CACHE_FILE.write_text(json.dumps(data))
+        AVOI_INDEX_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        AVOI_INDEX_CACHE_FILE.write_text(json.dumps(data))
     except OSError:
         pass
 
@@ -2751,9 +2751,9 @@ def _load_hermes_index() -> Optional[dict]:
 
 def _load_stale_index_cache() -> Optional[dict]:
     """Fall back to stale cache when the network fetch fails."""
-    if HERMES_INDEX_CACHE_FILE.exists():
+    if AVOI_INDEX_CACHE_FILE.exists():
         try:
-            return json.loads(HERMES_INDEX_CACHE_FILE.read_text())
+            return json.loads(AVOI_INDEX_CACHE_FILE.read_text())
         except (OSError, json.JSONDecodeError):
             pass
     return None
@@ -2781,7 +2781,7 @@ class HermesIndexSource(SkillSource):
 
     def _ensure_loaded(self) -> dict:
         if not self._loaded:
-            self._index = _load_hermes_index()
+            self._index = _load_avoi_index()
             self._loaded = True
         return self._index or {}
 
@@ -2791,7 +2791,7 @@ class HermesIndexSource(SkillSource):
         return self._github
 
     def source_id(self) -> str:
-        return "hermes-index"
+        return "avoi-index"
 
     @property
     def is_available(self) -> bool:
@@ -2845,7 +2845,7 @@ class HermesIndexSource(SkillSource):
         if resolved:
             bundle = self._get_github().fetch(resolved)
             if bundle:
-                bundle.source = entry.get("source", "hermes-index")
+                bundle.source = entry.get("source", "avoi-index")
                 bundle.identifier = identifier
                 return bundle
 
@@ -2856,7 +2856,7 @@ class HermesIndexSource(SkillSource):
             github_id = f"{repo}/{path}"
             bundle = self._get_github().fetch(github_id)
             if bundle:
-                bundle.source = entry.get("source", "hermes-index")
+                bundle.source = entry.get("source", "avoi-index")
                 bundle.identifier = identifier
                 return bundle
 
@@ -2905,7 +2905,7 @@ class HermesIndexSource(SkillSource):
         return SkillMeta(
             name=entry.get("name", ""),
             description=entry.get("description", ""),
-            source=entry.get("source", "hermes-index"),
+            source=entry.get("source", "avoi-index"),
             identifier=entry.get("identifier", ""),
             trust_level=entry.get("trust_level", "community"),
             repo=entry.get("repo"),
@@ -2980,7 +2980,7 @@ def parallel_search_sources(
                                   "claude-marketplace", "lobehub", "well-known"})
     if source_filter == "all":
         for src in sources:
-            if (src.source_id() == "hermes-index"
+            if (src.source_id() == "avoi-index"
                     and getattr(src, "is_available", False)):
                 _index_available = True
                 break

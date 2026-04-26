@@ -13,9 +13,9 @@ from dataclasses import dataclass, fields, replace
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from hermes_constants import OPENROUTER_BASE_URL
-import hermes_cli.auth as auth_mod
-from hermes_cli.auth import (
+from avoi_constants import OPENROUTER_BASE_URL
+import avoi_cli.auth as auth_mod
+from avoi_cli.auth import (
     CODEX_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
     DEFAULT_AGENT_KEY_MIN_TTL_SECONDS,
     PROVIDER_REGISTRY,
@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 def _load_config_safe() -> Optional[dict]:
     """Load config.yaml, returning None on any error."""
     try:
-        from hermes_cli.config import load_config
+        from avoi_cli.config import load_config
 
         return load_config()
     except Exception:
@@ -288,7 +288,7 @@ def _iter_custom_providers(config: Optional[dict] = None):
     if not isinstance(custom_providers, list):
         # Fall back to the v12+ providers dict via the compatibility layer
         try:
-            from hermes_cli.config import get_compatible_custom_providers
+            from avoi_cli.config import get_compatible_custom_providers
 
             custom_providers = get_compatible_custom_providers(config)
         except Exception:
@@ -455,12 +455,12 @@ class CredentialPool:
             logger.debug("Failed to sync from credentials file: %s", exc)
         return entry
 
-    def _sync_nous_entry_from_auth_store(self, entry: PooledCredential) -> PooledCredential:
+    def _sync_avoi_entry_from_auth_store(self, entry: PooledCredential) -> PooledCredential:
         """Sync a Nous pool entry from auth.json if tokens differ.
 
         Nous OAuth refresh tokens are single-use.  When another process
         (e.g. a concurrent cron) refreshes the token via
-        ``resolve_nous_runtime_credentials``, it writes fresh tokens to
+        ``resolve_avoi_runtime_credentials``, it writes fresh tokens to
         auth.json under ``_auth_store_lock``.  The pool entry's tokens
         become stale.  This method detects that and adopts the newer pair,
         avoiding a "refresh token reuse" revocation on the Nous Portal.
@@ -583,7 +583,7 @@ class CredentialPool:
 
                 refreshed = refresh_anthropic_oauth_pure(
                     entry.refresh_token,
-                    use_json=entry.source.endswith("hermes_pkce"),
+                    use_json=entry.source.endswith("avoi_pkce"),
                 )
                 updated = replace(
                     entry,
@@ -616,10 +616,10 @@ class CredentialPool:
                     last_refresh=refreshed.get("last_refresh"),
                 )
             elif self.provider == "nous":
-                synced = self._sync_nous_entry_from_auth_store(entry)
+                synced = self._sync_avoi_entry_from_auth_store(entry)
                 if synced is not entry:
                     entry = synced
-                nous_state = {
+                avoi_state = {
                     "access_token": entry.access_token,
                     "refresh_token": entry.refresh_token,
                     "client_id": entry.client_id,
@@ -633,8 +633,8 @@ class CredentialPool:
                     "agent_key_expires_at": entry.agent_key_expires_at,
                     "tls": entry.tls,
                 }
-                refreshed = auth_mod.refresh_nous_oauth_from_state(
-                    nous_state,
+                refreshed = auth_mod.refresh_avoi_oauth_from_state(
+                    avoi_state,
                     min_key_ttl_seconds=DEFAULT_AGENT_KEY_MIN_TTL_SECONDS,
                     force_refresh=force,
                     force_mint=force,
@@ -664,7 +664,7 @@ class CredentialPool:
                         from agent.anthropic_adapter import refresh_anthropic_oauth_pure
                         refreshed = refresh_anthropic_oauth_pure(
                             synced.refresh_token,
-                            use_json=synced.source.endswith("hermes_pkce"),
+                            use_json=synced.source.endswith("avoi_pkce"),
                         )
                         updated = replace(
                             synced,
@@ -697,7 +697,7 @@ class CredentialPool:
             # between our proactive sync and the HTTP call.  Re-sync from
             # auth.json and adopt the fresh tokens if available.
             if self.provider == "nous":
-                synced = self._sync_nous_entry_from_auth_store(entry)
+                synced = self._sync_avoi_entry_from_auth_store(entry)
                 if synced.refresh_token != entry.refresh_token:
                     logger.debug("Nous refresh failed but auth.json has newer tokens — adopting")
                     updated = replace(
@@ -778,12 +778,12 @@ class CredentialPool:
                     cleared_any = True
             # For nous entries, sync from auth.json before status checks.
             # Another process may have successfully refreshed via
-            # resolve_nous_runtime_credentials(), making this entry's
+            # resolve_avoi_runtime_credentials(), making this entry's
             # exhausted status stale.
             if (self.provider == "nous"
                     and entry.source == "device_code"
                     and entry.last_status == STATUS_EXHAUSTED):
-                synced = self._sync_nous_entry_from_auth_store(entry)
+                synced = self._sync_avoi_entry_from_auth_store(entry)
                 if synced is not entry:
                     entry = synced
                     cleared_any = True
@@ -1043,7 +1043,7 @@ def _normalize_pool_priorities(provider: str, entries: List[PooledCredential]) -
     source_rank = {
         "env:ANTHROPIC_TOKEN": 0,
         "env:CLAUDE_CODE_OAUTH_TOKEN": 1,
-        "hermes_pkce": 2,
+        "avoi_pkce": 2,
         "claude_code": 3,
         "env:ANTHROPIC_API_KEY": 4,
     }
@@ -1076,9 +1076,9 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
     auth_store = _load_auth_store()
 
     # Shared suppression gate — used at every upsert site so
-    # `hermes auth remove <provider> <N>` is stable across all source types.
+    # `avoi auth remove <provider> <N>` is stable across all source types.
     try:
-        from hermes_cli.auth import is_source_suppressed as _is_suppressed
+        from avoi_cli.auth import is_source_suppressed as _is_suppressed
     except ImportError:
         def _is_suppressed(_p, _s):  # type: ignore[misc]
             return False
@@ -1089,16 +1089,16 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
         # Without this gate, auxiliary client fallback chains silently read
         # ~/.claude/.credentials.json without user consent.  See PR #4210.
         try:
-            from hermes_cli.auth import is_provider_explicitly_configured
+            from avoi_cli.auth import is_provider_explicitly_configured
             if not is_provider_explicitly_configured("anthropic"):
                 return changed, active_sources
         except ImportError:
             pass
 
-        from agent.anthropic_adapter import read_claude_code_credentials, read_hermes_oauth_credentials
+        from agent.anthropic_adapter import read_claude_code_credentials, read_avoi_oauth_credentials
 
         for source_name, creds in (
-            ("hermes_pkce", read_hermes_oauth_credentials()),
+            ("avoi_pkce", read_avoi_oauth_credentials()),
             ("claude_code", read_claude_code_credentials()),
         ):
             if creds and creds.get("accessToken"):
@@ -1124,8 +1124,8 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
         if state and not _is_suppressed(provider, "device_code"):
             active_sources.add("device_code")
             # Prefer a user-supplied label embedded in the singleton state
-            # (set by persist_nous_credentials(label=...) when the user ran
-            # `hermes auth add nous --label <name>`).  Fall back to the
+            # (set by persist_avoi_credentials(label=...) when the user ran
+            # `avoi auth add nous --label <name>`).  Fall back to the
             # auto-derived token fingerprint for logins that didn't supply one.
             custom_label = str(state.get("label") or "").strip()
             seeded_label = custom_label or label_from_token(
@@ -1170,7 +1170,7 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
         # env vars (COPILOT_GITHUB_TOKEN / GH_TOKEN).  They don't live in
         # the auth store or credential pool, so we resolve them here.
         try:
-            from hermes_cli.copilot_auth import resolve_copilot_token, get_copilot_api_token
+            from avoi_cli.copilot_auth import resolve_copilot_token, get_copilot_api_token
             token, source = resolve_copilot_token()
             if token:
                 api_token = get_copilot_api_token(token)
@@ -1200,7 +1200,7 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
         # Use refresh_if_expiring=False to avoid network calls during
         # pool loading / provider discovery.
         try:
-            from hermes_cli.auth import resolve_qwen_runtime_credentials
+            from avoi_cli.auth import resolve_qwen_runtime_credentials
             creds = resolve_qwen_runtime_credentials(refresh_if_expiring=False)
             token = creds.get("api_key", "")
             if token:
@@ -1224,7 +1224,7 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
             logger.debug("Qwen OAuth token seed failed: %s", exc)
 
     elif provider == "openai-codex":
-        # Respect user suppression — `hermes auth remove openai-codex` marks
+        # Respect user suppression — `avoi auth remove openai-codex` marks
         # the device_code source as suppressed so it won't be re-seeded from
         # the Hermes auth store.  Without this gate the removal is instantly
         # undone on the next load_pool() call.
@@ -1238,7 +1238,7 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
         # single-use, so sharing them with Codex CLI / VS Code causes
         # refresh_token_reused race failures.  Users who want to adopt
         # existing Codex CLI credentials get a one-time, explicit prompt
-        # via `hermes auth openai-codex`.
+        # via `avoi auth openai-codex`.
         if isinstance(tokens, dict) and tokens.get("access_token"):
             active_sources.add("device_code")
             changed |= _upsert_entry(
@@ -1262,13 +1262,13 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
 def _seed_from_env(provider: str, entries: List[PooledCredential]) -> Tuple[bool, Set[str]]:
     changed = False
     active_sources: Set[str] = set()
-    # Honour user suppression — `hermes auth remove <provider> <N>` for an
+    # Honour user suppression — `avoi auth remove <provider> <N>` for an
     # env-seeded credential marks the env:<VAR> source as suppressed so it
-    # won't be re-seeded from the user's shell environment or ~/.hermes/.env.
+    # won't be re-seeded from the user's shell environment or ~/.avoi/.env.
     # Without this gate the removal is silently undone on the next
     # load_pool() call whenever the var is still exported by the shell.
     try:
-        from hermes_cli.auth import is_source_suppressed as _is_source_suppressed
+        from avoi_cli.auth import is_source_suppressed as _is_source_suppressed
     except ImportError:
         def _is_source_suppressed(_p, _s):  # type: ignore[misc]
             return False
@@ -1346,7 +1346,7 @@ def _prune_stale_seeded_entries(entries: List[PooledCredential], active_sources:
         or entry.source in active_sources
         or not (
             entry.source.startswith("env:")
-            or entry.source in {"claude_code", "hermes_pkce"}
+            or entry.source in {"claude_code", "avoi_pkce"}
         )
     ]
     if len(retained) == len(entries):
@@ -1362,7 +1362,7 @@ def _seed_custom_pool(pool_key: str, entries: List[PooledCredential]) -> Tuple[b
 
     # Shared suppression gate — same pattern as _seed_from_env/_seed_from_singletons.
     try:
-        from hermes_cli.auth import is_source_suppressed as _is_suppressed
+        from avoi_cli.auth import is_source_suppressed as _is_suppressed
     except ImportError:
         def _is_suppressed(_p, _s):  # type: ignore[misc]
             return False

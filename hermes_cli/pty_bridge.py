@@ -1,20 +1,20 @@
-"""PTY bridge for `hermes dashboard` chat tab.
+"""PTY bridge for `avoi dashboard` chat tab.
 
 Wraps a child process behind a pseudo-terminal so its ANSI output can be
 streamed to a browser-side terminal emulator (xterm.js) and typed
 keystrokes can be fed back in.  The only caller today is the
-``/api/pty`` WebSocket endpoint in ``hermes_cli.web_server``.
+``/api/pty`` WebSocket endpoint in ``avoi_cli.web_server``.
 
 Design constraints:
 
-* **POSIX-only.**  Hermes Agent supports Windows exclusively via WSL, which
+* **POSIX-only.**  AVOI Agent supports Windows exclusively via WSL, which
   exposes a native POSIX PTY via ``openpty(3)``.  Native Windows Python
   has no PTY; :class:`PtyUnavailableError` is raised with a user-readable
   install/platform message so the dashboard can render a banner instead of
   crashing.
 * **Zero Node dependency on the server side.**  We use :mod:`ptyprocess`,
   which is a pure-Python wrapper around the OS calls.  The browser talks
-  to the same ``hermes --tui`` binary it would launch from the CLI, so
+  to the same ``avoi --tui`` binary it would launch from the CLI, so
   every TUI feature (slash popover, model picker, tool rows, markdown,
   skin engine, clarify/sudo/approval prompts) ships automatically.
 * **Byte-safe I/O.**  Reads and writes go through the PTY master fd
@@ -99,7 +99,7 @@ class PtyBridge:
             if sys.platform.startswith("win"):
                 raise PtyUnavailableError(
                     "Pseudo-terminals are unavailable on this platform. "
-                    "Hermes Agent supports Windows only via WSL."
+                    "AVOI Agent supports Windows only via WSL."
                 )
             if ptyprocess is None:
                 raise PtyUnavailableError(

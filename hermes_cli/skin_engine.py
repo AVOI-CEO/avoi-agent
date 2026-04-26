@@ -1,7 +1,7 @@
 """Hermes CLI skin/theme engine.
 
 A data-driven skin system that lets users customize the CLI's visual appearance.
-Skins are defined as YAML files in ~/.hermes/skins/ or as built-in presets.
+Skins are defined as YAML files in ~/.avoi/skins/ or as built-in presets.
 No code changes are needed to add a new skin.
 
 SKIN YAML SCHEMA
@@ -64,7 +64,7 @@ All fields are optional. Missing values inherit from the ``default`` skin.
 
     # Branding: text strings used throughout the CLI
     branding:
-      agent_name: "Hermes Agent"          # Banner title, status display
+      agent_name: "AVOI Agent"          # Banner title, status display
       welcome: "Welcome message"          # Shown at CLI startup
       goodbye: "Goodbye! ⚕"              # Shown on exit
       response_label: " ⚕ Hermes "       # Response box header label
@@ -85,14 +85,14 @@ USAGE
 
 .. code-block:: python
 
-    from hermes_cli.skin_engine import get_active_skin, list_skins, set_active_skin
+    from avoi_cli.skin_engine import get_active_skin, list_skins, set_active_skin
 
     skin = get_active_skin()
     print(skin.colors["banner_title"])    # "#FFD700"
-    print(skin.get_branding("agent_name"))  # "Hermes Agent"
+    print(skin.get_branding("agent_name"))  # "AVOI Agent"
 
     set_active_skin("ares")               # Switch to built-in ares skin
-    set_active_skin("mytheme")            # Switch to user skin from ~/.hermes/skins/
+    set_active_skin("mytheme")            # Switch to user skin from ~/.avoi/skins/
 
 BUILT-IN SKINS
 ==============
@@ -107,7 +107,7 @@ BUILT-IN SKINS
 USER SKINS
 ==========
 
-Drop a YAML file in ``~/.hermes/skins/<name>.yaml`` following the schema above.
+Drop a YAML file in ``~/.avoi/skins/<name>.yaml`` following the schema above.
 Activate with ``/skin <name>`` in the CLI or ``display.skin: <name>`` in config.yaml.
 """
 
@@ -116,7 +116,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from hermes_constants import get_hermes_home
+from avoi_constants import get_avoi_home
 
 logger = logging.getLogger(__name__)
 
@@ -135,8 +135,8 @@ class SkinConfig:
     branding: Dict[str, str] = field(default_factory=dict)
     tool_prefix: str = "┊"
     tool_emojis: Dict[str, str] = field(default_factory=dict)  # per-tool emoji overrides
-    banner_logo: str = ""    # Rich-markup ASCII art logo (replaces HERMES_AGENT_LOGO)
-    banner_hero: str = ""    # Rich-markup hero art (replaces HERMES_CADUCEUS)
+    banner_logo: str = ""    # Rich-markup ASCII art logo (replaces AVOI_AGENT_LOGO)
+    banner_hero: str = ""    # Rich-markup hero art (replaces AVOI_CADUCEUS)
 
     def get_color(self, key: str, fallback: str = "") -> str:
         """Get a color value with fallback."""
@@ -373,8 +373,8 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
         },
         "spinner": {},
         "branding": {
-            "agent_name": "Hermes Agent",
-            "welcome": "Welcome to Hermes Agent! Type your message or /help for commands.",
+            "agent_name": "AVOI Agent",
+            "welcome": "Welcome to AVOI Agent! Type your message or /help for commands.",
             "goodbye": "Goodbye! ⚕",
             "response_label": " ⚕ Hermes ",
             "prompt_symbol": "❯ ",
@@ -410,8 +410,8 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
         },
         "spinner": {},
         "branding": {
-            "agent_name": "Hermes Agent",
-            "welcome": "Welcome to Hermes Agent! Type your message or /help for commands.",
+            "agent_name": "AVOI Agent",
+            "welcome": "Welcome to AVOI Agent! Type your message or /help for commands.",
             "goodbye": "Goodbye! \u2695",
             "response_label": " \u2695 Hermes ",
             "prompt_symbol": "\u276f ",
@@ -649,7 +649,7 @@ _active_skin_name: str = "default"
 
 def _skins_dir() -> Path:
     """User skins directory."""
-    return get_hermes_home() / "skins"
+    return get_avoi_home() / "skins"
 
 
 def _load_skin_from_yaml(path: Path) -> Optional[Dict[str, Any]]:

@@ -1,6 +1,6 @@
 import pytest
 
-from hermes_cli import runtime_provider as rp
+from avoi_cli import runtime_provider as rp
 
 
 def test_resolve_runtime_provider_uses_credential_pool(monkeypatch):
@@ -109,7 +109,7 @@ def test_resolve_runtime_provider_falls_back_when_pool_empty(monkeypatch):
             "provider": "openai-codex",
             "base_url": "https://chatgpt.com/backend-api/codex",
             "api_key": "codex-token",
-            "source": "hermes-auth-store",
+            "source": "avoi-auth-store",
             "last_refresh": "2026-02-26T00:00:00Z",
         },
     )
@@ -209,7 +209,7 @@ def test_resolve_provider_alias_qwen(monkeypatch):
 
 def test_qwen_oauth_auto_fallthrough_on_auth_failure(monkeypatch):
     """When requested_provider is 'auto' and Qwen creds fail, fall through."""
-    from hermes_cli.auth import AuthError
+    from avoi_cli.auth import AuthError
 
     monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "qwen-oauth")
     monkeypatch.setattr(
@@ -769,9 +769,9 @@ def test_named_custom_provider_does_not_shadow_builtin_provider(monkeypatch):
     )
     monkeypatch.setattr(
         rp,
-        "resolve_nous_runtime_credentials",
+        "resolve_avoi_runtime_credentials",
         lambda **kwargs: {
-            "base_url": "https://inference-api.nousresearch.com/v1",
+            "base_url": "https://inference-api.avoi-ai.com/v1",
             "api_key": "nous-runtime-key",
             "source": "portal",
             "expires_at": None,
@@ -781,7 +781,7 @@ def test_named_custom_provider_does_not_shadow_builtin_provider(monkeypatch):
     resolved = rp.resolve_runtime_provider(requested="nous")
 
     assert resolved["provider"] == "nous"
-    assert resolved["base_url"] == "https://inference-api.nousresearch.com/v1"
+    assert resolved["base_url"] == "https://inference-api.avoi-ai.com/v1"
     assert resolved["api_key"] == "nous-runtime-key"
     assert resolved["requested_provider"] == "nous"
 
@@ -836,7 +836,7 @@ def test_explicit_openrouter_honors_openrouter_base_url_over_pool(monkeypatch):
 
 
 def test_resolve_requested_provider_precedence(monkeypatch):
-    monkeypatch.setenv("HERMES_INFERENCE_PROVIDER", "nous")
+    monkeypatch.setenv("AVOI_INFERENCE_PROVIDER", "nous")
     monkeypatch.setattr(rp, "_get_model_config", lambda: {"provider": "openai-codex"})
     assert rp.resolve_requested_provider("openrouter") == "openrouter"
     assert rp.resolve_requested_provider() == "openai-codex"
@@ -844,7 +844,7 @@ def test_resolve_requested_provider_precedence(monkeypatch):
     monkeypatch.setattr(rp, "_get_model_config", lambda: {})
     assert rp.resolve_requested_provider() == "nous"
 
-    monkeypatch.delenv("HERMES_INFERENCE_PROVIDER", raising=False)
+    monkeypatch.delenv("AVOI_INFERENCE_PROVIDER", raising=False)
     assert rp.resolve_requested_provider() == "auto"
 
 
@@ -1216,13 +1216,13 @@ def test_named_custom_provider_anthropic_api_mode(monkeypatch):
 
 def test_resolve_provider_custom_returns_custom():
     """resolve_provider('custom') must return 'custom', not 'openrouter'."""
-    from hermes_cli.auth import resolve_provider
+    from avoi_cli.auth import resolve_provider
     assert resolve_provider("custom") == "custom"
 
 
 def test_resolve_provider_openrouter_unchanged():
     """resolve_provider('openrouter') must still return 'openrouter'."""
-    from hermes_cli.auth import resolve_provider
+    from avoi_cli.auth import resolve_provider
     assert resolve_provider("openrouter") == "openrouter"
 
 
@@ -1275,9 +1275,9 @@ def test_custom_provider_no_key_gets_placeholder(monkeypatch):
     assert resolved["base_url"] == "http://localhost:8080/v1"
 
 
-def test_auto_detected_nous_auth_failure_falls_through_to_openrouter(monkeypatch):
+def test_auto_detected_avoi_auth_failure_falls_through_to_openrouter(monkeypatch):
     """When auto-detect picks Nous but credentials are revoked, fall through to OpenRouter."""
-    from hermes_cli.auth import AuthError
+    from avoi_cli.auth import AuthError
 
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-or-key")
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
@@ -1293,7 +1293,7 @@ def test_auto_detected_nous_auth_failure_falls_through_to_openrouter(monkeypatch
     })())
     # Nous credential resolution fails with revoked token
     monkeypatch.setattr(
-        rp, "resolve_nous_runtime_credentials",
+        rp, "resolve_avoi_runtime_credentials",
         lambda **kw: (_ for _ in ()).throw(
             AuthError("Refresh session has been revoked",
                       provider="nous", code="invalid_grant", relogin_required=True)
@@ -1308,7 +1308,7 @@ def test_auto_detected_nous_auth_failure_falls_through_to_openrouter(monkeypatch
 
 def test_auto_detected_codex_auth_failure_falls_through_to_openrouter(monkeypatch):
     """When auto-detect picks Codex but credentials are revoked, fall through to OpenRouter."""
-    from hermes_cli.auth import AuthError
+    from avoi_cli.auth import AuthError
 
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-or-key")
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
@@ -1333,9 +1333,9 @@ def test_auto_detected_codex_auth_failure_falls_through_to_openrouter(monkeypatc
     assert resolved["api_key"] == "test-or-key"
 
 
-def test_explicit_nous_auth_failure_still_raises(monkeypatch):
+def test_explicit_avoi_auth_failure_still_raises(monkeypatch):
     """When user explicitly requests Nous and auth fails, the error should propagate."""
-    from hermes_cli.auth import AuthError
+    from avoi_cli.auth import AuthError
     import pytest
 
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-or-key")
@@ -1346,7 +1346,7 @@ def test_explicit_nous_auth_failure_still_raises(monkeypatch):
         "has_credentials": lambda self: False,
     })())
     monkeypatch.setattr(
-        rp, "resolve_nous_runtime_credentials",
+        rp, "resolve_avoi_runtime_credentials",
         lambda **kw: (_ for _ in ()).throw(
             AuthError("Refresh session has been revoked",
                       provider="nous", code="invalid_grant", relogin_required=True)
@@ -1631,9 +1631,9 @@ class TestAzureFoundryResolution:
 
     def test_azure_foundry_missing_api_key_raises(self, monkeypatch):
         monkeypatch.delenv("AZURE_FOUNDRY_API_KEY", raising=False)
-        # `get_env_value` reads from ~/.hermes/.env — mock it to return None
+        # `get_env_value` reads from ~/.avoi/.env — mock it to return None
         # so the resolver can't find a key there either.
-        import hermes_cli.config as cfg_mod
+        import avoi_cli.config as cfg_mod
         monkeypatch.setattr(cfg_mod, "get_env_value", lambda k: None)
         monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "azure-foundry")
         monkeypatch.setattr(rp, "_get_model_config", lambda: self._make_cfg(

@@ -1,4 +1,4 @@
-"""hermes memory setup|status — configure memory provider plugins.
+"""avoi memory setup|status — configure memory provider plugins.
 
 Auto-detects installed memory providers via the plugin system.
 Interactive curses-based UI for provider selection, then walks through
@@ -12,11 +12,11 @@ import os
 import sys
 from pathlib import Path
 
-from hermes_constants import get_hermes_home
+from avoi_constants import get_avoi_home
 
 
 # ---------------------------------------------------------------------------
-# Curses-based interactive picker (same pattern as hermes tools)
+# Curses-based interactive picker (same pattern as avoi tools)
 # ---------------------------------------------------------------------------
 
 def _curses_select(title: str, items: list[tuple[str, str]], default: int = 0) -> int:
@@ -25,7 +25,7 @@ def _curses_select(title: str, items: list[tuple[str, str]], default: int = 0) -
     items: list of (label, description) tuples.
     Returns selected index, or default on escape/quit.
     """
-    from hermes_cli.curses_ui import curses_radiolist
+    from avoi_cli.curses_ui import curses_radiolist
     # Format (label, desc) tuples into display strings
     display_items = [
         f"{label}  {desc}" if desc else label
@@ -105,7 +105,7 @@ def _install_dependencies(provider_name: str) -> None:
     if not uv_path:
         print(f"  ⚠ uv not found — cannot install dependencies")
         print(f"  Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh")
-        print(f"  Then re-run: hermes memory setup")
+        print(f"  Then re-run: avoi memory setup")
         return
 
     try:
@@ -184,7 +184,7 @@ def _get_available_providers() -> list:
 
 def cmd_setup_provider(provider_name: str) -> None:
     """Run memory setup for a specific provider, skipping the picker."""
-    from hermes_cli.config import load_config, save_config
+    from avoi_cli.config import load_config, save_config
 
     providers = _get_available_providers()
     match = None
@@ -195,7 +195,7 @@ def cmd_setup_provider(provider_name: str) -> None:
 
     if not match:
         print(f"\n  Memory provider '{provider_name}' not found.")
-        print("  Run 'hermes memory setup' to see available providers.\n")
+        print("  Run 'avoi memory setup' to see available providers.\n")
         return
 
     name, _, provider = match
@@ -207,8 +207,8 @@ def cmd_setup_provider(provider_name: str) -> None:
         config["memory"] = {}
 
     if hasattr(provider, "post_setup"):
-        hermes_home = str(get_hermes_home())
-        provider.post_setup(hermes_home, config)
+        avoi_home = str(get_avoi_home())
+        provider.post_setup(avoi_home, config)
         return
 
     # Fallback: generic schema-based setup (same as cmd_setup)
@@ -220,13 +220,13 @@ def cmd_setup_provider(provider_name: str) -> None:
 
 def cmd_setup(args) -> None:
     """Interactive memory provider setup wizard."""
-    from hermes_cli.config import load_config, save_config
+    from avoi_cli.config import load_config, save_config
 
     providers = _get_available_providers()
 
     if not providers:
         print("\n  No memory provider plugins detected.")
-        print("  Install a plugin to ~/.hermes/plugins/ and try again.\n")
+        print("  Install a plugin to ~/.avoi/plugins/ and try again.\n")
         return
 
     # Build picker items
@@ -258,8 +258,8 @@ def cmd_setup(args) -> None:
     # If the provider has a post_setup hook, delegate entirely to it.
     # The hook handles its own config, connection test, and activation.
     if hasattr(provider, "post_setup"):
-        hermes_home = str(get_hermes_home())
-        provider.post_setup(hermes_home, config)
+        avoi_home = str(get_avoi_home())
+        provider.post_setup(avoi_home, config)
         return
 
     schema = provider.get_config_schema() if hasattr(provider, "get_config_schema") else []
@@ -268,7 +268,7 @@ def cmd_setup(args) -> None:
     if not isinstance(provider_config, dict):
         provider_config = {}
 
-    env_path = get_hermes_home() / ".env"
+    env_path = get_avoi_home() / ".env"
     env_writes = {}
 
     if schema:
@@ -335,10 +335,10 @@ def cmd_setup(args) -> None:
     save_config(config)
 
     # Write non-secret config to provider's native location
-    hermes_home = str(get_hermes_home())
+    avoi_home = str(get_avoi_home())
     if provider_config and hasattr(provider, "save_config"):
         try:
-            provider.save_config(provider_config, hermes_home)
+            provider.save_config(provider_config, avoi_home)
         except Exception as e:
             print(f"  Failed to write provider config: {e}")
 
@@ -386,7 +386,7 @@ def _write_env_vars(env_path: Path, env_writes: dict) -> None:
 
 def cmd_status(args) -> None:
     """Show current memory provider config."""
-    from hermes_cli.config import load_config
+    from avoi_cli.config import load_config
 
     config = load_config()
     mem_config = config.get("memory", {})
@@ -430,7 +430,7 @@ def cmd_status(args) -> None:
                     break
         else:
             print(f"\n  Plugin:    NOT installed ✗")
-            print(f"  Install the '{provider_name}' memory plugin to ~/.hermes/plugins/")
+            print(f"  Install the '{provider_name}' memory plugin to ~/.avoi/plugins/")
 
     providers = _get_available_providers()
     if providers:

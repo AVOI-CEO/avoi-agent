@@ -221,8 +221,8 @@ class TestDeveloperRoleSwap:
         # Original messages must be untouched (internal representation stays "system")
         assert messages[0]["role"] == "system"
 
-    def test_developer_role_via_nous_portal(self, monkeypatch):
-        agent = _make_agent(monkeypatch, "nous", base_url="https://inference-api.nousresearch.com/v1")
+    def test_developer_role_via_avoi_portal(self, monkeypatch):
+        agent = _make_agent(monkeypatch, "nous", base_url="https://inference-api.avoi-ai.com/v1")
         agent.model = "gpt-5"
         messages = [
             {"role": "system", "content": "You are helpful."},
@@ -304,15 +304,15 @@ class TestBuildApiKwargsAIGateway:
 
 
 class TestBuildApiKwargsNousPortal:
-    def test_includes_nous_product_tags(self, monkeypatch):
-        agent = _make_agent(monkeypatch, "nous", base_url="https://inference-api.nousresearch.com/v1")
+    def test_includes_avoi_product_tags(self, monkeypatch):
+        agent = _make_agent(monkeypatch, "nous", base_url="https://inference-api.avoi-ai.com/v1")
         messages = [{"role": "user", "content": "hi"}]
         kwargs = agent._build_api_kwargs(messages)
         extra = kwargs.get("extra_body", {})
-        assert extra.get("tags") == ["product=hermes-agent"]
+        assert extra.get("tags") == ["product=avoi-agent"]
 
     def test_uses_chat_completions_format(self, monkeypatch):
-        agent = _make_agent(monkeypatch, "nous", base_url="https://inference-api.nousresearch.com/v1")
+        agent = _make_agent(monkeypatch, "nous", base_url="https://inference-api.avoi-ai.com/v1")
         messages = [{"role": "user", "content": "hi"}]
         kwargs = agent._build_api_kwargs(messages)
         assert "messages" in kwargs
@@ -903,10 +903,10 @@ class TestAuxiliaryClientProviderPriority:
         assert model == "google/gemini-3-flash-preview"
         assert "openrouter" in str(mock.call_args.kwargs["base_url"]).lower()
 
-    def test_nous_when_no_openrouter(self, monkeypatch):
+    def test_avoi_when_no_openrouter(self, monkeypatch):
         monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
         from agent.auxiliary_client import get_text_auxiliary_client
-        with patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "nous-tok"}), \
+        with patch("agent.auxiliary_client._read_avoi_auth", return_value={"access_token": "nous-tok"}), \
              patch("agent.auxiliary_client.OpenAI") as mock:
             client, model = get_text_auxiliary_client()
         assert model == "google/gemini-3-flash-preview"
@@ -921,7 +921,7 @@ class TestAuxiliaryClientProviderPriority:
         monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
         monkeypatch.setenv("OPENAI_API_KEY", "local-key")
         from agent.auxiliary_client import get_text_auxiliary_client
-        with patch("agent.auxiliary_client._read_nous_auth", return_value=None), \
+        with patch("agent.auxiliary_client._read_avoi_auth", return_value=None), \
              patch("agent.auxiliary_client._resolve_custom_runtime",
                    return_value=("http://localhost:1234/v1", "local-key")), \
              patch("agent.auxiliary_client.OpenAI") as mock:
@@ -933,7 +933,7 @@ class TestAuxiliaryClientProviderPriority:
         monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         from agent.auxiliary_client import get_text_auxiliary_client, CodexAuxiliaryClient
-        with patch("agent.auxiliary_client._read_nous_auth", return_value=None), \
+        with patch("agent.auxiliary_client._read_avoi_auth", return_value=None), \
              patch("agent.auxiliary_client._read_codex_access_token", return_value="codex-tok"), \
              patch("agent.auxiliary_client.OpenAI"):
             client, model = get_text_auxiliary_client()

@@ -88,7 +88,7 @@ def _make_server_manager():
         server_type="vllm",
         health_check=False,
     )
-    sm = ServerManager([config], tool_parser="hermes")
+    sm = ServerManager([config], tool_parser="avoi")
     sm.servers[0].server_healthy = True
     return sm
 

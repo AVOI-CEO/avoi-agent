@@ -1,14 +1,14 @@
-"""hermes hooks — inspect and manage shell-script hooks.
+"""avoi hooks — inspect and manage shell-script hooks.
 
 Usage::
 
-    hermes hooks list
-    hermes hooks test <event> [--for-tool X] [--payload-file F]
-    hermes hooks revoke <command>
-    hermes hooks doctor
+    avoi hooks list
+    avoi hooks test <event> [--for-tool X] [--payload-file F]
+    avoi hooks revoke <command>
+    avoi hooks doctor
 
-Consent records live under ``~/.hermes/shell-hooks-allowlist.json`` and
-hook definitions come from the ``hooks:`` block in ``~/.hermes/config.yaml``
+Consent records live under ``~/.avoi/shell-hooks-allowlist.json`` and
+hook definitions come from the ``hooks:`` block in ``~/.avoi/config.yaml``
 (the same config read by the CLI / gateway at startup).
 
 This module is a thin CLI shell over :mod:`agent.shell_hooks`; every
@@ -25,12 +25,12 @@ from typing import Any, Dict, List, Optional
 
 
 def hooks_command(args) -> None:
-    """Entry point for ``hermes hooks`` — dispatches to the requested action."""
+    """Entry point for ``avoi hooks`` — dispatches to the requested action."""
     sub = getattr(args, "hooks_action", None)
 
     if not sub:
-        print("Usage: hermes hooks {list|test|revoke|doctor}")
-        print("Run 'hermes hooks --help' for details.")
+        print("Usage: avoi hooks {list|test|revoke|doctor}")
+        print("Run 'avoi hooks --help' for details.")
         return
 
     if sub in ("list", "ls"):
@@ -50,14 +50,14 @@ def hooks_command(args) -> None:
 # ---------------------------------------------------------------------------
 
 def _cmd_list(_args) -> None:
-    from hermes_cli.config import load_config
+    from avoi_cli.config import load_config
     from agent import shell_hooks
 
     specs = shell_hooks.iter_configured_hooks(load_config())
 
     if not specs:
-        print("No shell hooks configured in ~/.hermes/config.yaml.")
-        print("See `hermes hooks --help` or")
+        print("No shell hooks configured in ~/.avoi/config.yaml.")
+        print("See `avoi hooks --help` or")
         print("    website/docs/user-guide/features/hooks.md")
         print("for the config schema and worked examples.")
         return
@@ -96,7 +96,7 @@ def _cmd_list(_args) -> None:
                         print(
                             f"      ⚠ script modified since approval "
                             f"(was {mtime_at}, now {mtime_now}) — "
-                            f"run `hermes hooks doctor` to re-validate"
+                            f"run `avoi hooks doctor` to re-validate"
                         )
         print()
 
@@ -108,7 +108,7 @@ def _cmd_list(_args) -> None:
 # Synthetic kwargs matching the real invoke_hook() call sites — these are
 # passed verbatim to agent.shell_hooks.run_once(), which routes them through
 # the same _serialize_payload() that production firings use.  That way the
-# stdin a script sees under `hermes hooks test` and `hermes hooks doctor`
+# stdin a script sees under `avoi hooks test` and `avoi hooks doctor`
 # is identical in shape to what it will see at runtime.
 _DEFAULT_PAYLOADS = {
     "pre_tool_call": {
@@ -186,8 +186,8 @@ _DEFAULT_PAYLOADS = {
 
 
 def _cmd_test(args) -> None:
-    from hermes_cli.config import load_config
-    from hermes_cli.plugins import VALID_HOOKS
+    from avoi_cli.config import load_config
+    from avoi_cli.plugins import VALID_HOOKS
     from agent import shell_hooks
 
     event = args.event
@@ -291,7 +291,7 @@ def _cmd_revoke(args) -> None:
 # ---------------------------------------------------------------------------
 
 def _cmd_doctor(_args) -> None:
-    from hermes_cli.config import load_config
+    from avoi_cli.config import load_config
     from agent import shell_hooks
 
     specs = shell_hooks.iter_configured_hooks(load_config())
@@ -342,19 +342,19 @@ def _doctor_one(spec, shell_hooks) -> int:
             problems += 1
             print(f"      ⚠ script modified since approval "
                   f"(was {mtime_at}, now {mtime_now}) — review changes, "
-                  f"then `hermes hooks revoke` + re-approve to refresh")
+                  f"then `avoi hooks revoke` + re-approve to refresh")
         elif mtime_now and mtime_at and mtime_now == mtime_at:
             print("      ✓ script unchanged since approval")
 
     # 4. Produces valid JSON for a synthetic payload — only when the entry
-    # is already allowlisted.  Otherwise `hermes hooks doctor` would execute
+    # is already allowlisted.  Otherwise `avoi hooks doctor` would execute
     # every script listed in a freshly-pulled config before the user has
     # reviewed them, which directly contradicts the documented workflow
     # ("spot newly-added hooks *before they register*").
     if not entry:
         print("      ℹ skipped JSON smoke test — not allowlisted yet. "
               "Approve the hook first (via TTY prompt or --accept-hooks), "
-              "then re-run `hermes hooks doctor`.")
+              "then re-run `avoi hooks doctor`.")
     elif shell_hooks.script_is_executable(spec.command):
         payload = _DEFAULT_PAYLOADS.get(spec.event, {"extra": {}})
         result = shell_hooks.run_once(spec, payload)

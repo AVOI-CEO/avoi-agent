@@ -305,7 +305,7 @@ class TestSessionLifecycleMcpE2E:
             return []
 
         state = mock_manager.get_session(sid)
-        state.agent.enabled_toolsets = ["hermes-acp"]
+        state.agent.enabled_toolsets = ["avoi-acp"]
         state.agent.disabled_toolsets = None
         state.agent.tools = []
         state.agent.valid_tool_names = set()
@@ -332,7 +332,7 @@ class TestSessionLifecycleMcpE2E:
             return []
 
         state = mock_manager.get_session(sid)
-        state.agent.enabled_toolsets = ["hermes-acp"]
+        state.agent.enabled_toolsets = ["avoi-acp"]
         state.agent.disabled_toolsets = None
         state.agent.tools = []
         state.agent.valid_tool_names = set()

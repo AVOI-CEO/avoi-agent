@@ -1,11 +1,11 @@
 """
-Unified tool configuration for Hermes Agent.
+Unified tool configuration for AVOI Agent.
 
-`hermes tools` and `hermes setup tools` both enter this module.
+`avoi tools` and `avoi setup tools` both enter this module.
 Select a platform → toggle toolsets on/off → for newly enabled tools
 that need API keys, run through provider-aware configuration.
 
-Saves per-platform tool configuration to ~/.hermes/config.yaml under
+Saves per-platform tool configuration to ~/.avoi/config.yaml under
 the `platform_toolsets` key.
 """
 
@@ -16,15 +16,15 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set
 
 
-from hermes_cli.config import (
+from avoi_cli.config import (
     load_config, save_config, get_env_value, save_env_value,
 )
-from hermes_cli.colors import Colors, color
-from hermes_cli.nous_subscription import (
-    apply_nous_managed_defaults,
-    get_nous_subscription_features,
+from avoi_cli.colors import Colors, color
+from avoi_cli.avoi_subscription import (
+    apply_avoi_managed_defaults,
+    get_avoi_subscription_features,
 )
-from tools.tool_backend_helpers import fal_key_is_configured, managed_nous_tools_enabled
+from tools.tool_backend_helpers import fal_key_is_configured, managed_avoi_tools_enabled
 from utils import base_url_hostname
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
 # ─── UI Helpers (shared with setup.py) ────────────────────────────────────────
 
-from hermes_cli.cli_output import (  # noqa: E402 — late import block
+from avoi_cli.cli_output import (  # noqa: E402 — late import block
     print_error as _print_error,
     print_info as _print_info,
     print_success as _print_success,
@@ -73,11 +73,11 @@ CONFIGURABLE_TOOLSETS = [
 ]
 
 # Toolsets that are OFF by default for new installs.
-# They're still in _HERMES_CORE_TOOLS (available at runtime if enabled),
+# They're still in _AVOI_CORE_TOOLS (available at runtime if enabled),
 # but the setup checklist won't pre-select them for first-time users.
 _DEFAULT_OFF_TOOLSETS = {"moa", "homeassistant", "rl", "spotify", "discord", "discord_admin"}
 
-# Platform-scoped toolsets: only appear in the `hermes tools` checklist for
+# Platform-scoped toolsets: only appear in the `avoi tools` checklist for
 # these platforms, and only resolve/save for these platforms.  A toolset
 # absent from this map is available on every platform (current behaviour).
 #
@@ -107,13 +107,13 @@ def _get_effective_configurable_toolsets():
     already appears in ``CONFIGURABLE_TOOLSETS`` is skipped — bundled
     plugins (e.g. ``plugins/spotify``) share their toolset key with the
     built-in entry, and we want the built-in label/description to win.
-    Without the dedupe, ``hermes tools`` → "reconfigure existing" would
+    Without the dedupe, ``avoi tools`` → "reconfigure existing" would
     list the same toolset twice.
     """
     result = list(CONFIGURABLE_TOOLSETS)
     seen = {ts_key for ts_key, _, _ in result}
     try:
-        from hermes_cli.plugins import discover_plugins, get_plugin_toolsets
+        from avoi_cli.plugins import discover_plugins, get_plugin_toolsets
         discover_plugins()  # idempotent — ensures plugins are loaded
         for entry in get_plugin_toolsets():
             if entry[0] in seen:
@@ -128,7 +128,7 @@ def _get_effective_configurable_toolsets():
 def _get_plugin_toolset_keys() -> set:
     """Return the set of toolset keys provided by plugins."""
     try:
-        from hermes_cli.plugins import discover_plugins, get_plugin_toolsets
+        from avoi_cli.plugins import discover_plugins, get_plugin_toolsets
         discover_plugins()  # idempotent — ensures plugins are loaded
         return {ts_key for ts_key, _, _ in get_plugin_toolsets()}
     except Exception:
@@ -137,7 +137,7 @@ def _get_plugin_toolset_keys() -> set:
 # Platform display config — derived from the canonical registry so every
 # module shares the same data.  Kept as dict-of-dicts for backward
 # compatibility with existing ``PLATFORMS[key]["label"]`` access patterns.
-from hermes_cli.platforms import PLATFORMS as _PLATFORMS_REGISTRY
+from avoi_cli.platforms import PLATFORMS as _PLATFORMS_REGISTRY
 
 PLATFORMS = {
     k: {"label": info.label, "default_toolset": info.default_toolset}
@@ -161,8 +161,8 @@ TOOL_CATEGORIES = {
                 "tag": "Managed OpenAI TTS billed to your subscription",
                 "env_vars": [],
                 "tts_provider": "openai",
-                "requires_nous_auth": True,
-                "managed_nous_feature": "tts",
+                "requires_avoi_auth": True,
+                "managed_avoi_feature": "tts",
                 "override_env_vars": ["VOICE_TOOLS_OPENAI_KEY", "OPENAI_API_KEY"],
             },
             {
@@ -238,8 +238,8 @@ TOOL_CATEGORIES = {
                 "tag": "Managed Firecrawl billed to your subscription",
                 "web_backend": "firecrawl",
                 "env_vars": [],
-                "requires_nous_auth": True,
-                "managed_nous_feature": "web",
+                "requires_avoi_auth": True,
+                "managed_avoi_feature": "web",
                 "override_env_vars": ["FIRECRAWL_API_KEY", "FIRECRAWL_API_URL"],
             },
             {
@@ -298,8 +298,8 @@ TOOL_CATEGORIES = {
                 "badge": "subscription",
                 "tag": "Managed FAL image generation billed to your subscription",
                 "env_vars": [],
-                "requires_nous_auth": True,
-                "managed_nous_feature": "image_gen",
+                "requires_avoi_auth": True,
+                "managed_avoi_feature": "image_gen",
                 "override_env_vars": ["FAL_KEY"],
                 "imagegen_backend": "fal",
             },
@@ -324,8 +324,8 @@ TOOL_CATEGORIES = {
                 "tag": "Managed Browser Use billed to your subscription",
                 "env_vars": [],
                 "browser_provider": "browser-use",
-                "requires_nous_auth": True,
-                "managed_nous_feature": "browser",
+                "requires_avoi_auth": True,
+                "managed_avoi_feature": "browser",
                 "override_env_vars": ["BROWSER_USE_API_KEY"],
                 "post_setup": "agent_browser",
             },
@@ -450,10 +450,10 @@ def _run_post_setup(post_setup_key: str):
             if result.returncode == 0:
                 _print_success("    Node.js dependencies installed")
             else:
-                from hermes_constants import display_hermes_home
-                _print_warning(f"    npm install failed - run manually: cd {display_hermes_home()}/hermes-agent && npm install")
+                from avoi_constants import display_avoi_home
+                _print_warning(f"    npm install failed - run manually: cd {display_avoi_home()}/avoi-agent && npm install")
         elif not node_modules.exists():
-            _print_warning("    Node.js not found - browser tools require: npm install (in hermes-agent directory)")
+            _print_warning("    Node.js not found - browser tools require: npm install (in avoi-agent directory)")
 
     elif post_setup_key == "camofox":
         camofox_dir = PROJECT_ROOT / "node_modules" / "@askjo" / "camofox-browser"
@@ -508,17 +508,17 @@ def _run_post_setup(post_setup_key: str):
             _print_info(f"    Run manually: python -m pip install -U '{wheel_url}' soundfile")
 
     elif post_setup_key == "spotify":
-        # Run the full `hermes auth spotify` flow — if the user has no
+        # Run the full `avoi auth spotify` flow — if the user has no
         # client_id yet, this drops them into the interactive wizard
         # (opens the Spotify dashboard, prompts for client_id, persists
-        # to ~/.hermes/.env), then continues straight into PKCE. If they
+        # to ~/.avoi/.env), then continues straight into PKCE. If they
         # already have an app, it skips the wizard and just does OAuth.
         from types import SimpleNamespace
         try:
-            from hermes_cli.auth import login_spotify_command
+            from avoi_cli.auth import login_spotify_command
         except Exception as exc:
             _print_warning(f"    Could not load Spotify auth: {exc}")
-            _print_info("    Run manually: hermes auth spotify")
+            _print_info("    Run manually: avoi auth spotify")
             return
         _print_info("    Starting Spotify login...")
         try:
@@ -529,12 +529,12 @@ def _run_post_setup(post_setup_key: str):
             _print_success("    Spotify authenticated")
         except SystemExit as exc:
             # User aborted the wizard, or OAuth failed — don't fail the
-            # toolset enable; they can retry with `hermes auth spotify`.
+            # toolset enable; they can retry with `avoi auth spotify`.
             _print_warning(f"    Spotify login did not complete: {exc}")
-            _print_info("    Run later: hermes auth spotify")
+            _print_info("    Run later: avoi auth spotify")
         except Exception as exc:
             _print_warning(f"    Spotify login failed: {exc}")
-            _print_info("    Run manually: hermes auth spotify")
+            _print_info("    Run manually: avoi auth spotify")
 
     elif post_setup_key == "rl_training":
         try:
@@ -644,7 +644,7 @@ def _get_platform_tools(
     # If the saved list contains any configurable keys directly, the user
     # has explicitly configured this platform — use direct membership.
     # This avoids the subset-inference bug where composite toolsets like
-    # "hermes-cli" (which include all _HERMES_CORE_TOOLS) cause disabled
+    # "avoi-cli" (which include all _AVOI_CORE_TOOLS) cause disabled
     # toolsets to re-appear as enabled.
     has_explicit_config = any(ts in configurable_keys for ts in toolset_names)
 
@@ -655,7 +655,7 @@ def _get_platform_tools(
         }
     else:
         # No explicit config — fall back to resolving composite toolset names
-        # (e.g. "hermes-cli") to individual tool names and reverse-mapping.
+        # (e.g. "avoi-cli") to individual tool names and reverse-mapping.
         all_tool_names = set()
         for ts_name in toolset_names:
             all_tool_names.update(resolve_toolset(ts_name))
@@ -682,7 +682,7 @@ def _get_platform_tools(
     # feishu_drive).  These are part of the platform's default composite but
     # absent from CONFIGURABLE_TOOLSETS, so they can't appear in the TUI
     # checklist or in a user-saved config.  Must run in BOTH branches —
-    # otherwise saving via `hermes tools` (which flips has_explicit_config
+    # otherwise saving via `avoi tools` (which flips has_explicit_config
     # to True) silently drops them.
     platform_tool_universe = set(resolve_toolset(PLATFORMS[platform]["default_toolset"]))
     configurable_tool_universe = set()
@@ -692,7 +692,7 @@ def _get_platform_tools(
     for ts_key in enabled_toolsets:
         claimed.update(resolve_toolset(ts_key))
     skip = configurable_keys | plugin_ts_keys | platform_default_keys
-    skip |= {k for k in TOOLSETS if k.startswith("hermes-")}
+    skip |= {k for k in TOOLSETS if k.startswith("avoi-")}
     skip |= set(_DEFAULT_OFF_TOOLSETS) - {platform}
     for ts_key, ts_def in TOOLSETS.items():
         if ts_key in skip:
@@ -710,9 +710,9 @@ def _get_platform_tools(
 
     # Plugin toolsets: enabled by default unless explicitly disabled, or
     # unless the toolset is in _DEFAULT_OFF_TOOLSETS (e.g. spotify —
-    # shipped as a bundled plugin but user must opt in via `hermes tools`
+    # shipped as a bundled plugin but user must opt in via `avoi tools`
     # so we don't ship 7 Spotify tool schemas to users who don't use it).
-    # A plugin toolset is "known" for a platform once `hermes tools`
+    # A plugin toolset is "known" for a platform once `avoi tools`
     # has been saved for that platform (tracked via known_plugin_toolsets).
     # Unknown plugins default to enabled; known-but-absent = disabled.
     if plugin_ts_keys:
@@ -726,7 +726,7 @@ def _get_platform_tools(
                 # Opt-in plugin toolset — stay off until user picks it
                 continue
             elif pts not in known_for_platform:
-                # New plugin not yet seen by hermes tools — default enabled
+                # New plugin not yet seen by avoi tools — default enabled
                 enabled_toolsets.add(pts)
             # else: known but not in config = user disabled it
 
@@ -790,7 +790,7 @@ def _save_platform_tools(config: dict, platform: str, enabled_toolset_keys: Set[
     plugin_keys = _get_plugin_toolset_keys()
     configurable_keys |= plugin_keys
 
-    # Also exclude platform default toolsets (hermes-cli, hermes-telegram, etc.)
+    # Also exclude platform default toolsets (avoi-cli, avoi-telegram, etc.)
     # These are "super" toolsets that resolve to ALL tools, so preserving them
     # would silently override the user's unchecked selections on the next read.
     platform_default_keys = {p["default_toolset"] for p in PLATFORMS.values()}
@@ -807,7 +807,7 @@ def _save_platform_tools(config: dict, platform: str, enabled_toolset_keys: Set[
         entry for entry in existing_toolsets
         if entry not in configurable_keys and entry not in platform_default_keys
     }
-    # Opening `hermes tools` is the user's opt-in to reconfigure tools, so treat
+    # Opening `avoi tools` is the user's opt-in to reconfigure tools, so treat
     # saving from the picker as consent to clear the "no_mcp" sentinel. The
     # picker has no checkbox for no_mcp, so without this users who once set it
     # by hand could never re-enable MCP servers through the UI.
@@ -840,7 +840,7 @@ def _toolset_has_keys(ts_key: str, config: dict = None) -> bool:
             return False
 
     if ts_key in {"web", "image_gen", "tts", "browser"}:
-        features = get_nous_subscription_features(config)
+        features = get_avoi_subscription_features(config)
         feature = features.features.get(ts_key)
         if feature and (feature.available or feature.managed_by_nous):
             return True
@@ -867,7 +867,7 @@ def _toolset_has_keys(ts_key: str, config: dict = None) -> bool:
 
 def _prompt_choice(question: str, choices: list, default: int = 0) -> int:
     """Single-select menu (arrow keys). Delegates to curses_radiolist."""
-    from hermes_cli.curses_ui import curses_radiolist
+    from avoi_cli.curses_ui import curses_radiolist
     return curses_radiolist(question, choices, selected=default, cancel_returns=default)
 
 
@@ -921,7 +921,7 @@ def _estimate_tool_tokens() -> Dict[str, int]:
 
 def _prompt_toolset_checklist(platform_label: str, enabled: Set[str], platform: str = "cli") -> Set[str]:
     """Multi-select checklist of toolsets. Returns set of selected toolset keys."""
-    from hermes_cli.curses_ui import curses_checklist
+    from avoi_cli.curses_ui import curses_checklist
     from toolsets import resolve_toolset
 
     # Pre-compute per-tool token counts (cached after first call).
@@ -1003,7 +1003,7 @@ def _plugin_image_gen_providers() -> list[dict]:
     """
     try:
         from agent.image_gen_registry import list_providers
-        from hermes_cli.plugins import _ensure_plugins_discovered
+        from avoi_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         providers = list_providers()
@@ -1035,12 +1035,12 @@ def _plugin_image_gen_providers() -> list[dict]:
 
 def _visible_providers(cat: dict, config: dict) -> list[dict]:
     """Return provider entries visible for the current auth/config state."""
-    features = get_nous_subscription_features(config)
+    features = get_avoi_subscription_features(config)
     visible = []
     for provider in cat.get("providers", []):
-        if provider.get("managed_nous_feature") and not managed_nous_tools_enabled():
+        if provider.get("managed_avoi_feature") and not managed_avoi_tools_enabled():
             continue
-        if provider.get("requires_nous_auth") and not features.nous_auth_present:
+        if provider.get("requires_avoi_auth") and not features.avoi_auth_present:
             continue
         visible.append(provider)
 
@@ -1074,7 +1074,7 @@ def _toolset_needs_configuration_prompt(ts_key: str, config: dict) -> bool:
             return False
         try:
             from agent.image_gen_registry import list_providers
-            from hermes_cli.plugins import _ensure_plugins_discovered
+            from avoi_cli.plugins import _ensure_plugins_discovered
 
             _ensure_plugins_discovered()
             for provider in list_providers():
@@ -1165,9 +1165,9 @@ def _is_provider_active(provider: dict, config: dict) -> bool:
         image_cfg = config.get("image_gen", {})
         return isinstance(image_cfg, dict) and image_cfg.get("provider") == plugin_name
 
-    managed_feature = provider.get("managed_nous_feature")
+    managed_feature = provider.get("managed_avoi_feature")
     if managed_feature:
-        features = get_nous_subscription_features(config)
+        features = get_avoi_subscription_features(config)
         feature = features.features.get(managed_feature)
         if feature is None:
             return False
@@ -1336,7 +1336,7 @@ def _plugin_image_gen_catalog(plugin_name: str):
     """
     try:
         from agent.image_gen_registry import get_provider
-        from hermes_cli.plugins import _ensure_plugins_discovered
+        from avoi_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         provider = get_provider(plugin_name)
@@ -1423,11 +1423,11 @@ def _select_plugin_image_gen_provider(plugin_name: str, config: dict) -> None:
 def _configure_provider(provider: dict, config: dict):
     """Configure a single provider - prompt for API keys and set config."""
     env_vars = provider.get("env_vars", [])
-    managed_feature = provider.get("managed_nous_feature")
+    managed_feature = provider.get("managed_avoi_feature")
 
-    if provider.get("requires_nous_auth"):
-        features = get_nous_subscription_features(config)
-        if not features.nous_auth_present:
+    if provider.get("requires_avoi_auth"):
+        features = get_avoi_subscription_features(config)
+        if not features.avoi_auth_present:
             _print_warning("  Nous Subscription is only available after logging into Nous Portal.")
             return
 
@@ -1676,11 +1676,11 @@ def _configure_tool_category_for_reconfig(ts_key: str, cat: dict, config: dict):
 def _reconfigure_provider(provider: dict, config: dict):
     """Reconfigure a provider - update API keys."""
     env_vars = provider.get("env_vars", [])
-    managed_feature = provider.get("managed_nous_feature")
+    managed_feature = provider.get("managed_avoi_feature")
 
-    if provider.get("requires_nous_auth"):
-        features = get_nous_subscription_features(config)
-        if not features.nous_auth_present:
+    if provider.get("requires_avoi_auth"):
+        features = get_avoi_subscription_features(config)
+        if not features.avoi_auth_present:
             _print_warning("  Nous Subscription is only available after logging into Nous Portal.")
             return
 
@@ -1795,7 +1795,7 @@ def _reconfigure_simple_requirements(ts_key: str):
 # ─── Main Entry Point ─────────────────────────────────────────────────────────
 
 def tools_command(args=None, first_install: bool = False, config: dict = None):
-    """Entry point for `hermes tools` and `hermes setup tools`.
+    """Entry point for `avoi tools` and `avoi setup tools`.
 
     Args:
         first_install: When True (set by the setup wizard on fresh installs),
@@ -1833,7 +1833,7 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
     print(color("⚕ Hermes Tool Configuration", Colors.CYAN, Colors.BOLD))
     print(color("  Enable or disable tools per platform.", Colors.DIM))
     print(color("  Tools that need API keys will be configured when enabled.", Colors.DIM))
-    print(color("  Guide: https://hermes-agent.nousresearch.com/docs/user-guide/features/tools", Colors.DIM))
+    print(color("  Guide: https://avoi-agent.avoi-ai.com/docs/user-guide/features/tools", Colors.DIM))
     print()
 
     # ── First-time install: linear flow, no platform menu ──
@@ -1859,11 +1859,11 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
                     label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
                     print(color(f"  - {label}", Colors.RED))
 
-            auto_configured = apply_nous_managed_defaults(
+            auto_configured = apply_avoi_managed_defaults(
                 config,
                 enabled_toolsets=new_enabled,
             )
-            if managed_nous_tools_enabled():
+            if managed_avoi_tools_enabled():
                 for ts_key in sorted(auto_configured):
                     label = next((l for k, l, _ in CONFIGURABLE_TOOLSETS if k == ts_key), ts_key)
                     print(color(f"  ✓ {label}: using your Nous subscription defaults", Colors.GREEN))
@@ -2025,9 +2025,9 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
         platform_choices[idx] = f"Configure {pinfo['label']}  ({new_count}/{total} enabled)"
 
     print()
-    from hermes_constants import display_hermes_home
-    print(color(f"  Tool configuration saved to {display_hermes_home()}/config.yaml", Colors.DIM))
-    print(color("  Changes take effect on next 'hermes' or gateway restart.", Colors.DIM))
+    from avoi_constants import display_avoi_home
+    print(color(f"  Tool configuration saved to {display_avoi_home()}/config.yaml", Colors.DIM))
+    print(color("  Changes take effect on next 'avoi' or gateway restart.", Colors.DIM))
     print()
 
 
@@ -2041,7 +2041,7 @@ def _configure_mcp_tools_interactive(config: dict):
     a per-server curses checklist.  Writes changes back as ``tools.exclude``
     entries in config.yaml.
     """
-    from hermes_cli.curses_ui import curses_checklist
+    from avoi_cli.curses_ui import curses_checklist
 
     mcp_servers = config.get("mcp_servers") or {}
     if not mcp_servers:

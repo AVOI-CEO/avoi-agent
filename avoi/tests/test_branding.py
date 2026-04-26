@@ -39,7 +39,7 @@ def test_rebrand_works_on_sample():
     from avoi.scripts.rebrand import rebrand_file
 
     with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
-        f.write("# Welcome to Hermes Agent\nBuilt by Nous Research\n")
+        f.write("# Welcome to AVOI Agent\nBuilt by AVOI AI\n")
         tmp_path = f.name
 
     try:

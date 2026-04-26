@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 # long-running subprocesses immediately instead of blocking until timeout.
 # ---------------------------------------------------------------------------
 from tools.interrupt import is_interrupted, _interrupt_event  # noqa: F401 — re-exported
-# display_hermes_home imported lazily at call site (stale-module safety during hermes update)
+# display_avoi_home imported lazily at call site (stale-module safety during avoi update)
 
 
 
@@ -67,7 +67,7 @@ from tools.environments.singularity import _get_scratch_dir
 from tools.tool_backend_helpers import (
     coerce_modal_mode,
     has_direct_modal_credentials,
-    managed_nous_tools_enabled,
+    managed_avoi_tools_enabled,
     resolve_modal_backend_state,
 )
 
@@ -121,10 +121,10 @@ def _check_disk_usage_warning():
     try:
         scratch_dir = _get_scratch_dir()
 
-        # Get total size of hermes directories
+        # Get total size of avoi directories
         total_bytes = 0
         import glob
-        for path in glob.glob(str(scratch_dir / "hermes-*")):
+        for path in glob.glob(str(scratch_dir / "avoi-*")):
             for f in Path(path).rglob('*'):
                 if f.is_file():
                     try:
@@ -241,7 +241,7 @@ def _handle_sudo_failure(output: str, env_type: str) -> str:
     
     Returns enhanced output if sudo failed in messaging context, else original.
     """
-    is_gateway = os.getenv("HERMES_GATEWAY_SESSION")
+    is_gateway = os.getenv("AVOI_GATEWAY_SESSION")
     
     if not is_gateway:
         return output
@@ -255,7 +255,7 @@ def _handle_sudo_failure(output: str, env_type: str) -> str:
     
     for failure in sudo_failures:
         if failure in output:
-            from hermes_constants import display_hermes_home as _dhh
+            from avoi_constants import display_avoi_home as _dhh
             return output + f"\n\n💡 Tip: To enable sudo over messaging, add SUDO_PASSWORD to {_dhh()}/.env on the agent machine."
     
     return output
@@ -270,7 +270,7 @@ def _prompt_for_sudo_password(timeout_seconds: int = 45) -> str:
     - Timeout expires (45s default)
     - Any error occurs
     
-    Only works in interactive mode (HERMES_INTERACTIVE=1).
+    Only works in interactive mode (AVOI_INTERACTIVE=1).
     If a _sudo_password_callback is registered (by the CLI), delegates to it
     so the prompt integrates with prompt_toolkit's UI.  Otherwise reads
     directly from /dev/tty with echo disabled.
@@ -336,7 +336,7 @@ def _prompt_for_sudo_password(timeout_seconds: int = 45) -> str:
             result["done"] = True
     
     try:
-        os.environ["HERMES_SPINNER_PAUSE"] = "1"
+        os.environ["AVOI_SPINNER_PAUSE"] = "1"
         time.sleep(0.2)
         
         print()
@@ -382,8 +382,8 @@ def _prompt_for_sudo_password(timeout_seconds: int = 45) -> str:
         sys.stdout.flush()
         return ""
     finally:
-        if "HERMES_SPINNER_PAUSE" in os.environ:
-            del os.environ["HERMES_SPINNER_PAUSE"]
+        if "AVOI_SPINNER_PAUSE" in os.environ:
+            del os.environ["AVOI_SPINNER_PAUSE"]
 
 def _safe_command_preview(command: Any, limit: int = 200) -> str:
     """Return a log-safe preview for possibly-invalid command values."""
@@ -694,7 +694,7 @@ def _transform_sudo_command(command: str | None) -> tuple[str | None, str | None
     password in the command string themselves; see their execute() methods for
     how they handle the non-None sudo_stdin case.
 
-    If SUDO_PASSWORD is not set and in interactive mode (HERMES_INTERACTIVE=1):
+    If SUDO_PASSWORD is not set and in interactive mode (AVOI_INTERACTIVE=1):
       Prompts user for password with 45s timeout, caches for session.
 
     If SUDO_PASSWORD is not set and NOT interactive:
@@ -711,7 +711,7 @@ def _transform_sudo_command(command: str | None) -> tuple[str | None, str | None
     has_configured_password = "SUDO_PASSWORD" in os.environ
     sudo_password = os.environ.get("SUDO_PASSWORD", "") if has_configured_password else _cached_sudo_password
 
-    if not has_configured_password and not sudo_password and os.getenv("HERMES_INTERACTIVE"):
+    if not has_configured_password and not sudo_password and os.getenv("AVOI_INTERACTIVE"):
         sudo_password = _prompt_for_sudo_password(timeout_seconds=45)
         if sudo_password:
             _cached_sudo_password = sudo_password
@@ -817,7 +817,7 @@ def _parse_env_var(name: str, default: str, converter=int, type_label: str = "in
     except (ValueError, json.JSONDecodeError):
         raise ValueError(
             f"Invalid value for {name}: {raw!r} (expected {type_label}). "
-            f"Check ~/.hermes/.env or environment variables."
+            f"Check ~/.avoi/.env or environment variables."
         )
 
 
@@ -989,7 +989,7 @@ def _create_environment(env_type: str, image: str, cwd: str, timeout: int,
                 raise ValueError(
                     "Modal backend is configured for managed mode, but "
                     "a paid Nous subscription is required for the Tool Gateway and no direct "
-                    "Modal credentials/config were found. Log in with `hermes model` or "
+                    "Modal credentials/config were found. Log in with `avoi model` or "
                     "choose TERMINAL_MODAL_MODE=direct/auto."
                 )
             if modal_state["mode"] == "managed":
@@ -1001,7 +1001,7 @@ def _create_environment(env_type: str, image: str, cwd: str, timeout: int,
                     "Modal backend is configured for direct mode, but no direct Modal credentials/config were found."
                 )
             message = "Modal backend selected but no direct Modal credentials/config was found."
-            if managed_nous_tools_enabled():
+            if managed_avoi_tools_enabled():
                 message = (
                     "Modal backend selected but no direct Modal credentials/config or managed tool gateway was found."
                 )
@@ -1177,7 +1177,7 @@ def cleanup_all_environments():
     # Also clean any orphaned directories
     scratch_dir = _get_scratch_dir()
     import glob
-    for path in glob.glob(str(scratch_dir / "hermes-*")):
+    for path in glob.glob(str(scratch_dir / "avoi-*")):
         try:
             shutil.rmtree(path, ignore_errors=True)
             logger.info("Removed orphaned: %s", path)
@@ -1716,12 +1716,12 @@ def terminal_tool(
                 # routed back to the correct chat/thread.
                 if background and (notify_on_complete or watch_patterns):
                     from gateway.session_context import get_session_env as _gse
-                    _gw_platform = _gse("HERMES_SESSION_PLATFORM", "")
+                    _gw_platform = _gse("AVOI_SESSION_PLATFORM", "")
                     if _gw_platform:
-                        _gw_chat_id = _gse("HERMES_SESSION_CHAT_ID", "")
-                        _gw_thread_id = _gse("HERMES_SESSION_THREAD_ID", "")
-                        _gw_user_id = _gse("HERMES_SESSION_USER_ID", "")
-                        _gw_user_name = _gse("HERMES_SESSION_USER_NAME", "")
+                        _gw_chat_id = _gse("AVOI_SESSION_CHAT_ID", "")
+                        _gw_thread_id = _gse("AVOI_SESSION_THREAD_ID", "")
+                        _gw_user_id = _gse("AVOI_SESSION_USER_ID", "")
+                        _gw_user_name = _gse("AVOI_SESSION_USER_NAME", "")
                         proc_session.watcher_platform = _gw_platform
                         proc_session.watcher_chat_id = _gw_chat_id
                         proc_session.watcher_user_id = _gw_user_id
@@ -1831,7 +1831,7 @@ def terminal_tool(
             # replace it by returning a string from transform_terminal_output.
             # The hook is fail-open, and the first valid string return wins.
             try:
-                from hermes_cli.plugins import invoke_hook
+                from avoi_cli.plugins import invoke_hook
                 hook_results = invoke_hook(
                     "transform_terminal_output",
                     command=command,
@@ -1942,7 +1942,7 @@ def check_terminal_requirements() -> bool:
                     logger.error(
                         "Modal backend selected with TERMINAL_MODAL_MODE=managed, but "
                         "a paid Nous subscription is required for the Tool Gateway and no direct "
-                        "Modal credentials/config were found. Log in with `hermes model` "
+                        "Modal credentials/config were found. Log in with `avoi model` "
                         "or choose TERMINAL_MODAL_MODE=direct/auto."
                     )
                     return False
@@ -1954,7 +1954,7 @@ def check_terminal_requirements() -> bool:
                     )
                     return False
                 elif modal_state["mode"] == "direct":
-                    if managed_nous_tools_enabled():
+                    if managed_avoi_tools_enabled():
                         logger.error(
                             "Modal backend selected with TERMINAL_MODAL_MODE=direct, but no direct "
                             "Modal credentials/config were found. Configure Modal or choose "
@@ -1968,7 +1968,7 @@ def check_terminal_requirements() -> bool:
                         )
                     return False
                 else:
-                    if managed_nous_tools_enabled():
+                    if managed_avoi_tools_enabled():
                         logger.error(
                             "Modal backend selected but no direct Modal credentials/config or managed "
                             "tool gateway was found. Configure Modal, set up the managed gateway, "
@@ -2040,7 +2040,7 @@ if __name__ == "__main__":
     print(f"  TERMINAL_MODAL_IMAGE: {os.getenv('TERMINAL_MODAL_IMAGE', default_img)}")
     print(f"  TERMINAL_DAYTONA_IMAGE: {os.getenv('TERMINAL_DAYTONA_IMAGE', default_img)}")
     print(f"  TERMINAL_CWD: {os.getenv('TERMINAL_CWD', os.getcwd())}")
-    from hermes_constants import display_hermes_home as _dhh
+    from avoi_constants import display_avoi_home as _dhh
     print(f"  TERMINAL_SANDBOX_DIR: {os.getenv('TERMINAL_SANDBOX_DIR', f'{_dhh()}/sandboxes')}")
     print(f"  TERMINAL_TIMEOUT: {os.getenv('TERMINAL_TIMEOUT', '60')}")
     print(f"  TERMINAL_LIFETIME_SECONDS: {os.getenv('TERMINAL_LIFETIME_SECONDS', '300')}")

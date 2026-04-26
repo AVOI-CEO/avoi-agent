@@ -5,8 +5,8 @@ Provides a single ``now()`` helper that returns a timezone-aware datetime
 based on the user's configured IANA timezone (e.g. ``Asia/Kolkata``).
 
 Resolution order:
-  1. ``HERMES_TIMEZONE`` environment variable
-  2. ``timezone`` key in ``~/.hermes/config.yaml``
+  1. ``AVOI_TIMEZONE`` environment variable
+  2. ``timezone`` key in ``~/.avoi/config.yaml``
   3. Falls back to the server's local time (``datetime.now().astimezone()``)
 
 Invalid timezone values log a warning and fall back safely — Hermes never
@@ -16,7 +16,7 @@ crashes due to a bad timezone string.
 import logging
 import os
 from datetime import datetime
-from hermes_constants import get_config_path
+from avoi_constants import get_config_path
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ def _resolve_timezone_name() -> str:
     should cache the result rather than calling on every ``now()``.
     """
     # 1. Environment variable (highest priority — set by Supervisor, etc.)
-    tz_env = os.getenv("HERMES_TIMEZONE", "").strip()
+    tz_env = os.getenv("AVOI_TIMEZONE", "").strip()
     if tz_env:
         return tz_env
 

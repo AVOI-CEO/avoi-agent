@@ -18,7 +18,7 @@ import yaml
 
 from utils import base_url_host_matches, base_url_hostname
 
-from hermes_constants import OPENROUTER_MODELS_URL
+from avoi_constants import OPENROUTER_MODELS_URL
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ def _resolve_requests_verify() -> bool | str:
     """Resolve SSL verify setting for `requests` calls from env vars.
 
     The `requests` library only honours REQUESTS_CA_BUNDLE / CURL_CA_BUNDLE
-    by default. Hermes also honours HERMES_CA_BUNDLE (its own convention)
+    by default. Hermes also honours AVOI_CA_BUNDLE (its own convention)
     and SSL_CERT_FILE (used by the stdlib `ssl` module and by httpx), so
     that a single env var can cover both `requests` and `httpx` callsites
     inside the same process.
@@ -35,7 +35,7 @@ def _resolve_requests_verify() -> bool | str:
     Returns either a filesystem path to a CA bundle, or True to defer to
     the requests default (certifi).
     """
-    for env_var in ("HERMES_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE"):
+    for env_var in ("AVOI_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE"):
         val = os.getenv(env_var)
         if val and os.path.isfile(val):
             return val
@@ -121,7 +121,7 @@ CONTEXT_PROBE_TIERS = [
 # Default context length when no detection method succeeds.
 DEFAULT_FALLBACK_CONTEXT = CONTEXT_PROBE_TIERS[0]
 
-# Minimum context length required to run Hermes Agent.  Models with fewer
+# Minimum context length required to run AVOI Agent.  Models with fewer
 # tokens cannot maintain enough working memory for tool-calling workflows.
 # Sessions, model switches, and cron jobs should reject models below this.
 MINIMUM_CONTEXT_LENGTH = 64_000
@@ -286,7 +286,7 @@ _URL_TO_PROVIDER: Dict[str, str] = {
     "portal.qwen.ai": "qwen-oauth",
     "openrouter.ai": "openrouter",
     "generativelanguage.googleapis.com": "gemini",
-    "inference-api.nousresearch.com": "nous",
+    "inference-api.avoi-ai.com": "nous",
     "api.deepseek.com": "deepseek",
     "api.githubcopilot.com": "copilot",
     "models.github.ai": "copilot",
@@ -693,8 +693,8 @@ def fetch_endpoint_model_metadata(
 
 def _get_context_cache_path() -> Path:
     """Return path to the persistent context length cache file."""
-    from hermes_constants import get_hermes_home
-    return get_hermes_home() / "context_length_cache.yaml"
+    from avoi_constants import get_avoi_home
+    return get_avoi_home() / "context_length_cache.yaml"
 
 
 def _load_context_cache() -> Dict[str, int]:
@@ -1156,7 +1156,7 @@ def _resolve_codex_oauth_context_length(
     return None
 
 
-def _resolve_nous_context_length(model: str) -> Optional[int]:
+def _resolve_avoi_context_length(model: str) -> Optional[int]:
     """Resolve Nous Portal model context length via OpenRouter metadata.
 
     Nous model IDs are bare (e.g. 'claude-opus-4-6') while OpenRouter uses
@@ -1222,7 +1222,7 @@ def get_model_context_length(
     # See #15779.
     if custom_providers and base_url and model:
         try:
-            from hermes_cli.config import get_custom_provider_context_length
+            from avoi_cli.config import get_custom_provider_context_length
             cp_ctx = get_custom_provider_context_length(
                 model=model,
                 base_url=base_url,
@@ -1343,7 +1343,7 @@ def get_model_context_length(
     # returns the provider-enforced limit which is what users can actually use.
     if effective_provider in ("copilot", "copilot-acp", "github-copilot"):
         try:
-            from hermes_cli.models import get_copilot_model_context
+            from avoi_cli.models import get_copilot_model_context
             ctx = get_copilot_model_context(model, api_key=api_key)
             if ctx:
                 return ctx
@@ -1351,7 +1351,7 @@ def get_model_context_length(
             pass  # Fall through to models.dev
 
     if effective_provider == "nous":
-        ctx = _resolve_nous_context_length(model)
+        ctx = _resolve_avoi_context_length(model)
         if ctx:
             return ctx
     if effective_provider == "openai-codex":

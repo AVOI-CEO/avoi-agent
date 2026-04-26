@@ -56,8 +56,8 @@ _SENSITIVE_BODY_KEYS = frozenset({
 })
 
 # Snapshot at import time so runtime env mutations (e.g. LLM-generated
-# `export HERMES_REDACT_SECRETS=false`) cannot disable redaction mid-session.
-_REDACT_ENABLED = os.getenv("HERMES_REDACT_SECRETS", "").lower() not in ("0", "false", "no", "off")
+# `export AVOI_REDACT_SECRETS=false`) cannot disable redaction mid-session.
+_REDACT_ENABLED = os.getenv("AVOI_REDACT_SECRETS", "").lower() not in ("0", "false", "no", "off")
 
 # Known API key prefixes -- match the prefix + contiguous token chars
 _PREFIX_PATTERNS = [

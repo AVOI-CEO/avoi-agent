@@ -79,7 +79,7 @@ setup_command() {
     cat > "$HOME/.local/bin/avoi" << 'WRAPPER'
 #!/usr/bin/env bash
 source "$HOME/avoi-agent/venv/bin/activate"
-exec python -m hermes_cli.main "$@"
+exec python -m avoi_cli.main "$@"
 WRAPPER
     chmod +x "$HOME/.local/bin/avoi"
 
@@ -114,5 +114,5 @@ echo "       avoi"
 echo ""
 echo "  One-line setup with GLM key:"
 echo "       avoi config set model z-ai/glm-5.1"
-echo "       echo 'GLM_API_KEY=your_key' >> ~/.hermes/.env"
+echo "       echo 'GLM_API_KEY=your_key' >> ~/.avoi/.env"
 echo ""

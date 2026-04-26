@@ -21,7 +21,7 @@ def _make_adapter(require_mention=None, free_response_chats=None, mention_patter
     adapter = object.__new__(TelegramAdapter)
     adapter.platform = Platform.TELEGRAM
     adapter.config = PlatformConfig(enabled=True, token="***", extra=extra)
-    adapter._bot = SimpleNamespace(id=999, username="hermes_bot")
+    adapter._bot = SimpleNamespace(id=999, username="avoi_bot")
     adapter._message_handler = AsyncMock()
     adapter._pending_text_batches = {}
     adapter._pending_text_batch_tasks = {}
@@ -54,7 +54,7 @@ def _group_message(
     )
 
 
-def _mention_entity(text, mention="@hermes_bot"):
+def _mention_entity(text, mention="@avoi_bot"):
     offset = text.index(mention)
     return SimpleNamespace(type="mention", offset=offset, length=len(mention))
 
@@ -69,7 +69,7 @@ def test_group_messages_can_require_direct_trigger_via_config():
     adapter = _make_adapter(require_mention=True)
 
     assert adapter._should_process_message(_group_message("hello everyone")) is False
-    assert adapter._should_process_message(_group_message("hi @hermes_bot", entities=[_mention_entity("hi @hermes_bot")])) is True
+    assert adapter._should_process_message(_group_message("hi @avoi_bot", entities=[_mention_entity("hi @avoi_bot")])) is True
     assert adapter._should_process_message(_group_message("replying", reply_to_bot=True)) is True
     # Commands must also respect require_mention when it is enabled
     assert adapter._should_process_message(_group_message("/status"), is_command=True) is False
@@ -77,7 +77,7 @@ def test_group_messages_can_require_direct_trigger_via_config():
     # for /cmd@botname — the bot menu and python-telegram-bot's CommandHandler
     # rely on this same mechanism)
     assert adapter._should_process_message(
-        _group_message("/status@hermes_bot", entities=[_mention_entity("/status@hermes_bot")])
+        _group_message("/status@avoi_bot", entities=[_mention_entity("/status@avoi_bot")])
     ) is True
     # And commands still pass unconditionally when require_mention is disabled
     adapter_no_mention = _make_adapter(require_mention=False)
@@ -115,9 +115,9 @@ def test_invalid_regex_patterns_are_ignored():
 
 
 def test_config_bridges_telegram_group_settings(monkeypatch, tmp_path):
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    avoi_home = tmp_path / ".avoi"
+    avoi_home.mkdir()
+    (avoi_home / "config.yaml").write_text(
         "telegram:\n"
         "  require_mention: true\n"
         "  mention_patterns:\n"
@@ -127,7 +127,7 @@ def test_config_bridges_telegram_group_settings(monkeypatch, tmp_path):
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("AVOI_HOME", str(avoi_home))
     monkeypatch.delenv("TELEGRAM_REQUIRE_MENTION", raising=False)
     monkeypatch.delenv("TELEGRAM_MENTION_PATTERNS", raising=False)
     monkeypatch.delenv("TELEGRAM_FREE_RESPONSE_CHATS", raising=False)
@@ -141,9 +141,9 @@ def test_config_bridges_telegram_group_settings(monkeypatch, tmp_path):
 
 
 def test_config_bridges_telegram_ignored_threads(monkeypatch, tmp_path):
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    avoi_home = tmp_path / ".avoi"
+    avoi_home.mkdir()
+    (avoi_home / "config.yaml").write_text(
         "telegram:\n"
         "  ignored_threads:\n"
         "    - 31\n"
@@ -151,7 +151,7 @@ def test_config_bridges_telegram_ignored_threads(monkeypatch, tmp_path):
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("AVOI_HOME", str(avoi_home))
     monkeypatch.delenv("TELEGRAM_IGNORED_THREADS", raising=False)
 
     config = load_gateway_config()

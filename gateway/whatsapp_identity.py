@@ -33,7 +33,7 @@ from __future__ import annotations
 import json
 from typing import Set
 
-from hermes_constants import get_hermes_home
+from avoi_constants import get_avoi_home
 
 
 def normalize_whatsapp_identifier(value: str) -> str:
@@ -62,7 +62,7 @@ def expand_whatsapp_aliases(identifier: str) -> Set[str]:
     """Resolve WhatsApp phone/LID aliases via bridge session mapping files.
 
     Returns the set of all identifiers transitively reachable through the
-    bridge's ``$HERMES_HOME/whatsapp/session/lid-mapping-*.json`` files,
+    bridge's ``$AVOI_HOME/whatsapp/session/lid-mapping-*.json`` files,
     starting from ``identifier``. The result always includes the
     normalized input itself, so callers can safely ``in`` check against
     the return value without a separate fallback branch.
@@ -73,7 +73,7 @@ def expand_whatsapp_aliases(identifier: str) -> Set[str]:
     if not normalized:
         return set()
 
-    session_dir = get_hermes_home() / "whatsapp" / "session"
+    session_dir = get_avoi_home() / "whatsapp" / "session"
     resolved: Set[str] = set()
     queue = [normalized]
 

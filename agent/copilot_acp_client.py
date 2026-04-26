@@ -33,14 +33,14 @@ _TOOL_CALL_JSON_RE = re.compile(r"\{\s*\"id\"\s*:\s*\"[^\"]+\"\s*,\s*\"type\"\s*
 
 def _resolve_command() -> str:
     return (
-        os.getenv("HERMES_COPILOT_ACP_COMMAND", "").strip()
+        os.getenv("AVOI_COPILOT_ACP_COMMAND", "").strip()
         or os.getenv("COPILOT_CLI_PATH", "").strip()
         or "copilot"
     )
 
 
 def _resolve_args() -> list[str]:
-    raw = os.getenv("HERMES_COPILOT_ACP_ARGS", "").strip()
+    raw = os.getenv("AVOI_COPILOT_ACP_ARGS", "").strip()
     if not raw:
         return ["--acp", "--stdio"]
     return shlex.split(raw)
@@ -50,7 +50,7 @@ def _resolve_home_dir() -> str:
     """Return a stable HOME for child ACP processes."""
 
     try:
-        from hermes_constants import get_subprocess_home
+        from avoi_constants import get_subprocess_home
 
         profile_home = get_subprocess_home()
         if profile_home:
@@ -76,7 +76,7 @@ def _resolve_home_dir() -> str:
         pass
 
     # Last resort: /tmp (writable on any POSIX system). Avoids crashing the
-    # subprocess with no HOME; callers can set HERMES_HOME explicitly if they
+    # subprocess with no HOME; callers can set AVOI_HOME explicitly if they
     # need a different writable dir.
     return "/tmp"
 
@@ -428,7 +428,7 @@ class CopilotACPClient:
         except FileNotFoundError as exc:
             raise RuntimeError(
                 f"Could not start Copilot ACP command '{self._acp_command}'. "
-                "Install GitHub Copilot CLI or set HERMES_COPILOT_ACP_COMMAND/COPILOT_CLI_PATH."
+                "Install GitHub Copilot CLI or set AVOI_COPILOT_ACP_COMMAND/COPILOT_CLI_PATH."
             ) from exc
 
         if proc.stdin is None or proc.stdout is None:
@@ -521,8 +521,8 @@ class CopilotACPClient:
                         }
                     },
                     "clientInfo": {
-                        "name": "hermes-agent",
-                        "title": "Hermes Agent",
+                        "name": "avoi-agent",
+                        "title": "AVOI Agent",
                         "version": "0.0.0",
                     },
                 },

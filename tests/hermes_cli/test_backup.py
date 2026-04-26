@@ -1,4 +1,4 @@
-"""Tests for hermes backup and import commands."""
+"""Tests for avoi backup and import commands."""
 
 import json
 import os
@@ -15,12 +15,12 @@ import pytest
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _make_hermes_tree(root: Path) -> None:
-    """Create a realistic ~/.hermes directory structure for testing."""
+def _make_avoi_tree(root: Path) -> None:
+    """Create a realistic ~/.avoi directory structure for testing."""
     (root / "config.yaml").write_text("model:\n  provider: openrouter\n")
     (root / ".env").write_text("OPENROUTER_API_KEY=sk-test-123\n")
     (root / "memory_store.db").write_bytes(b"fake-sqlite")
-    (root / "hermes_state.db").write_bytes(b"fake-state")
+    (root / "avoi_state.db").write_bytes(b"fake-state")
 
     # Sessions
     (root / "sessions").mkdir(exist_ok=True)
@@ -49,11 +49,11 @@ def _make_hermes_tree(root: Path) -> None:
     (root / "profiles" / "coder" / "config.yaml").write_text("model:\n  provider: anthropic\n")
     (root / "profiles" / "coder" / ".env").write_text("ANTHROPIC_API_KEY=sk-ant-123\n")
 
-    # hermes-agent repo (should be EXCLUDED)
-    (root / "hermes-agent").mkdir(exist_ok=True)
-    (root / "hermes-agent" / "run_agent.py").write_text("# big file\n")
-    (root / "hermes-agent" / ".git").mkdir()
-    (root / "hermes-agent" / ".git" / "HEAD").write_text("ref: refs/heads/main\n")
+    # avoi-agent repo (should be EXCLUDED)
+    (root / "avoi-agent").mkdir(exist_ok=True)
+    (root / "avoi-agent" / "run_agent.py").write_text("# big file\n")
+    (root / "avoi-agent" / ".git").mkdir()
+    (root / "avoi-agent" / ".git" / "HEAD").write_text("ref: refs/heads/main\n")
 
     # __pycache__ (should be EXCLUDED)
     (root / "plugins").mkdir(exist_ok=True)
@@ -73,46 +73,46 @@ def _make_hermes_tree(root: Path) -> None:
 # ---------------------------------------------------------------------------
 
 class TestShouldExclude:
-    def test_excludes_hermes_agent(self):
-        from hermes_cli.backup import _should_exclude
-        assert _should_exclude(Path("hermes-agent/run_agent.py"))
-        assert _should_exclude(Path("hermes-agent/.git/HEAD"))
+    def test_excludes_avoi_agent(self):
+        from avoi_cli.backup import _should_exclude
+        assert _should_exclude(Path("avoi-agent/run_agent.py"))
+        assert _should_exclude(Path("avoi-agent/.git/HEAD"))
 
     def test_excludes_pycache(self):
-        from hermes_cli.backup import _should_exclude
+        from avoi_cli.backup import _should_exclude
         assert _should_exclude(Path("plugins/__pycache__/mod.cpython-312.pyc"))
 
     def test_excludes_pyc_files(self):
-        from hermes_cli.backup import _should_exclude
+        from avoi_cli.backup import _should_exclude
         assert _should_exclude(Path("some/module.pyc"))
 
     def test_excludes_pid_files(self):
-        from hermes_cli.backup import _should_exclude
+        from avoi_cli.backup import _should_exclude
         assert _should_exclude(Path("gateway.pid"))
         assert _should_exclude(Path("cron.pid"))
 
     def test_includes_config(self):
-        from hermes_cli.backup import _should_exclude
+        from avoi_cli.backup import _should_exclude
         assert not _should_exclude(Path("config.yaml"))
 
     def test_includes_env(self):
-        from hermes_cli.backup import _should_exclude
+        from avoi_cli.backup import _should_exclude
         assert not _should_exclude(Path(".env"))
 
     def test_includes_skills(self):
-        from hermes_cli.backup import _should_exclude
+        from avoi_cli.backup import _should_exclude
         assert not _should_exclude(Path("skills/my-skill/SKILL.md"))
 
     def test_includes_profiles(self):
-        from hermes_cli.backup import _should_exclude
+        from avoi_cli.backup import _should_exclude
         assert not _should_exclude(Path("profiles/coder/config.yaml"))
 
     def test_includes_sessions(self):
-        from hermes_cli.backup import _should_exclude
+        from avoi_cli.backup import _should_exclude
         assert not _should_exclude(Path("sessions/abc.json"))
 
     def test_includes_logs(self):
-        from hermes_cli.backup import _should_exclude
+        from avoi_cli.backup import _should_exclude
         assert not _should_exclude(Path("logs/agent.log"))
 
 
@@ -123,18 +123,18 @@ class TestShouldExclude:
 class TestBackup:
     def test_creates_zip(self, tmp_path, monkeypatch):
         """Backup creates a valid zip containing expected files."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        _make_hermes_tree(hermes_home)
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        _make_avoi_tree(avoi_home)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        # get_default_hermes_root needs this
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
+        # get_default_avoi_root needs this
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from hermes_cli.backup import run_backup
+        from avoi_cli.backup import run_backup
         run_backup(args)
 
         assert out_zip.exists()
@@ -155,39 +155,39 @@ class TestBackup:
             # Skins
             assert "skins/cyber.yaml" in names
 
-    def test_excludes_hermes_agent(self, tmp_path, monkeypatch):
-        """Backup does NOT include hermes-agent/ directory."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        _make_hermes_tree(hermes_home)
+    def test_excludes_avoi_agent(self, tmp_path, monkeypatch):
+        """Backup does NOT include avoi-agent/ directory."""
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        _make_avoi_tree(avoi_home)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from hermes_cli.backup import run_backup
+        from avoi_cli.backup import run_backup
         run_backup(args)
 
         with zipfile.ZipFile(out_zip, "r") as zf:
             names = zf.namelist()
-            agent_files = [n for n in names if "hermes-agent" in n]
-            assert agent_files == [], f"hermes-agent files leaked into backup: {agent_files}"
+            agent_files = [n for n in names if "avoi-agent" in n]
+            assert agent_files == [], f"avoi-agent files leaked into backup: {agent_files}"
 
     def test_excludes_pycache(self, tmp_path, monkeypatch):
         """Backup does NOT include __pycache__ dirs."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        _make_hermes_tree(hermes_home)
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        _make_avoi_tree(avoi_home)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from hermes_cli.backup import run_backup
+        from avoi_cli.backup import run_backup
         run_backup(args)
 
         with zipfile.ZipFile(out_zip, "r") as zf:
@@ -197,17 +197,17 @@ class TestBackup:
 
     def test_excludes_pid_files(self, tmp_path, monkeypatch):
         """Backup does NOT include PID files."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        _make_hermes_tree(hermes_home)
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        _make_avoi_tree(avoi_home)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from hermes_cli.backup import run_backup
+        from avoi_cli.backup import run_backup
         run_backup(args)
 
         with zipfile.ZipFile(out_zip, "r") as zf:
@@ -216,21 +216,21 @@ class TestBackup:
             assert pid_files == []
 
     def test_default_output_path(self, tmp_path, monkeypatch):
-        """When no output path given, zip goes to ~/hermes-backup-*.zip."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text("model: test\n")
+        """When no output path given, zip goes to ~/avoi-backup-*.zip."""
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        (avoi_home / "config.yaml").write_text("model: test\n")
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         args = Namespace(output=None)
 
-        from hermes_cli.backup import run_backup
+        from avoi_cli.backup import run_backup
         run_backup(args)
 
         # Should exist in home dir
-        zips = list(tmp_path.glob("hermes-backup-*.zip"))
+        zips = list(tmp_path.glob("avoi-backup-*.zip"))
         assert len(zips) == 1
 
 
@@ -246,7 +246,7 @@ class TestValidateBackupZip:
 
     def test_state_db_passes(self, tmp_path):
         """A zip containing state.db is accepted as a valid Hermes backup."""
-        from hermes_cli.backup import _validate_backup_zip
+        from avoi_cli.backup import _validate_backup_zip
         zip_path = tmp_path / "backup.zip"
         self._make_zip(zip_path, ["state.db", "sessions/abc.json"])
         with zipfile.ZipFile(zip_path, "r") as zf:
@@ -254,17 +254,17 @@ class TestValidateBackupZip:
         assert ok, reason
 
     def test_old_wrong_db_name_fails(self, tmp_path):
-        """A zip with only hermes_state.db (old wrong name) is rejected."""
-        from hermes_cli.backup import _validate_backup_zip
+        """A zip with only avoi_state.db (old wrong name) is rejected."""
+        from avoi_cli.backup import _validate_backup_zip
         zip_path = tmp_path / "old.zip"
-        self._make_zip(zip_path, ["hermes_state.db", "memory_store.db"])
+        self._make_zip(zip_path, ["avoi_state.db", "memory_store.db"])
         with zipfile.ZipFile(zip_path, "r") as zf:
             ok, reason = _validate_backup_zip(zf)
         assert not ok
 
     def test_config_yaml_passes(self, tmp_path):
         """A zip containing config.yaml is accepted (existing behaviour preserved)."""
-        from hermes_cli.backup import _validate_backup_zip
+        from avoi_cli.backup import _validate_backup_zip
         zip_path = tmp_path / "backup.zip"
         self._make_zip(zip_path, ["config.yaml", "skills/x/SKILL.md"])
         with zipfile.ZipFile(zip_path, "r") as zf:
@@ -287,10 +287,10 @@ class TestImport:
                     zf.writestr(name, content)
 
     def test_restores_files(self, tmp_path, monkeypatch):
-        """Import extracts files into hermes home."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        """Import extracts files into avoi home."""
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -303,40 +303,40 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from avoi_cli.backup import run_import
         run_import(args)
 
-        assert (hermes_home / "config.yaml").read_text() == "model:\n  provider: openrouter\n"
-        assert (hermes_home / ".env").read_text() == "OPENROUTER_API_KEY=sk-test\n"
-        assert (hermes_home / "skills" / "my-skill" / "SKILL.md").read_text() == "# My Skill\n"
-        assert (hermes_home / "profiles" / "coder" / "config.yaml").exists()
+        assert (avoi_home / "config.yaml").read_text() == "model:\n  provider: openrouter\n"
+        assert (avoi_home / ".env").read_text() == "OPENROUTER_API_KEY=sk-test\n"
+        assert (avoi_home / "skills" / "my-skill" / "SKILL.md").read_text() == "# My Skill\n"
+        assert (avoi_home / "profiles" / "coder" / "config.yaml").exists()
 
-    def test_strips_hermes_prefix(self, tmp_path, monkeypatch):
-        """Import strips .hermes/ prefix if all entries share it."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    def test_strips_avoi_prefix(self, tmp_path, monkeypatch):
+        """Import strips .avoi/ prefix if all entries share it."""
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
         self._make_backup_zip(zip_path, {
-            ".hermes/config.yaml": "model: test\n",
-            ".hermes/skills/a/SKILL.md": "# A\n",
+            ".avoi/config.yaml": "model: test\n",
+            ".avoi/skills/a/SKILL.md": "# A\n",
         })
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from avoi_cli.backup import run_import
         run_import(args)
 
-        assert (hermes_home / "config.yaml").read_text() == "model: test\n"
-        assert (hermes_home / "skills" / "a" / "SKILL.md").read_text() == "# A\n"
+        assert (avoi_home / "config.yaml").read_text() == "model: test\n"
+        assert (avoi_home / "skills" / "a" / "SKILL.md").read_text() == "# A\n"
 
     def test_rejects_empty_zip(self, tmp_path, monkeypatch):
         """Import rejects an empty zip."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "empty.zip"
@@ -345,15 +345,15 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from avoi_cli.backup import run_import
         with pytest.raises(SystemExit):
             run_import(args)
 
-    def test_rejects_non_hermes_zip(self, tmp_path, monkeypatch):
-        """Import rejects a zip that doesn't look like a hermes backup."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    def test_rejects_non_avoi_zip(self, tmp_path, monkeypatch):
+        """Import rejects a zip that doesn't look like a avoi backup."""
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "random.zip"
@@ -364,15 +364,15 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from avoi_cli.backup import run_import
         with pytest.raises(SystemExit):
             run_import(args)
 
     def test_blocks_path_traversal(self, tmp_path, monkeypatch):
         """Import blocks zip entries with path traversal."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "evil.zip"
@@ -384,21 +384,21 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from avoi_cli.backup import run_import
         run_import(args)
 
         # config.yaml should be restored
-        assert (hermes_home / "config.yaml").exists()
-        # traversal file should NOT exist outside hermes home
+        assert (avoi_home / "config.yaml").exists()
+        # traversal file should NOT exist outside avoi home
         assert not (tmp_path / "etc" / "passwd").exists()
 
     def test_confirmation_prompt_abort(self, tmp_path, monkeypatch):
         """Import aborts when user says no to confirmation."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
         # Pre-existing config triggers the confirmation
-        (hermes_home / "config.yaml").write_text("existing: true\n")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        (avoi_home / "config.yaml").write_text("existing: true\n")
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -408,19 +408,19 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=False)
 
-        from hermes_cli.backup import run_import
+        from avoi_cli.backup import run_import
         with patch("builtins.input", return_value="n"):
             run_import(args)
 
         # Original config should be unchanged
-        assert (hermes_home / "config.yaml").read_text() == "existing: true\n"
+        assert (avoi_home / "config.yaml").read_text() == "existing: true\n"
 
     def test_force_skips_confirmation(self, tmp_path, monkeypatch):
         """Import with --force skips confirmation and overwrites."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text("existing: true\n")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        (avoi_home / "config.yaml").write_text("existing: true\n")
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -430,20 +430,20 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from avoi_cli.backup import run_import
         run_import(args)
 
-        assert (hermes_home / "config.yaml").read_text() == "model: restored\n"
+        assert (avoi_home / "config.yaml").read_text() == "model: restored\n"
 
     def test_missing_file_exits(self, tmp_path, monkeypatch):
         """Import exits with error for nonexistent file."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
 
         args = Namespace(zipfile=str(tmp_path / "nonexistent.zip"), force=True)
 
-        from hermes_cli.backup import run_import
+        from avoi_cli.backup import run_import
         with pytest.raises(SystemExit):
             run_import(args)
 
@@ -456,24 +456,24 @@ class TestRoundTrip:
     def test_backup_then_import(self, tmp_path, monkeypatch):
         """Full round-trip: backup -> import to a new location -> verify."""
         # Source
-        src_home = tmp_path / "source" / ".hermes"
+        src_home = tmp_path / "source" / ".avoi"
         src_home.mkdir(parents=True)
-        _make_hermes_tree(src_home)
+        _make_avoi_tree(src_home)
 
-        monkeypatch.setenv("HERMES_HOME", str(src_home))
+        monkeypatch.setenv("AVOI_HOME", str(src_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "source")
 
         # Backup
         out_zip = tmp_path / "roundtrip.zip"
-        from hermes_cli.backup import run_backup, run_import
+        from avoi_cli.backup import run_backup, run_import
 
         run_backup(Namespace(output=str(out_zip)))
         assert out_zip.exists()
 
         # Import into a different location
-        dst_home = tmp_path / "dest" / ".hermes"
+        dst_home = tmp_path / "dest" / ".avoi"
         dst_home.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(dst_home))
+        monkeypatch.setenv("AVOI_HOME", str(dst_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "dest")
 
         run_import(Namespace(zipfile=str(out_zip), force=True))
@@ -486,8 +486,8 @@ class TestRoundTrip:
         assert (dst_home / "sessions" / "abc123.json").exists()
         assert (dst_home / "logs" / "agent.log").exists()
 
-        # hermes-agent should NOT be present
-        assert not (dst_home / "hermes-agent").exists()
+        # avoi-agent should NOT be present
+        assert not (dst_home / "avoi-agent").exists()
         # __pycache__ should NOT be present
         assert not (dst_home / "plugins" / "__pycache__").exists()
         # PID files should NOT be present
@@ -500,23 +500,23 @@ class TestRoundTrip:
 
 class TestFormatSize:
     def test_bytes(self):
-        from hermes_cli.backup import _format_size
+        from avoi_cli.backup import _format_size
         assert _format_size(512) == "512 B"
 
     def test_kilobytes(self):
-        from hermes_cli.backup import _format_size
+        from avoi_cli.backup import _format_size
         assert "KB" in _format_size(2048)
 
     def test_megabytes(self):
-        from hermes_cli.backup import _format_size
+        from avoi_cli.backup import _format_size
         assert "MB" in _format_size(5 * 1024 * 1024)
 
     def test_gigabytes(self):
-        from hermes_cli.backup import _format_size
+        from avoi_cli.backup import _format_size
         assert "GB" in _format_size(3 * 1024 ** 3)
 
     def test_terabytes(self):
-        from hermes_cli.backup import _format_size
+        from avoi_cli.backup import _format_size
         assert "TB" in _format_size(2 * 1024 ** 4)
 
 
@@ -524,7 +524,7 @@ class TestValidation:
     def test_validate_with_config(self):
         """Zip with config.yaml passes validation."""
         import io
-        from hermes_cli.backup import _validate_backup_zip
+        from avoi_cli.backup import _validate_backup_zip
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
@@ -537,7 +537,7 @@ class TestValidation:
     def test_validate_with_env(self):
         """Zip with .env passes validation."""
         import io
-        from hermes_cli.backup import _validate_backup_zip
+        from avoi_cli.backup import _validate_backup_zip
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
@@ -548,9 +548,9 @@ class TestValidation:
         assert ok
 
     def test_validate_rejects_random(self):
-        """Zip without hermes markers fails validation."""
+        """Zip without avoi markers fails validation."""
         import io
-        from hermes_cli.backup import _validate_backup_zip
+        from avoi_cli.backup import _validate_backup_zip
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
@@ -560,23 +560,23 @@ class TestValidation:
             ok, reason = _validate_backup_zip(zf)
         assert not ok
 
-    def test_detect_prefix_hermes(self):
-        """Detects .hermes/ prefix wrapping all entries."""
+    def test_detect_prefix_avoi(self):
+        """Detects .avoi/ prefix wrapping all entries."""
         import io
-        from hermes_cli.backup import _detect_prefix
+        from avoi_cli.backup import _detect_prefix
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
-            zf.writestr(".hermes/config.yaml", "test")
-            zf.writestr(".hermes/skills/a/SKILL.md", "skill")
+            zf.writestr(".avoi/config.yaml", "test")
+            zf.writestr(".avoi/skills/a/SKILL.md", "skill")
         buf.seek(0)
         with zipfile.ZipFile(buf, "r") as zf:
-            assert _detect_prefix(zf) == ".hermes/"
+            assert _detect_prefix(zf) == ".avoi/"
 
     def test_detect_prefix_none(self):
         """No prefix when entries are at root."""
         import io
-        from hermes_cli.backup import _detect_prefix
+        from avoi_cli.backup import _detect_prefix
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
@@ -589,13 +589,13 @@ class TestValidation:
     def test_detect_prefix_only_dirs(self):
         """Prefix detection returns empty for zip with only directory entries."""
         import io
-        from hermes_cli.backup import _detect_prefix
+        from avoi_cli.backup import _detect_prefix
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
             # Only directory entries (trailing slash)
-            zf.writestr(".hermes/", "")
-            zf.writestr(".hermes/skills/", "")
+            zf.writestr(".avoi/", "")
+            zf.writestr(".avoi/skills/", "")
         buf.seek(0)
         with zipfile.ZipFile(buf, "r") as zf:
             assert _detect_prefix(zf) == ""
@@ -606,25 +606,25 @@ class TestValidation:
 # ---------------------------------------------------------------------------
 
 class TestBackupEdgeCases:
-    def test_nonexistent_hermes_home(self, tmp_path, monkeypatch):
-        """Backup exits when hermes home doesn't exist."""
-        fake_home = tmp_path / "nonexistent" / ".hermes"
-        monkeypatch.setenv("HERMES_HOME", str(fake_home))
+    def test_nonexistent_avoi_home(self, tmp_path, monkeypatch):
+        """Backup exits when avoi home doesn't exist."""
+        fake_home = tmp_path / "nonexistent" / ".avoi"
+        monkeypatch.setenv("AVOI_HOME", str(fake_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "nonexistent")
 
         args = Namespace(output=str(tmp_path / "out.zip"))
 
-        from hermes_cli.backup import run_backup
+        from avoi_cli.backup import run_backup
         with pytest.raises(SystemExit):
             run_backup(args)
 
     def test_output_is_directory(self, tmp_path, monkeypatch):
         """When output path is a directory, zip is created inside it."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text("model: test\n")
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        (avoi_home / "config.yaml").write_text("model: test\n")
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_dir = tmp_path / "backups"
@@ -632,44 +632,44 @@ class TestBackupEdgeCases:
 
         args = Namespace(output=str(out_dir))
 
-        from hermes_cli.backup import run_backup
+        from avoi_cli.backup import run_backup
         run_backup(args)
 
-        zips = list(out_dir.glob("hermes-backup-*.zip"))
+        zips = list(out_dir.glob("avoi-backup-*.zip"))
         assert len(zips) == 1
 
     def test_output_without_zip_suffix(self, tmp_path, monkeypatch):
         """Output path without .zip gets suffix appended."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text("model: test\n")
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        (avoi_home / "config.yaml").write_text("model: test\n")
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_path = tmp_path / "mybackup.tar"
         args = Namespace(output=str(out_path))
 
-        from hermes_cli.backup import run_backup
+        from avoi_cli.backup import run_backup
         run_backup(args)
 
         # Should have .tar.zip suffix
         assert (tmp_path / "mybackup.tar.zip").exists()
 
-    def test_empty_hermes_home(self, tmp_path, monkeypatch):
-        """Backup handles empty hermes home (no files to back up)."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
+    def test_empty_avoi_home(self, tmp_path, monkeypatch):
+        """Backup handles empty avoi home (no files to back up)."""
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
         # Only excluded dirs, no actual files
-        (hermes_home / "__pycache__").mkdir()
-        (hermes_home / "__pycache__" / "foo.pyc").write_bytes(b"\x00")
+        (avoi_home / "__pycache__").mkdir()
+        (avoi_home / "__pycache__" / "foo.pyc").write_bytes(b"\x00")
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         args = Namespace(output=str(tmp_path / "out.zip"))
 
-        from hermes_cli.backup import run_backup
+        from avoi_cli.backup import run_backup
         run_backup(args)
 
         # No zip should be created
@@ -677,22 +677,22 @@ class TestBackupEdgeCases:
 
     def test_permission_error_during_backup(self, tmp_path, monkeypatch):
         """Backup handles permission errors gracefully."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text("model: test\n")
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        (avoi_home / "config.yaml").write_text("model: test\n")
 
         # Create an unreadable file
-        bad_file = hermes_home / "secret.db"
+        bad_file = avoi_home / "secret.db"
         bad_file.write_text("data")
         bad_file.chmod(0o000)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "out.zip"
         args = Namespace(output=str(out_zip))
 
-        from hermes_cli.backup import run_backup
+        from avoi_cli.backup import run_backup
         try:
             run_backup(args)
         finally:
@@ -704,22 +704,22 @@ class TestBackupEdgeCases:
 
     def test_pre1980_timestamp_skipped(self, tmp_path, monkeypatch):
         """Backup skips files with pre-1980 timestamps (ZIP limitation)."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text("model: test\n")
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        (avoi_home / "config.yaml").write_text("model: test\n")
 
         # Create a file with epoch timestamp (1970-01-01)
-        old_file = hermes_home / "ancient.txt"
+        old_file = avoi_home / "ancient.txt"
         old_file.write_text("old data")
         os.utime(old_file, (0, 0))
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "out.zip"
         args = Namespace(output=str(out_zip))
 
-        from hermes_cli.backup import run_backup
+        from avoi_cli.backup import run_backup
         run_backup(args)
 
         # Zip should still be created with the valid files
@@ -730,20 +730,20 @@ class TestBackupEdgeCases:
             # The pre-1980 file should be skipped, not crash the backup
             assert "ancient.txt" not in names
 
-    def test_skips_output_zip_inside_hermes(self, tmp_path, monkeypatch):
-        """Backup skips its own output zip if it's inside hermes root."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text("model: test\n")
+    def test_skips_output_zip_inside_avoi(self, tmp_path, monkeypatch):
+        """Backup skips its own output zip if it's inside avoi root."""
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        (avoi_home / "config.yaml").write_text("model: test\n")
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-        # Output inside hermes home
-        out_zip = hermes_home / "backup.zip"
+        # Output inside avoi home
+        out_zip = avoi_home / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from hermes_cli.backup import run_backup
+        from avoi_cli.backup import run_backup
         run_backup(args)
 
         # The zip should exist but not contain itself
@@ -760,25 +760,25 @@ class TestImportEdgeCases:
 
     def test_not_a_zip(self, tmp_path, monkeypatch):
         """Import rejects a non-zip file."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
 
         not_zip = tmp_path / "fake.zip"
         not_zip.write_text("this is not a zip")
 
         args = Namespace(zipfile=str(not_zip), force=True)
 
-        from hermes_cli.backup import run_import
+        from avoi_cli.backup import run_import
         with pytest.raises(SystemExit):
             run_import(args)
 
     def test_eof_during_confirmation(self, tmp_path, monkeypatch):
         """Import handles EOFError during confirmation prompt."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text("existing\n")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        (avoi_home / "config.yaml").write_text("existing\n")
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -786,17 +786,17 @@ class TestImportEdgeCases:
 
         args = Namespace(zipfile=str(zip_path), force=False)
 
-        from hermes_cli.backup import run_import
+        from avoi_cli.backup import run_import
         with patch("builtins.input", side_effect=EOFError):
             with pytest.raises(SystemExit):
                 run_import(args)
 
     def test_keyboard_interrupt_during_confirmation(self, tmp_path, monkeypatch):
         """Import handles KeyboardInterrupt during confirmation prompt."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / ".env").write_text("KEY=val\n")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        (avoi_home / ".env").write_text("KEY=val\n")
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -804,20 +804,20 @@ class TestImportEdgeCases:
 
         args = Namespace(zipfile=str(zip_path), force=False)
 
-        from hermes_cli.backup import run_import
+        from avoi_cli.backup import run_import
         with patch("builtins.input", side_effect=KeyboardInterrupt):
             with pytest.raises(SystemExit):
                 run_import(args)
 
     def test_permission_error_during_import(self, tmp_path, monkeypatch):
         """Import handles permission errors during extraction."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         # Create a read-only directory so extraction fails
-        locked_dir = hermes_home / "locked"
+        locked_dir = avoi_home / "locked"
         locked_dir.mkdir()
         locked_dir.chmod(0o555)
 
@@ -829,20 +829,20 @@ class TestImportEdgeCases:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from avoi_cli.backup import run_import
         try:
             run_import(args)
         finally:
             locked_dir.chmod(0o755)
 
         # config.yaml should still be restored despite the error
-        assert (hermes_home / "config.yaml").exists()
+        assert (avoi_home / "config.yaml").exists()
 
     def test_progress_with_many_files(self, tmp_path, monkeypatch):
         """Import shows progress with 500+ files."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "big.zip"
@@ -854,11 +854,11 @@ class TestImportEdgeCases:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from avoi_cli.backup import run_import
         run_import(args)
 
-        assert (hermes_home / "config.yaml").exists()
-        assert (hermes_home / "sessions" / "s0599.json").exists()
+        assert (avoi_home / "config.yaml").exists()
+        assert (avoi_home / "sessions" / "s0599.json").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -873,9 +873,9 @@ class TestProfileRestoration:
 
     def test_import_creates_profile_wrappers(self, tmp_path, monkeypatch):
         """Import auto-creates wrapper scripts for restored profiles."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         # Mock the wrapper dir to be inside tmp_path
@@ -892,12 +892,12 @@ class TestProfileRestoration:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from avoi_cli.backup import run_import
         run_import(args)
 
         # Profile directories should exist
-        assert (hermes_home / "profiles" / "coder" / "config.yaml").exists()
-        assert (hermes_home / "profiles" / "researcher" / "config.yaml").exists()
+        assert (avoi_home / "profiles" / "coder" / "config.yaml").exists()
+        assert (avoi_home / "profiles" / "researcher" / "config.yaml").exists()
 
         # Wrapper scripts should be created
         assert (wrapper_dir / "coder").exists()
@@ -905,13 +905,13 @@ class TestProfileRestoration:
 
         # Wrappers should contain the right content
         coder_wrapper = (wrapper_dir / "coder").read_text()
-        assert "hermes -p coder" in coder_wrapper
+        assert "avoi -p coder" in coder_wrapper
 
     def test_import_skips_profile_dirs_without_config(self, tmp_path, monkeypatch):
         """Import doesn't create wrappers for profile dirs without config."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         wrapper_dir = tmp_path / ".local" / "bin"
@@ -926,7 +926,7 @@ class TestProfileRestoration:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from avoi_cli.backup import run_import
         run_import(args)
 
         # Only valid profile should get a wrapper
@@ -935,9 +935,9 @@ class TestProfileRestoration:
 
     def test_import_without_profiles_module(self, tmp_path, monkeypatch):
         """Import gracefully handles missing profiles module (fresh install)."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -949,20 +949,20 @@ class TestProfileRestoration:
         args = Namespace(zipfile=str(zip_path), force=True)
 
         # Simulate profiles module not being available
-        import hermes_cli.backup as backup_mod
+        import avoi_cli.backup as backup_mod
         original_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__
 
         def fake_import(name, *a, **kw):
-            if name == "hermes_cli.profiles":
+            if name == "avoi_cli.profiles":
                 raise ImportError("no profiles module")
             return original_import(name, *a, **kw)
 
-        from hermes_cli.backup import run_import
+        from avoi_cli.backup import run_import
         with patch("builtins.__import__", side_effect=fake_import):
             run_import(args)
 
         # Files should still be restored even if wrappers can't be created
-        assert (hermes_home / "profiles" / "coder" / "config.yaml").exists()
+        assert (avoi_home / "profiles" / "coder" / "config.yaml").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -971,7 +971,7 @@ class TestProfileRestoration:
 
 class TestSafeCopyDb:
     def test_copies_valid_database(self, tmp_path):
-        from hermes_cli.backup import _safe_copy_db
+        from avoi_cli.backup import _safe_copy_db
         src = tmp_path / "test.db"
         dst = tmp_path / "copy.db"
 
@@ -990,7 +990,7 @@ class TestSafeCopyDb:
         assert rows == [(42,)]
 
     def test_copies_wal_mode_database(self, tmp_path):
-        from hermes_cli.backup import _safe_copy_db
+        from avoi_cli.backup import _safe_copy_db
         src = tmp_path / "wal.db"
         dst = tmp_path / "copy.db"
 
@@ -1016,9 +1016,9 @@ class TestSafeCopyDb:
 
 class TestQuickSnapshot:
     @pytest.fixture
-    def hermes_home(self, tmp_path):
-        """Create a fake HERMES_HOME with critical state files."""
-        home = tmp_path / ".hermes"
+    def avoi_home(self, tmp_path):
+        """Create a fake AVOI_HOME with critical state files."""
+        home = tmp_path / ".avoi"
         home.mkdir()
         (home / "config.yaml").write_text("model:\n  provider: openrouter\n")
         (home / ".env").write_text("OPENROUTER_API_KEY=test-key-123\n")
@@ -1035,23 +1035,23 @@ class TestQuickSnapshot:
         conn.close()
         return home
 
-    def test_creates_snapshot(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot
-        snap_id = create_quick_snapshot(hermes_home=hermes_home)
+    def test_creates_snapshot(self, avoi_home):
+        from avoi_cli.backup import create_quick_snapshot
+        snap_id = create_quick_snapshot(avoi_home=avoi_home)
         assert snap_id is not None
-        snap_dir = hermes_home / "state-snapshots" / snap_id
+        snap_dir = avoi_home / "state-snapshots" / snap_id
         assert snap_dir.is_dir()
         assert (snap_dir / "manifest.json").exists()
 
-    def test_label_in_id(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot
-        snap_id = create_quick_snapshot(label="before-upgrade", hermes_home=hermes_home)
+    def test_label_in_id(self, avoi_home):
+        from avoi_cli.backup import create_quick_snapshot
+        snap_id = create_quick_snapshot(label="before-upgrade", avoi_home=avoi_home)
         assert "before-upgrade" in snap_id
 
-    def test_state_db_safely_copied(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot
-        snap_id = create_quick_snapshot(hermes_home=hermes_home)
-        db_copy = hermes_home / "state-snapshots" / snap_id / "state.db"
+    def test_state_db_safely_copied(self, avoi_home):
+        from avoi_cli.backup import create_quick_snapshot
+        snap_id = create_quick_snapshot(avoi_home=avoi_home)
+        db_copy = avoi_home / "state-snapshots" / snap_id / "state.db"
         assert db_copy.exists()
 
         conn = sqlite3.connect(str(db_copy))
@@ -1060,84 +1060,84 @@ class TestQuickSnapshot:
         assert len(rows) == 1
         assert rows[0] == ("s1", "hello world")
 
-    def test_copies_nested_files(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot
-        snap_id = create_quick_snapshot(hermes_home=hermes_home)
-        assert (hermes_home / "state-snapshots" / snap_id / "cron" / "jobs.json").exists()
+    def test_copies_nested_files(self, avoi_home):
+        from avoi_cli.backup import create_quick_snapshot
+        snap_id = create_quick_snapshot(avoi_home=avoi_home)
+        assert (avoi_home / "state-snapshots" / snap_id / "cron" / "jobs.json").exists()
 
-    def test_missing_files_skipped(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot
-        snap_id = create_quick_snapshot(hermes_home=hermes_home)
-        with open(hermes_home / "state-snapshots" / snap_id / "manifest.json") as f:
+    def test_missing_files_skipped(self, avoi_home):
+        from avoi_cli.backup import create_quick_snapshot
+        snap_id = create_quick_snapshot(avoi_home=avoi_home)
+        with open(avoi_home / "state-snapshots" / snap_id / "manifest.json") as f:
             meta = json.load(f)
         # gateway_state.json etc. don't exist in fixture
         assert "gateway_state.json" not in meta["files"]
 
     def test_empty_home_returns_none(self, tmp_path):
-        from hermes_cli.backup import create_quick_snapshot
+        from avoi_cli.backup import create_quick_snapshot
         empty = tmp_path / "empty"
         empty.mkdir()
-        assert create_quick_snapshot(hermes_home=empty) is None
+        assert create_quick_snapshot(avoi_home=empty) is None
 
-    def test_list_snapshots(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot, list_quick_snapshots
-        id1 = create_quick_snapshot(label="first", hermes_home=hermes_home)
-        id2 = create_quick_snapshot(label="second", hermes_home=hermes_home)
+    def test_list_snapshots(self, avoi_home):
+        from avoi_cli.backup import create_quick_snapshot, list_quick_snapshots
+        id1 = create_quick_snapshot(label="first", avoi_home=avoi_home)
+        id2 = create_quick_snapshot(label="second", avoi_home=avoi_home)
 
-        snaps = list_quick_snapshots(hermes_home=hermes_home)
+        snaps = list_quick_snapshots(avoi_home=avoi_home)
         assert len(snaps) == 2
         assert snaps[0]["id"] == id2  # most recent first
         assert snaps[1]["id"] == id1
 
-    def test_list_limit(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot, list_quick_snapshots
+    def test_list_limit(self, avoi_home):
+        from avoi_cli.backup import create_quick_snapshot, list_quick_snapshots
         for i in range(5):
-            create_quick_snapshot(label=f"s{i}", hermes_home=hermes_home)
-        snaps = list_quick_snapshots(limit=3, hermes_home=hermes_home)
+            create_quick_snapshot(label=f"s{i}", avoi_home=avoi_home)
+        snaps = list_quick_snapshots(limit=3, avoi_home=avoi_home)
         assert len(snaps) == 3
 
-    def test_restore_config(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot, restore_quick_snapshot
-        snap_id = create_quick_snapshot(hermes_home=hermes_home)
+    def test_restore_config(self, avoi_home):
+        from avoi_cli.backup import create_quick_snapshot, restore_quick_snapshot
+        snap_id = create_quick_snapshot(avoi_home=avoi_home)
 
-        (hermes_home / "config.yaml").write_text("model:\n  provider: anthropic\n")
-        assert "anthropic" in (hermes_home / "config.yaml").read_text()
+        (avoi_home / "config.yaml").write_text("model:\n  provider: anthropic\n")
+        assert "anthropic" in (avoi_home / "config.yaml").read_text()
 
-        result = restore_quick_snapshot(snap_id, hermes_home=hermes_home)
+        result = restore_quick_snapshot(snap_id, avoi_home=avoi_home)
         assert result is True
-        assert "openrouter" in (hermes_home / "config.yaml").read_text()
+        assert "openrouter" in (avoi_home / "config.yaml").read_text()
 
-    def test_restore_state_db(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot, restore_quick_snapshot
-        snap_id = create_quick_snapshot(hermes_home=hermes_home)
+    def test_restore_state_db(self, avoi_home):
+        from avoi_cli.backup import create_quick_snapshot, restore_quick_snapshot
+        snap_id = create_quick_snapshot(avoi_home=avoi_home)
 
-        conn = sqlite3.connect(str(hermes_home / "state.db"))
+        conn = sqlite3.connect(str(avoi_home / "state.db"))
         conn.execute("INSERT INTO sessions VALUES ('s2', 'new')")
         conn.commit()
         conn.close()
 
-        restore_quick_snapshot(snap_id, hermes_home=hermes_home)
+        restore_quick_snapshot(snap_id, avoi_home=avoi_home)
 
-        conn = sqlite3.connect(str(hermes_home / "state.db"))
+        conn = sqlite3.connect(str(avoi_home / "state.db"))
         rows = conn.execute("SELECT * FROM sessions").fetchall()
         conn.close()
         assert len(rows) == 1
 
-    def test_restore_nonexistent(self, hermes_home):
-        from hermes_cli.backup import restore_quick_snapshot
-        assert restore_quick_snapshot("nonexistent", hermes_home=hermes_home) is False
+    def test_restore_nonexistent(self, avoi_home):
+        from avoi_cli.backup import restore_quick_snapshot
+        assert restore_quick_snapshot("nonexistent", avoi_home=avoi_home) is False
 
-    def test_auto_prune(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot, list_quick_snapshots, _QUICK_DEFAULT_KEEP
+    def test_auto_prune(self, avoi_home):
+        from avoi_cli.backup import create_quick_snapshot, list_quick_snapshots, _QUICK_DEFAULT_KEEP
         for i in range(_QUICK_DEFAULT_KEEP + 5):
-            create_quick_snapshot(label=f"snap-{i:03d}", hermes_home=hermes_home)
-        snaps = list_quick_snapshots(limit=100, hermes_home=hermes_home)
+            create_quick_snapshot(label=f"snap-{i:03d}", avoi_home=avoi_home)
+        snaps = list_quick_snapshots(limit=100, avoi_home=avoi_home)
         assert len(snaps) <= _QUICK_DEFAULT_KEEP
 
-    def test_manual_prune(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot, prune_quick_snapshots, list_quick_snapshots
+    def test_manual_prune(self, avoi_home):
+        from avoi_cli.backup import create_quick_snapshot, prune_quick_snapshots, list_quick_snapshots
         for i in range(10):
-            create_quick_snapshot(label=f"s{i}", hermes_home=hermes_home)
-        deleted = prune_quick_snapshots(keep=3, hermes_home=hermes_home)
+            create_quick_snapshot(label=f"s{i}", avoi_home=avoi_home)
+        deleted = prune_quick_snapshots(keep=3, avoi_home=avoi_home)
         assert deleted == 7
-        assert len(list_quick_snapshots(hermes_home=hermes_home)) == 3
+        assert len(list_quick_snapshots(avoi_home=avoi_home)) == 3

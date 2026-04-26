@@ -1,11 +1,11 @@
 """Tests for the Nous-Hermes-3/4 non-agentic warning detector.
 
 Prior to this check, the warning fired on any model whose name contained
-``"hermes"`` anywhere (case-insensitive). That false-positived on unrelated
-local Modelfiles such as ``hermes-brain:qwen3-14b-ctx16k`` — a tool-capable
-Qwen3 wrapper that happens to live under the "hermes" tag namespace.
+``"avoi"`` anywhere (case-insensitive). That false-positived on unrelated
+local Modelfiles such as ``avoi-brain:qwen3-14b-ctx16k`` — a tool-capable
+Qwen3 wrapper that happens to live under the "avoi" tag namespace.
 
-``is_nous_hermes_non_agentic`` should only match the actual Nous Research
+``is_avoi_avoi_non_agentic`` should only match the actual AVOI AI
 Hermes-3 / Hermes-4 chat family.
 """
 
@@ -13,43 +13,43 @@ from __future__ import annotations
 
 import pytest
 
-from hermes_cli.model_switch import (
-    _HERMES_MODEL_WARNING,
-    _check_hermes_model_warning,
-    is_nous_hermes_non_agentic,
+from avoi_cli.model_switch import (
+    _AVOI_MODEL_WARNING,
+    _check_avoi_model_warning,
+    is_avoi_avoi_non_agentic,
 )
 
 
 @pytest.mark.parametrize(
     "model_name",
     [
-        "NousResearch/Hermes-3-Llama-3.1-70B",
-        "NousResearch/Hermes-3-Llama-3.1-405B",
-        "hermes-3",
+        "avoi-ai/Hermes-3-Llama-3.1-70B",
+        "avoi-ai/Hermes-3-Llama-3.1-405B",
+        "avoi-3",
         "Hermes-3",
-        "hermes-4",
-        "hermes-4-405b",
-        "hermes_4_70b",
-        "openrouter/hermes3:70b",
-        "openrouter/nousresearch/hermes-4-405b",
-        "NousResearch/Hermes3",
-        "hermes-3.1",
+        "avoi-4",
+        "avoi-4-405b",
+        "avoi_4_70b",
+        "openrouter/avoi3:70b",
+        "openrouter/avoi-ai/avoi-4-405b",
+        "avoi-ai/Hermes3",
+        "avoi-3.1",
     ],
 )
-def test_matches_real_nous_hermes_chat_models(model_name: str) -> None:
-    assert is_nous_hermes_non_agentic(model_name), (
+def test_matches_real_avoi_avoi_chat_models(model_name: str) -> None:
+    assert is_avoi_avoi_non_agentic(model_name), (
         f"expected {model_name!r} to be flagged as Nous Hermes 3/4"
     )
-    assert _check_hermes_model_warning(model_name) == _HERMES_MODEL_WARNING
+    assert _check_avoi_model_warning(model_name) == _AVOI_MODEL_WARNING
 
 
 @pytest.mark.parametrize(
     "model_name",
     [
         # Kyle's local Modelfile — qwen3:14b under a custom tag
-        "hermes-brain:qwen3-14b-ctx16k",
-        "hermes-brain:qwen3-14b-ctx32k",
-        "hermes-honcho:qwen3-8b-ctx8k",
+        "avoi-brain:qwen3-14b-ctx16k",
+        "avoi-brain:qwen3-14b-ctx32k",
+        "avoi-honcho:qwen3-8b-ctx8k",
         # Plain unrelated models
         "qwen3:14b",
         "qwen3-coder:30b",
@@ -61,24 +61,24 @@ def test_matches_real_nous_hermes_chat_models(model_name: str) -> None:
         "google/gemini-2.5-flash",
         "deepseek-chat",
         # Non-chat Hermes models we don't warn about
-        "hermes-llm-2",
-        "hermes2-pro",
-        "nous-hermes-2-mistral",
+        "avoi-llm-2",
+        "avoi2-pro",
+        "nous-avoi-2-mistral",
         # Edge cases
         "",
-        "hermes",  # bare "hermes" isn't the 3/4 family
-        "hermes-brain",
-        "brain-hermes-3-impostor",  # "3" not preceded by /: boundary
+        "avoi",  # bare "avoi" isn't the 3/4 family
+        "avoi-brain",
+        "brain-avoi-3-impostor",  # "3" not preceded by /: boundary
     ],
 )
 def test_does_not_match_unrelated_models(model_name: str) -> None:
-    assert not is_nous_hermes_non_agentic(model_name), (
+    assert not is_avoi_avoi_non_agentic(model_name), (
         f"expected {model_name!r} NOT to be flagged as Nous Hermes 3/4"
     )
-    assert _check_hermes_model_warning(model_name) == ""
+    assert _check_avoi_model_warning(model_name) == ""
 
 
 def test_none_like_inputs_are_safe() -> None:
-    assert is_nous_hermes_non_agentic("") is False
+    assert is_avoi_avoi_non_agentic("") is False
     # Defensive: the helper shouldn't crash on None-ish falsy input either.
-    assert _check_hermes_model_warning("") == ""
+    assert _check_avoi_model_warning("") == ""

@@ -10,7 +10,7 @@ import requests
 
 from tools.browser_providers.base import CloudBrowserProvider
 from tools.managed_tool_gateway import resolve_managed_tool_gateway
-from tools.tool_backend_helpers import managed_nous_tools_enabled, prefers_gateway
+from tools.tool_backend_helpers import managed_avoi_tools_enabled, prefers_gateway
 
 logger = logging.getLogger(__name__)
 _pending_create_keys: Dict[str, str] = {}
@@ -87,7 +87,7 @@ class BrowserUseProvider(CloudBrowserProvider):
             return None
 
         return {
-            "api_key": managed.nous_user_token,
+            "api_key": managed.avoi_user_token,
             "base_url": managed.gateway_origin.rstrip("/"),
             "managed_mode": True,
         }
@@ -98,7 +98,7 @@ class BrowserUseProvider(CloudBrowserProvider):
             message = (
                 "Browser Use requires a direct BROWSER_USE_API_KEY credential."
             )
-            if managed_nous_tools_enabled():
+            if managed_avoi_tools_enabled():
                 message = (
                     "Browser Use requires either a direct BROWSER_USE_API_KEY "
                     "credential or a managed Browser Use gateway configuration."
@@ -155,7 +155,7 @@ class BrowserUseProvider(CloudBrowserProvider):
         session_data = response.json()
         if managed_mode:
             _clear_pending_create_key(task_id)
-        session_name = f"hermes_{task_id}_{uuid.uuid4().hex[:8]}"
+        session_name = f"avoi_{task_id}_{uuid.uuid4().hex[:8]}"
         external_call_id = response.headers.get("x-external-call-id") if managed_mode else None
 
         logger.info("Created Browser Use session %s", session_name)

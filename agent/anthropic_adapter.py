@@ -1,4 +1,4 @@
-"""Anthropic Messages API adapter for Hermes Agent.
+"""Anthropic Messages API adapter for AVOI Agent.
 
 Translates between Hermes's internal OpenAI-style message format and
 Anthropic's Messages API. Follows the same pattern as the codex_responses
@@ -18,7 +18,7 @@ import platform
 import subprocess
 from pathlib import Path
 
-from hermes_constants import get_hermes_home
+from avoi_constants import get_avoi_home
 from typing import Any, Dict, List, Optional, Tuple
 from utils import normalize_proxy_env_vars
 
@@ -858,13 +858,13 @@ def run_oauth_setup_token() -> Optional[str]:
 
 # ── Hermes-native PKCE OAuth flow ────────────────────────────────────────
 # Mirrors the flow used by Claude Code, pi-ai, and OpenCode.
-# Stores credentials in ~/.hermes/.anthropic_oauth.json (our own file).
+# Stores credentials in ~/.avoi/.anthropic_oauth.json (our own file).
 
 _OAUTH_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
 _OAUTH_TOKEN_URL = "https://console.anthropic.com/v1/oauth/token"
 _OAUTH_REDIRECT_URI = "https://console.anthropic.com/oauth/code/callback"
 _OAUTH_SCOPES = "org:create_api_key user:profile user:inference"
-_HERMES_OAUTH_FILE = get_hermes_home() / ".anthropic_oauth.json"
+_AVOI_OAUTH_FILE = get_avoi_home() / ".anthropic_oauth.json"
 
 
 def _generate_pkce() -> tuple:
@@ -880,7 +880,7 @@ def _generate_pkce() -> tuple:
     return verifier, challenge
 
 
-def run_hermes_oauth_login_pure() -> Optional[Dict[str, Any]]:
+def run_avoi_oauth_login_pure() -> Optional[Dict[str, Any]]:
     """Run Hermes-native OAuth PKCE flow and return credential state."""
     import time
     import webbrowser
@@ -978,11 +978,11 @@ def run_hermes_oauth_login_pure() -> Optional[Dict[str, Any]]:
     }
 
 
-def read_hermes_oauth_credentials() -> Optional[Dict[str, Any]]:
-    """Read Hermes-managed OAuth credentials from ~/.hermes/.anthropic_oauth.json."""
-    if _HERMES_OAUTH_FILE.exists():
+def read_avoi_oauth_credentials() -> Optional[Dict[str, Any]]:
+    """Read Hermes-managed OAuth credentials from ~/.avoi/.anthropic_oauth.json."""
+    if _AVOI_OAUTH_FILE.exists():
         try:
-            data = json.loads(_HERMES_OAUTH_FILE.read_text(encoding="utf-8"))
+            data = json.loads(_AVOI_OAUTH_FILE.read_text(encoding="utf-8"))
             if data.get("accessToken"):
                 return data
         except (json.JSONDecodeError, OSError, IOError) as e:
@@ -1257,7 +1257,7 @@ def convert_messages_to_anthropic(
             # Kimi's /coding endpoint (Anthropic protocol) requires assistant
             # tool-call messages to carry reasoning_content when thinking is
             # enabled server-side.  Preserve it as a thinking block so Kimi
-            # can validate the message history.  See hermes-agent#13848.
+            # can validate the message history.  See avoi-agent#13848.
             #
             # Accept empty string "" — _copy_reasoning_content_for_api()
             # injects "" as a tier-3 fallback for Kimi tool-call messages
@@ -1593,10 +1593,10 @@ def build_anthropic_kwargs(
         for block in system:
             if isinstance(block, dict) and block.get("type") == "text":
                 text = block.get("text", "")
-                text = text.replace("Hermes Agent", "Claude Code")
-                text = text.replace("Hermes agent", "Claude Code")
-                text = text.replace("hermes-agent", "claude-code")
-                text = text.replace("Nous Research", "Anthropic")
+                text = text.replace("AVOI Agent", "Claude Code")
+                text = text.replace("AVOI agent", "Claude Code")
+                text = text.replace("avoi-agent", "claude-code")
+                text = text.replace("AVOI AI", "Anthropic")
                 block["text"] = text
 
         # 3. Prefix tool names with mcp_ (Claude Code convention)

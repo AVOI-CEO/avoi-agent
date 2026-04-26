@@ -1,6 +1,6 @@
-# Contributing to Hermes Agent
+# Contributing to AVOI Agent
 
-Thank you for contributing to Hermes Agent! This guide covers everything you need: setting up your dev environment, understanding the architecture, deciding what to build, and getting your PR merged.
+Thank you for contributing to AVOI Agent! This guide covers everything you need: setting up your dev environment, understanding the architecture, deciding what to build, and getting your PR merged.
 
 ---
 
@@ -43,9 +43,9 @@ Bundled skills (in `skills/`) ship with every Hermes install. They should be **b
 - Document handling, web research, common dev workflows, system administration
 - Used regularly by a wide range of people
 
-If your skill is official and useful but not universally needed (e.g., a paid service integration, a heavyweight dependency), put it in **`optional-skills/`** — it ships with the repo but isn't activated by default. Users can discover it via `hermes skills browse` (labeled "official") and install it with `hermes skills install` (no third-party warning, builtin trust).
+If your skill is official and useful but not universally needed (e.g., a paid service integration, a heavyweight dependency), put it in **`optional-skills/`** — it ships with the repo but isn't activated by default. Users can discover it via `avoi skills browse` (labeled "official") and install it with `avoi skills install` (no third-party warning, builtin trust).
 
-If your skill is specialized, community-contributed, or niche, it's better suited for a **Skills Hub** — upload it to a skills registry and share it in the [Nous Research Discord](https://discord.gg/NousResearch). Users can install it with `hermes skills install`.
+If your skill is specialized, community-contributed, or niche, it's better suited for a **Skills Hub** — upload it to a skills registry and share it in the [AVOI AI Discord](https://discord.gg/avoi-ai). Users can install it with `avoi skills install`.
 
 ---
 
@@ -63,8 +63,8 @@ If your skill is specialized, community-contributed, or niche, it's better suite
 ### Clone and install
 
 ```bash
-git clone --recurse-submodules https://github.com/NousResearch/hermes-agent.git
-cd hermes-agent
+git clone --recurse-submodules https://github.com/avoi-ai/avoi-agent.git
+cd avoi-agent
 
 # Create venv with Python 3.11
 uv venv venv --python 3.11
@@ -83,12 +83,12 @@ npm install
 ### Configure for development
 
 ```bash
-mkdir -p ~/.hermes/{cron,sessions,logs,memories,skills}
-cp cli-config.yaml.example ~/.hermes/config.yaml
-touch ~/.hermes/.env
+mkdir -p ~/.avoi/{cron,sessions,logs,memories,skills}
+cp cli-config.yaml.example ~/.avoi/config.yaml
+touch ~/.avoi/.env
 
 # Add at minimum an LLM provider key:
-echo "OPENROUTER_API_KEY=***" >> ~/.hermes/.env
+echo "OPENROUTER_API_KEY=***" >> ~/.avoi/.env
 ```
 
 ### Run
@@ -96,11 +96,11 @@ echo "OPENROUTER_API_KEY=***" >> ~/.hermes/.env
 ```bash
 # Symlink for global access
 mkdir -p ~/.local/bin
-ln -sf "$(pwd)/venv/bin/hermes" ~/.local/bin/hermes
+ln -sf "$(pwd)/venv/bin/avoi" ~/.local/bin/avoi
 
 # Verify
-hermes doctor
-hermes chat -q "Hello"
+avoi doctor
+avoi chat -q "Hello"
 ```
 
 ### Run tests
@@ -114,12 +114,12 @@ pytest tests/ -v
 ## Project Structure
 
 ```
-hermes-agent/
+avoi-agent/
 ├── run_agent.py              # AIAgent class — core conversation loop, tool dispatch, session persistence
 ├── cli.py                    # HermesCLI class — interactive TUI, prompt_toolkit integration
 ├── model_tools.py            # Tool orchestration (thin layer over tools/registry.py)
-├── toolsets.py               # Tool groupings and presets (hermes-cli, hermes-telegram, etc.)
-├── hermes_state.py           # SQLite session database with FTS5 full-text search, session titles
+├── toolsets.py               # Tool groupings and presets (avoi-cli, avoi-telegram, etc.)
+├── avoi_state.py           # SQLite session database with FTS5 full-text search, session titles
 ├── batch_runner.py           # Parallel batch processing for trajectory generation
 │
 ├── agent/                    # Agent internals (extracted modules)
@@ -130,7 +130,7 @@ hermes-agent/
 │   ├── model_metadata.py         # Model context lengths, token estimation
 │   └── trajectory.py             # Trajectory saving helpers
 │
-├── hermes_cli/               # CLI command implementations
+├── avoi_cli/               # CLI command implementations
 │   ├── main.py                   # Entry point, argument parsing, command dispatch
 │   ├── config.py                 # Config management, migration, env var definitions
 │   ├── setup.py                  # Interactive setup wizard
@@ -171,29 +171,29 @@ hermes-agent/
 │   ├── install.ps1               # Windows PowerShell installer
 │   └── whatsapp-bridge/          # Node.js WhatsApp bridge (Baileys)
 │
-├── skills/                   # Bundled skills (copied to ~/.hermes/skills/ on install)
+├── skills/                   # Bundled skills (copied to ~/.avoi/skills/ on install)
 ├── optional-skills/          # Official optional skills (discoverable via hub, not activated by default)
 ├── environments/             # RL training environments (Atropos integration)
 ├── tests/                    # Test suite
-├── website/                  # Documentation site (hermes-agent.nousresearch.com)
+├── website/                  # Documentation site (avoi-agent.avoi-ai.com)
 │
-├── cli-config.yaml.example   # Example configuration (copied to ~/.hermes/config.yaml)
+├── cli-config.yaml.example   # Example configuration (copied to ~/.avoi/config.yaml)
 └── AGENTS.md                 # Development guide for AI coding assistants
 ```
 
-### User configuration (stored in `~/.hermes/`)
+### User configuration (stored in `~/.avoi/`)
 
 | Path | Purpose |
 |------|---------|
-| `~/.hermes/config.yaml` | Settings (model, terminal, toolsets, compression, etc.) |
-| `~/.hermes/.env` | API keys and secrets |
-| `~/.hermes/auth.json` | OAuth credentials (Nous Portal) |
-| `~/.hermes/skills/` | All active skills (bundled + hub-installed + agent-created) |
-| `~/.hermes/memories/` | Persistent memory (MEMORY.md, USER.md) |
-| `~/.hermes/state.db` | SQLite session database |
-| `~/.hermes/sessions/` | JSON session logs |
-| `~/.hermes/cron/` | Scheduled job data |
-| `~/.hermes/whatsapp/session/` | WhatsApp bridge credentials |
+| `~/.avoi/config.yaml` | Settings (model, terminal, toolsets, compression, etc.) |
+| `~/.avoi/.env` | API keys and secrets |
+| `~/.avoi/auth.json` | OAuth credentials (Nous Portal) |
+| `~/.avoi/skills/` | All active skills (bundled + hub-installed + agent-created) |
+| `~/.avoi/memories/` | Persistent memory (MEMORY.md, USER.md) |
+| `~/.avoi/state.db` | SQLite session database |
+| `~/.avoi/sessions/` | JSON session logs |
+| `~/.avoi/cron/` | Scheduled job data |
+| `~/.avoi/whatsapp/session/` | WhatsApp bridge credentials |
 
 ---
 
@@ -220,7 +220,7 @@ User message → AIAgent._run_agent_loop()
 
 - **Self-registering tools**: Each tool file calls `registry.register()` at import time. `model_tools.py` triggers discovery by importing all tool modules.
 - **Toolset grouping**: Tools are grouped into toolsets (`web`, `terminal`, `file`, `browser`, etc.) that can be enabled/disabled per platform.
-- **Session persistence**: All conversations are stored in SQLite (`hermes_state.py`) with full-text search and unique session titles. JSON logs go to `~/.hermes/sessions/`.
+- **Session persistence**: All conversations are stored in SQLite (`avoi_state.py`) with full-text search and unique session titles. JSON logs go to `~/.avoi/sessions/`.
 - **Ephemeral injection**: System prompts and prefill messages are injected at API call time, never persisted to the database or logs.
 - **Provider abstraction**: The agent works with any OpenAI-compatible API. Provider resolution happens at init time (Nous Portal OAuth, OpenRouter API key, or custom endpoint).
 - **Provider routing**: When using OpenRouter, `provider_routing` in config.yaml controls provider selection (sort by throughput/latency/price, allow/ignore specific providers, data retention policies). These are injected as `extra_body.provider` in API requests.
@@ -339,7 +339,7 @@ prerequisites:                     # Optional legacy runtime requirements
   env_vars: [MY_API_KEY]           #   Backward-compatible alias for required env vars
   commands: [curl, jq]             #   Advisory only; does not hide the skill
 metadata:
-  hermes:
+  avoi:
     tags: [Category, Subcategory, Keywords]
     related_skills: [other-skill-name]
     fallback_for_toolsets: [web]       # Optional — show only when toolset is unavailable
@@ -382,11 +382,11 @@ If the field is omitted or empty, the skill loads on all platforms (backward com
 
 Skills can declare conditions that control when they appear in the system prompt, based on which tools and toolsets are available in the current session. This is primarily used for **fallback skills** — alternatives that should only be shown when a primary tool is unavailable.
 
-Four fields are supported under `metadata.hermes`:
+Four fields are supported under `metadata.avoi`:
 
 ```yaml
 metadata:
-  hermes:
+  avoi:
     fallback_for_toolsets: [web]      # Show ONLY when these toolsets are unavailable
     requires_toolsets: [terminal]     # Show ONLY when these toolsets are available
     fallback_for_tools: [web_search]  # Show ONLY when these specific tools are unavailable
@@ -404,17 +404,17 @@ metadata:
 ```yaml
 # DuckDuckGo search — shown when Firecrawl (web toolset) is unavailable
 metadata:
-  hermes:
+  avoi:
     fallback_for_toolsets: [web]
 
 # Smart home skill — only useful when terminal is available
 metadata:
-  hermes:
+  avoi:
     requires_toolsets: [terminal]
 
 # Local browser fallback — shown when Browserbase is unavailable
 metadata:
-  hermes:
+  avoi:
     fallback_for_toolsets: [browser]
 ```
 
@@ -442,7 +442,7 @@ prerequisites:
   commands: [curl, jq]            # Advisory CLI checks
 ```
 
-Gateway and messaging sessions never collect secrets in-band; they instruct the user to run `hermes setup` or update `~/.hermes/.env` locally.
+Gateway and messaging sessions never collect secrets in-band; they instruct the user to run `avoi setup` or update `~/.avoi/.env` locally.
 
 **When to declare required environment variables:**
 - The skill uses an API key or token that should be collected securely at load time
@@ -459,7 +459,7 @@ See `skills/gifs/gif-search/` and `skills/email/himalaya/` for examples.
 - **No external dependencies unless absolutely necessary.** Prefer stdlib Python, curl, and existing Hermes tools (`web_extract`, `terminal`, `read_file`).
 - **Progressive disclosure.** Put the most common workflow first. Edge cases and advanced usage go at the bottom.
 - **Include helper scripts** for XML/JSON parsing or complex logic — don't expect the LLM to write parsers inline every time.
-- **Test it.** Run `hermes --toolsets skills -q "Use the X skill to do Y"` and verify the agent follows the instructions correctly.
+- **Test it.** Run `avoi --toolsets skills -q "Use the X skill to do Y"` and verify the agent follows the instructions correctly.
 
 ---
 
@@ -469,7 +469,7 @@ Hermes uses a data-driven skin system — no code changes needed to add a new sk
 
 **Option A: User skin (YAML file)**
 
-Create `~/.hermes/skins/<name>.yaml`:
+Create `~/.avoi/skins/<name>.yaml`:
 
 ```yaml
 name: mytheme
@@ -503,13 +503,13 @@ All fields are optional — missing values inherit from the default skin.
 
 **Option B: Built-in skin**
 
-Add to `_BUILTIN_SKINS` dict in `hermes_cli/skin_engine.py`. Use the same schema as above but as a Python dict. Built-in skins ship with the package and are always available.
+Add to `_BUILTIN_SKINS` dict in `avoi_cli/skin_engine.py`. Use the same schema as above but as a Python dict. Built-in skins ship with the package and are always available.
 
 **Activating:**
 - CLI: `/skin mytheme` or set `display.skin: mytheme` in config.yaml
 - Config: `display: { skin: mytheme }`
 
-See `hermes_cli/skin_engine.py` for the full schema and existing skins as examples.
+See `avoi_cli/skin_engine.py` for the full schema and existing skins as examples.
 
 ---
 
@@ -596,7 +596,7 @@ refactor/description   # Code restructuring
 ### Before submitting
 
 1. **Run tests**: `pytest tests/ -v`
-2. **Test manually**: Run `hermes` and exercise the code path you changed
+2. **Test manually**: Run `avoi` and exercise the code path you changed
 3. **Check cross-platform impact**: If you touch file I/O, process management, or terminal handling, consider macOS, Linux, and WSL2
 4. **Keep PRs focused**: One logical change per PR. Don't mix a bug fix with a refactor with a new feature.
 
@@ -639,8 +639,8 @@ test(tools): add unit tests for file_operations
 
 ## Reporting Issues
 
-- Use [GitHub Issues](https://github.com/NousResearch/hermes-agent/issues)
-- Include: OS, Python version, Hermes version (`hermes version`), full error traceback
+- Use [GitHub Issues](https://github.com/avoi-ai/avoi-agent/issues)
+- Include: OS, Python version, Hermes version (`avoi version`), full error traceback
 - Include steps to reproduce
 - Check existing issues before creating duplicates
 - For security vulnerabilities, please report privately
@@ -649,7 +649,7 @@ test(tools): add unit tests for file_operations
 
 ## Community
 
-- **Discord**: [discord.gg/NousResearch](https://discord.gg/NousResearch) — for questions, showcasing projects, and sharing skills
+- **Discord**: [discord.gg/avoi-ai](https://discord.gg/avoi-ai) — for questions, showcasing projects, and sharing skills
 - **GitHub Discussions**: For design proposals and architecture discussions
 - **Skills Hub**: Upload specialized skills to a registry and share them with the community
 

@@ -30,7 +30,7 @@ from tools.skill_manager_tool import (
 @contextmanager
 def _skill_dir(tmp_path):
     """Patch both SKILLS_DIR and get_all_skills_dirs so _find_skill searches
-    only the temp directory — not the real ~/.hermes/skills/."""
+    only the temp directory — not the real ~/.avoi/skills/."""
     with patch("tools.skill_manager_tool.SKILLS_DIR", tmp_path), \
          patch("agent.skill_utils.get_all_skills_dirs", return_value=[tmp_path]):
         yield
@@ -549,14 +549,14 @@ class TestSecurityScanGate:
         """_guard_agent_created_enabled returns False when config doesn't set it."""
         from tools.skill_manager_tool import _guard_agent_created_enabled
 
-        with patch("hermes_cli.config.load_config", return_value={"skills": {}}):
+        with patch("avoi_cli.config.load_config", return_value={"skills": {}}):
             assert _guard_agent_created_enabled() is False
 
     def test_guard_flag_reads_config_when_set(self):
         """_guard_agent_created_enabled returns True when user explicitly enables."""
         from tools.skill_manager_tool import _guard_agent_created_enabled
 
-        with patch("hermes_cli.config.load_config",
+        with patch("avoi_cli.config.load_config",
                    return_value={"skills": {"guard_agent_created": True}}):
             assert _guard_agent_created_enabled() is True
 
@@ -564,5 +564,5 @@ class TestSecurityScanGate:
         """If load_config raises, _guard_agent_created_enabled defaults to False (fail-safe off)."""
         from tools.skill_manager_tool import _guard_agent_created_enabled
 
-        with patch("hermes_cli.config.load_config", side_effect=RuntimeError("boom")):
+        with patch("avoi_cli.config.load_config", side_effect=RuntimeError("boom")):
             assert _guard_agent_created_enabled() is False

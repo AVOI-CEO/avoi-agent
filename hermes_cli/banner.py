@@ -10,7 +10,7 @@ import subprocess
 import threading
 import time
 from pathlib import Path
-from hermes_constants import get_hermes_home
+from avoi_constants import get_avoi_home
 from typing import Dict, List, Optional
 
 from rich.console import Console
@@ -45,7 +45,7 @@ def cprint(text: str):
 def _skin_color(key: str, fallback: str) -> str:
     """Get a color from the active skin, or return fallback."""
     try:
-        from hermes_cli.skin_engine import get_active_skin
+        from avoi_cli.skin_engine import get_active_skin
         return get_active_skin().get_color(key, fallback)
     except Exception:
         return fallback
@@ -54,7 +54,7 @@ def _skin_color(key: str, fallback: str) -> str:
 def _skin_branding(key: str, fallback: str) -> str:
     """Get a branding string from the active skin, or return fallback."""
     try:
-        from hermes_cli.skin_engine import get_active_skin
+        from avoi_cli.skin_engine import get_active_skin
         return get_active_skin().get_branding(key, fallback)
     except Exception:
         return fallback
@@ -64,16 +64,16 @@ def _skin_branding(key: str, fallback: str) -> str:
 # ASCII Art & Branding
 # =========================================================================
 
-from hermes_cli import __version__ as VERSION, __release_date__ as RELEASE_DATE
+from avoi_cli import __version__ as VERSION, __release_date__ as RELEASE_DATE
 
-HERMES_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
+AVOI_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
 [bold #FFD700]██║  ██║██╔════╝██╔══██╗████╗ ████║██╔════╝██╔════╝      ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
 [#FFBF00]███████║█████╗  ██████╔╝██╔████╔██║█████╗  ███████╗█████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║[/]
 [#FFBF00]██╔══██║██╔══╝  ██╔══██╗██║╚██╔╝██║██╔══╝  ╚════██║╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║[/]
 [#CD7F32]██║  ██║███████╗██║  ██║██║ ╚═╝ ██║███████╗███████║      ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║[/]
 [#CD7F32]╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝[/]"""
 
-HERMES_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+AVOI_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
 [#CD7F32]⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣇⠸⣿⣿⠇⣸⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀[/]
 [#FFBF00]⠀⢀⣠⣴⣶⠿⠋⣩⡿⣿⡿⠻⣿⡇⢠⡄⢸⣿⠟⢿⣿⢿⣍⠙⠿⣶⣦⣄⡀⠀[/]
 [#FFBF00]⠀⠀⠉⠉⠁⠶⠟⠋⠀⠉⠀⢀⣈⣁⡈⢁⣈⣁⡀⠀⠉⠀⠙⠻⠶⠈⠉⠉⠀⠀[/]
@@ -127,12 +127,12 @@ def check_for_updates() -> Optional[int]:
     """Check how many commits behind origin/main the local repo is.
 
     Does a ``git fetch`` at most once every 6 hours (cached to
-    ``~/.hermes/.update_check``).  Returns the number of commits behind,
+    ``~/.avoi/.update_check``).  Returns the number of commits behind,
     or ``None`` if the check fails or isn't applicable.
     """
-    hermes_home = get_hermes_home()
-    repo_dir = hermes_home / "hermes-agent"
-    cache_file = hermes_home / ".update_check"
+    avoi_home = get_avoi_home()
+    repo_dir = avoi_home / "avoi-agent"
+    cache_file = avoi_home / ".update_check"
 
     # Must be a git repo — fall back to project root for dev installs
     if not (repo_dir / ".git").exists():
@@ -185,8 +185,8 @@ def check_for_updates() -> Optional[int]:
 
 def _resolve_repo_dir() -> Optional[Path]:
     """Return the active Hermes git checkout, or None if this isn't a git install."""
-    hermes_home = get_hermes_home()
-    repo_dir = hermes_home / "hermes-agent"
+    avoi_home = get_avoi_home()
+    repo_dir = avoi_home / "avoi-agent"
     if not (repo_dir / ".git").exists():
         repo_dir = Path(__file__).parent.parent.resolve()
     return repo_dir if (repo_dir / ".git").exists() else None
@@ -238,7 +238,7 @@ def get_git_banner_state(repo_dir: Optional[Path] = None) -> Optional[dict]:
     return {"upstream": upstream, "local": local, "ahead": max(ahead, 0)}
 
 
-_RELEASE_URL_BASE = "https://github.com/NousResearch/hermes-agent/releases/tag"
+_RELEASE_URL_BASE = "https://github.com/avoi-ai/avoi-agent/releases/tag"
 _latest_release_cache: Optional[tuple] = None  # (tag, url) once resolved
 
 
@@ -247,7 +247,7 @@ def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
 
     Local-only — runs ``git describe --tags --abbrev=0`` against the
     Hermes checkout. Cached per-process. Release URL always points at the
-    canonical NousResearch/hermes-agent repo (forks don't get a link).
+    canonical avoi-ai/avoi-agent repo (forks don't get a link).
     """
     global _latest_release_cache
     if _latest_release_cache is not None:
@@ -410,12 +410,12 @@ def build_welcome_banner(console: Console, model: str, cwd: str,
 
     # Use skin's custom caduceus art if provided
     try:
-        from hermes_cli.skin_engine import get_active_skin
+        from avoi_cli.skin_engine import get_active_skin
         _bskin = get_active_skin()
-        _hero = _bskin.banner_hero if hasattr(_bskin, 'banner_hero') and _bskin.banner_hero else HERMES_CADUCEUS
+        _hero = _bskin.banner_hero if hasattr(_bskin, 'banner_hero') and _bskin.banner_hero else AVOI_CADUCEUS
     except Exception:
         _bskin = None
-        _hero = HERMES_CADUCEUS
+        _hero = AVOI_CADUCEUS
     left_lines = ["", _hero, ""]
     model_short = model.split("/")[-1] if "/" in model else model
     if model_short.endswith(".gguf"):
@@ -537,7 +537,7 @@ def build_welcome_banner(console: Console, model: str, cwd: str,
     summary_parts.append("/help for commands")
     # Show active profile name when not 'default'
     try:
-        from hermes_cli.profiles import get_active_profile_name
+        from avoi_cli.profiles import get_active_profile_name
         _profile_name = get_active_profile_name()
         if _profile_name and _profile_name != "default":
             right_lines.append(f"[bold {accent}]Profile:[/] [{text}]{_profile_name}[/]")
@@ -550,7 +550,7 @@ def build_welcome_banner(console: Console, model: str, cwd: str,
     try:
         behind = get_update_result(timeout=0.5)
         if behind and behind > 0:
-            from hermes_cli.config import recommended_update_command
+            from avoi_cli.config import recommended_update_command
             commits_word = "commit" if behind == 1 else "commits"
             right_lines.append(
                 f"[bold yellow]⚠ {behind} {commits_word} behind[/]"
@@ -582,7 +582,7 @@ def build_welcome_banner(console: Console, model: str, cwd: str,
     console.print()
     term_width = shutil.get_terminal_size().columns
     if term_width >= 95:
-        _logo = _bskin.banner_logo if _bskin and hasattr(_bskin, 'banner_logo') and _bskin.banner_logo else HERMES_AGENT_LOGO
+        _logo = _bskin.banner_logo if _bskin and hasattr(_bskin, 'banner_logo') and _bskin.banner_logo else AVOI_AGENT_LOGO
         console.print(_logo)
         console.print()
     console.print(outer_panel)

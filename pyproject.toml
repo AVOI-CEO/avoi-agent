@@ -3,12 +3,12 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hermes-agent"
+name = "avoi-agent"
 version = "0.11.0"
 description = "The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
 readme = "README.md"
 requires-python = ">=3.11"
-authors = [{ name = "Nous Research" }]
+authors = [{ name = "AVOI AI" }]
 license = { text = "MIT" }
 dependencies = [
   # Core — pinned to known-good ranges to limit supply chain attack surface
@@ -69,12 +69,12 @@ termux = [
   # avoiding extras that currently depend on non-Android wheels (notably
   # faster-whisper -> ctranslate2 via the voice extra).
   "python-telegram-bot[webhooks]>=22.6,<23",
-  "hermes-agent[cron]",
-  "hermes-agent[cli]",
-  "hermes-agent[pty]",
-  "hermes-agent[mcp]",
-  "hermes-agent[honcho]",
-  "hermes-agent[acp]",
+  "avoi-agent[cron]",
+  "avoi-agent[cli]",
+  "avoi-agent[pty]",
+  "avoi-agent[mcp]",
+  "avoi-agent[honcho]",
+  "avoi-agent[acp]",
 ]
 dingtalk = ["dingtalk-stream>=0.20,<1", "alibabacloud-dingtalk>=2.0.0", "qrcode>=7.0,<8"]
 feishu = ["lark-oapi>=1.5.3,<2", "qrcode>=7.0,<8"]
@@ -87,10 +87,10 @@ google = [
   "google-auth-oauthlib>=1.0,<2",
   "google-auth-httplib2>=0.2,<1",
 ]
-# `hermes dashboard` (localhost SPA + API).  Not in core to keep the default install lean.
+# `avoi dashboard` (localhost SPA + API).  Not in core to keep the default install lean.
 web = ["fastapi>=0.104.0,<1", "uvicorn[standard]>=0.24.0,<1"]
 rl = [
-  "atroposlib @ git+https://github.com/NousResearch/atropos.git@c20c85256e5a45ad31edf8b7276e9c5ee1995a30",
+  "atroposlib @ git+https://github.com/avoi-ai/atropos.git@c20c85256e5a45ad31edf8b7276e9c5ee1995a30",
   "tinker @ git+https://github.com/thinking-machines-lab/tinker.git@30517b667f18a3dfb7ef33fb56cf686d5820ba2b",
   "fastapi>=0.104.0,<1",
   "uvicorn[standard]>=0.24.0,<1",
@@ -98,46 +98,46 @@ rl = [
 ]
 yc-bench = ["yc-bench @ git+https://github.com/collinear-ai/yc-bench.git@bfb0c88062450f46341bd9a5298903fc2e952a5c ; python_version >= '3.12'"]
 all = [
-  "hermes-agent[modal]",
-  "hermes-agent[daytona]",
-  "hermes-agent[messaging]",
+  "avoi-agent[modal]",
+  "avoi-agent[daytona]",
+  "avoi-agent[messaging]",
   # matrix: python-olm (required by matrix-nio[e2e]) is upstream-broken on
   # modern macOS (archived libolm, C++ errors with Clang 21+).  On Linux the
   # [matrix] extra's own marker pulls in the [e2e] variant automatically.
-  "hermes-agent[matrix]; sys_platform == 'linux'",
-  "hermes-agent[cron]",
-  "hermes-agent[cli]",
-  "hermes-agent[dev]",
-  "hermes-agent[tts-premium]",
-  "hermes-agent[slack]",
-  "hermes-agent[pty]",
-  "hermes-agent[honcho]",
-  "hermes-agent[mcp]",
-  "hermes-agent[homeassistant]",
-  "hermes-agent[sms]",
-  "hermes-agent[acp]",
-  "hermes-agent[voice]",
-  "hermes-agent[dingtalk]",
-  "hermes-agent[feishu]",
-  "hermes-agent[google]",
-  "hermes-agent[mistral]",
-  "hermes-agent[bedrock]",
-  "hermes-agent[web]",
+  "avoi-agent[matrix]; sys_platform == 'linux'",
+  "avoi-agent[cron]",
+  "avoi-agent[cli]",
+  "avoi-agent[dev]",
+  "avoi-agent[tts-premium]",
+  "avoi-agent[slack]",
+  "avoi-agent[pty]",
+  "avoi-agent[honcho]",
+  "avoi-agent[mcp]",
+  "avoi-agent[homeassistant]",
+  "avoi-agent[sms]",
+  "avoi-agent[acp]",
+  "avoi-agent[voice]",
+  "avoi-agent[dingtalk]",
+  "avoi-agent[feishu]",
+  "avoi-agent[google]",
+  "avoi-agent[mistral]",
+  "avoi-agent[bedrock]",
+  "avoi-agent[web]",
 ]
 
 [project.scripts]
-hermes = "hermes_cli.main:main"
-hermes-agent = "run_agent:main"
-hermes-acp = "acp_adapter.entry:main"
+avoi = "avoi_cli.main:main"
+avoi-agent = "run_agent:main"
+avoi-acp = "acp_adapter.entry:main"
 
 [tool.setuptools]
-py-modules = ["run_agent", "model_tools", "toolsets", "batch_runner", "trajectory_compressor", "toolset_distributions", "cli", "hermes_constants", "hermes_state", "hermes_time", "hermes_logging", "rl_cli", "utils"]
+py-modules = ["run_agent", "model_tools", "toolsets", "batch_runner", "trajectory_compressor", "toolset_distributions", "cli", "avoi_constants", "avoi_state", "avoi_time", "avoi_logging", "rl_cli", "utils"]
 
 [tool.setuptools.package-data]
-hermes_cli = ["web_dist/**/*"]
+avoi_cli = ["web_dist/**/*"]
 
 [tool.setuptools.packages.find]
-include = ["agent", "agent.*", "tools", "tools.*", "hermes_cli", "gateway", "gateway.*", "tui_gateway", "tui_gateway.*", "cron", "acp_adapter", "plugins", "plugins.*"]
+include = ["agent", "agent.*", "tools", "tools.*", "avoi_cli", "gateway", "gateway.*", "tui_gateway", "tui_gateway.*", "cron", "acp_adapter", "plugins", "plugins.*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

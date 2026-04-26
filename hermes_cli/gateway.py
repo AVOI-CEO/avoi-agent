@@ -1,7 +1,7 @@
 """
-Gateway subcommand for hermes CLI.
+Gateway subcommand for avoi CLI.
 
-Handles: hermes gateway [run|start|stop|restart|status|install|uninstall|setup]
+Handles: avoi gateway [run|start|stop|restart|status|install|uninstall|setup]
 """
 
 import asyncio
@@ -21,21 +21,21 @@ from gateway.restart import (
     GATEWAY_SERVICE_RESTART_EXIT_CODE,
     parse_restart_drain_timeout,
 )
-from hermes_cli.config import (
+from avoi_cli.config import (
     get_env_value,
-    get_hermes_home,
+    get_avoi_home,
     is_managed,
     managed_error,
     read_raw_config,
     save_env_value,
 )
-# display_hermes_home is imported lazily at call sites to avoid ImportError
-# when hermes_constants is cached from a pre-update version during `hermes update`.
-from hermes_cli.setup import (
+# display_avoi_home is imported lazily at call sites to avoid ImportError
+# when avoi_constants is cached from a pre-update version during `avoi update`.
+from avoi_cli.setup import (
     print_header, print_info, print_success, print_warning, print_error,
     prompt, prompt_choice, prompt_yes_no,
 )
-from hermes_cli.colors import Colors, color
+from avoi_cli.colors import Colors, color
 
 
 # =============================================================================
@@ -74,7 +74,7 @@ def _get_service_pids() -> set:
         for scope_args in [["systemctl", "--user"], ["systemctl"]]:
             try:
                 result = subprocess.run(
-                    scope_args + ["list-units", "hermes-gateway*",
+                    scope_args + ["list-units", "avoi-gateway*",
                                   "--plain", "--no-legend", "--no-pager"],
                     capture_output=True, text=True, timeout=5,
                 )
@@ -246,16 +246,16 @@ def _scan_gateway_pids(exclude_pids: set[int], all_profiles: bool = False) -> li
     """
     pids: list[int] = []
     patterns = [
-        "hermes_cli.main gateway",
-        "hermes_cli.main --profile",
-        "hermes_cli.main -p",
-        "hermes_cli/main.py gateway",
-        "hermes_cli/main.py --profile",
-        "hermes_cli/main.py -p",
-        "hermes gateway",
+        "avoi_cli.main gateway",
+        "avoi_cli.main --profile",
+        "avoi_cli.main -p",
+        "avoi_cli/main.py gateway",
+        "avoi_cli/main.py --profile",
+        "avoi_cli/main.py -p",
+        "avoi gateway",
         "gateway/run.py",
     ]
-    current_home = str(get_hermes_home().resolve())
+    current_home = str(get_avoi_home().resolve())
     current_profile_arg = _profile_arg(current_home)
     current_profile_name = current_profile_arg.split()[-1] if current_profile_arg else ""
 
@@ -264,12 +264,12 @@ def _scan_gateway_pids(exclude_pids: set[int], all_profiles: bool = False) -> li
             return (
                 f"--profile {current_profile_name}" in command
                 or f"-p {current_profile_name}" in command
-                or f"HERMES_HOME={current_home}" in command
+                or f"AVOI_HOME={current_home}" in command
             )
 
         if "--profile " in command or " -p " in command:
             return False
-        if "HERMES_HOME=" in command and f"HERMES_HOME={current_home}" not in command:
+        if "AVOI_HOME=" in command and f"AVOI_HOME={current_home}" not in command:
             return False
         return True
 
@@ -348,7 +348,7 @@ def find_gateway_pids(exclude_pids: set | None = None, all_profiles: bool = Fals
         exclude_pids: PIDs to exclude from the result (e.g. service-managed
             PIDs that should not be killed during a stale-process sweep).
         all_profiles: When ``True``, return gateway PIDs across **all**
-            profiles (the pre-7923 global behaviour).  ``hermes update``
+            profiles (the pre-7923 global behaviour).  ``avoi update``
             needs this because a code update affects every profile.
             When ``False`` (default), only PIDs belonging to the current
             Hermes profile are returned.
@@ -468,7 +468,7 @@ def _wait_for_systemd_service_restart(
 
     print(
         f"⚠ {scope_label} service did not become active within {int(timeout)}s.\n"
-        f"  Check status: {'sudo ' if system else ''}hermes gateway status\n"
+        f"  Check status: {'sudo ' if system else ''}avoi gateway status\n"
         f"  Check logs:   journalctl {'--user ' if not system else ''}-u {svc} -l --since '2 min ago'"
     )
     return False
@@ -552,7 +552,7 @@ def get_gateway_runtime_snapshot(system: bool = False) -> GatewayRuntimeSnapshot
             gateway_pids=gateway_pids,
         )
 
-    from hermes_constants import is_container
+    from avoi_constants import is_container
 
     if is_linux() and is_container():
         return GatewayRuntimeSnapshot(
@@ -599,7 +599,7 @@ def _print_gateway_process_mismatch(snapshot: GatewayRuntimeSnapshot) -> None:
     print()
     print("⚠ Gateway process is running for this profile, but the service is not active")
     print(f"  PID(s): {_format_gateway_pids(snapshot.gateway_pids, limit=None)}")
-    print("  This is usually a manual foreground/tmux/nohup run, so `hermes gateway`")
+    print("  This is usually a manual foreground/tmux/nohup run, so `avoi gateway`")
     print("  can refuse to start another copy until this process stops.")
 
 
@@ -633,7 +633,7 @@ def kill_gateway_processes(force: bool = False, exclude_pids: set | None = None,
 
 
 def stop_profile_gateway() -> bool:
-    """Stop only the gateway for the current profile (HERMES_HOME-scoped).
+    """Stop only the gateway for the current profile (AVOI_HOME-scoped).
 
     Uses the PID file written by start_gateway(), so it only kills the
     gateway belonging to this profile — not gateways from other profiles.
@@ -674,7 +674,7 @@ def is_linux() -> bool:
     return sys.platform.startswith('linux')
 
 
-from hermes_constants import is_container, is_termux, is_wsl
+from avoi_constants import is_container, is_termux, is_wsl
 
 
 def _wsl_systemd_operational() -> bool:
@@ -735,22 +735,22 @@ def is_windows() -> bool:
 # Service Configuration
 # =============================================================================
 
-_SERVICE_BASE = "hermes-gateway"
-SERVICE_DESCRIPTION = "Hermes Agent Gateway - Messaging Platform Integration"
+_SERVICE_BASE = "avoi-gateway"
+SERVICE_DESCRIPTION = "AVOI Agent Gateway - Messaging Platform Integration"
 
 
 def _profile_suffix() -> str:
-    """Derive a service-name suffix from the current HERMES_HOME.
+    """Derive a service-name suffix from the current AVOI_HOME.
 
     Returns ``""`` for the default root, the profile name for
     ``<root>/profiles/<name>``, or a short hash for any other path.
-    Works correctly in Docker (HERMES_HOME=/opt/data) and standard deployments.
+    Works correctly in Docker (AVOI_HOME=/opt/data) and standard deployments.
     """
     import hashlib
     import re
-    from hermes_constants import get_default_hermes_root
-    home = get_hermes_home().resolve()
-    default = get_default_hermes_root().resolve()
+    from avoi_constants import get_default_avoi_root
+    home = get_avoi_home().resolve()
+    default = get_default_avoi_root().resolve()
     if home == default:
         return ""
     # Detect <root>/profiles/<name> pattern → use the profile name
@@ -762,25 +762,25 @@ def _profile_suffix() -> str:
             return parts[0]
     except ValueError:
         pass
-    # Fallback: short hash for arbitrary HERMES_HOME paths
+    # Fallback: short hash for arbitrary AVOI_HOME paths
     return hashlib.sha256(str(home).encode()).hexdigest()[:8]
 
 
-def _profile_arg(hermes_home: str | None = None) -> str:
-    """Return ``--profile <name>`` only when HERMES_HOME is a named profile.
+def _profile_arg(avoi_home: str | None = None) -> str:
+    """Return ``--profile <name>`` only when AVOI_HOME is a named profile.
 
-    For ``~/.hermes/profiles/<name>``, returns ``"--profile <name>"``.
+    For ``~/.avoi/profiles/<name>``, returns ``"--profile <name>"``.
     For the default profile or hash-based custom paths, returns the empty string.
 
     Args:
-        hermes_home: Optional explicit HERMES_HOME path. Defaults to the current
-            ``get_hermes_home()`` value. Should be passed when generating a
+        avoi_home: Optional explicit AVOI_HOME path. Defaults to the current
+            ``get_avoi_home()`` value. Should be passed when generating a
             service definition for a different user (e.g. system service).
     """
     import re
-    from hermes_constants import get_default_hermes_root
-    home = Path(hermes_home or str(get_hermes_home())).resolve()
-    default = get_default_hermes_root().resolve()
+    from avoi_constants import get_default_avoi_root
+    home = Path(avoi_home or str(get_avoi_home())).resolve()
+    default = get_default_avoi_root().resolve()
     if home == default:
         return ""
     profiles_root = (default / "profiles").resolve()
@@ -795,11 +795,11 @@ def _profile_arg(hermes_home: str | None = None) -> str:
 
 
 def get_service_name() -> str:
-    """Derive a systemd service name scoped to this HERMES_HOME.
+    """Derive a systemd service name scoped to this AVOI_HOME.
 
-    Default ``~/.hermes`` returns ``hermes-gateway`` (backward compatible).
-    Profile ``~/.hermes/profiles/coder`` returns ``hermes-gateway-coder``.
-    Any other HERMES_HOME appends a short hash for uniqueness.
+    Default ``~/.avoi`` returns ``avoi-gateway`` (backward compatible).
+    Profile ``~/.avoi/profiles/coder`` returns ``avoi-gateway-coder``.
+    Any other AVOI_HOME appends a short hash for uniqueness.
     """
     suffix = _profile_suffix()
     if not suffix:
@@ -967,7 +967,7 @@ def _raise_user_systemd_unavailable(username: str, *, reason: str, fix_hint: str
         "\n"
         "  Alternative: run the gateway in the foreground (stays up until\n"
         "  you exit / close the terminal):\n"
-        "    hermes gateway run"
+        "    avoi gateway run"
     )
     raise UserSystemdUnavailableError(msg)
 
@@ -1019,19 +1019,19 @@ def has_conflicting_systemd_units() -> bool:
 
 
 # Legacy service names from older Hermes installs that predate the
-# hermes-gateway rename. Kept as an explicit allowlist (NOT a glob) so
-# profile units (hermes-gateway-*.service) and unrelated third-party
-# "hermes" units are never matched.
-_LEGACY_SERVICE_NAMES: tuple[str, ...] = ("hermes.service",)
+# avoi-gateway rename. Kept as an explicit allowlist (NOT a glob) so
+# profile units (avoi-gateway-*.service) and unrelated third-party
+# "avoi" units are never matched.
+_LEGACY_SERVICE_NAMES: tuple[str, ...] = ("avoi.service",)
 
 # ExecStart content markers that identify a unit as running our gateway.
 # A legacy unit is only flagged when its file contains one of these.
 _LEGACY_UNIT_EXECSTART_MARKERS: tuple[str, ...] = (
-    "hermes_cli.main gateway",
-    "hermes_cli/main.py gateway",
+    "avoi_cli.main gateway",
+    "avoi_cli/main.py gateway",
     "gateway/run.py",
-    " hermes gateway ",
-    "/hermes gateway ",
+    " avoi gateway ",
+    "/avoi gateway ",
 )
 
 
@@ -1047,23 +1047,23 @@ def _legacy_unit_search_paths() -> list[tuple[bool, Path]]:
     ]
 
 
-def _find_legacy_hermes_units() -> list[tuple[str, Path, bool]]:
+def _find_legacy_avoi_units() -> list[tuple[str, Path, bool]]:
     """Return ``[(unit_name, unit_path, is_system)]`` for legacy Hermes gateway units.
 
     Detects unit files installed by older Hermes versions that used a
-    different service name (e.g. ``hermes.service`` before the rename to
-    ``hermes-gateway.service``). When both a legacy unit and the current
-    ``hermes-gateway.service`` are active, they fight over the same bot
+    different service name (e.g. ``avoi.service`` before the rename to
+    ``avoi-gateway.service``). When both a legacy unit and the current
+    ``avoi-gateway.service`` are active, they fight over the same bot
     token — the PR #5646 signal-recovery change turns this into a 30-second
     SIGTERM flap loop.
 
     Safety guards:
 
     * Explicit allowlist of legacy names (no globbing). Profile units such
-      as ``hermes-gateway-coder.service`` and unrelated third-party
-      ``hermes-*`` services are never matched.
+      as ``avoi-gateway-coder.service`` and unrelated third-party
+      ``avoi-*`` services are never matched.
     * ExecStart content check — only flag units that invoke our gateway
-      entrypoint. A user-created ``hermes.service`` running an unrelated
+      entrypoint. A user-created ``avoi.service`` running an unrelated
       binary is left untouched.
     * Results are returned purely for caller inspection; this function
       never mutates or removes anything.
@@ -1085,9 +1085,9 @@ def _find_legacy_hermes_units() -> list[tuple[str, Path, bool]]:
     return results
 
 
-def has_legacy_hermes_units() -> bool:
+def has_legacy_avoi_units() -> bool:
     """Return True when any legacy Hermes gateway unit files exist."""
-    return bool(_find_legacy_hermes_units())
+    return bool(_find_legacy_avoi_units())
 
 
 def print_legacy_unit_warning() -> None:
@@ -1096,26 +1096,26 @@ def print_legacy_unit_warning() -> None:
     Idempotent: prints nothing when no legacy units are detected. Safe to
     call from any status/install/setup path.
     """
-    legacy = _find_legacy_hermes_units()
+    legacy = _find_legacy_avoi_units()
     if not legacy:
         return
     print_warning("Legacy Hermes gateway unit(s) detected from an older install:")
     for name, path, is_system in legacy:
         scope = "system" if is_system else "user"
         print_info(f"    {path}  ({scope} scope)")
-    print_info("  These run alongside the current hermes-gateway service and")
+    print_info("  These run alongside the current avoi-gateway service and")
     print_info("  cause SIGTERM flap loops — both try to use the same bot token.")
     print_info("  Remove them with:")
-    print_info("    hermes gateway migrate-legacy")
+    print_info("    avoi gateway migrate-legacy")
 
 
-def remove_legacy_hermes_units(
+def remove_legacy_avoi_units(
     interactive: bool = True,
     dry_run: bool = False,
 ) -> tuple[int, list[Path]]:
     """Stop, disable, and remove legacy Hermes gateway unit files.
 
-    Iterates over whatever ``_find_legacy_hermes_units()`` returns — which is
+    Iterates over whatever ``_find_legacy_avoi_units()`` returns — which is
     an explicit allowlist of legacy names (not a glob). Profile units and
     unrelated third-party services are never touched.
 
@@ -1129,7 +1129,7 @@ def remove_legacy_hermes_units(
         ``(removed_count, remaining_paths)`` — remaining includes units we
         couldn't remove (typically system-scope when not running as root).
     """
-    legacy = _find_legacy_hermes_units()
+    legacy = _find_legacy_avoi_units()
     if not legacy:
         print("No legacy Hermes gateway units found.")
         return 0, []
@@ -1149,7 +1149,7 @@ def remove_legacy_hermes_units(
         return 0, [p for _, p, _ in legacy]
 
     if interactive and not prompt_yes_no("Remove these legacy units?", True):
-        print("Skipped. Run again with: hermes gateway migrate-legacy")
+        print("Skipped. Run again with: avoi gateway migrate-legacy")
         return 0, [p for _, p, _ in legacy]
 
     removed = 0
@@ -1178,7 +1178,7 @@ def remove_legacy_hermes_units(
         if os.geteuid() != 0:
             print()
             print_warning("System-scope legacy units require root to remove.")
-            print_info("  Re-run with: sudo hermes gateway migrate-legacy")
+            print_info("  Re-run with: sudo avoi gateway migrate-legacy")
             for _, path in system_units:
                 remaining.append(path)
         else:
@@ -1217,8 +1217,8 @@ def print_systemd_scope_conflict_warning() -> None:
     print_info("  This is confusing and can make start/stop/status behavior ambiguous.")
     print_info("  Default gateway commands target the user service unless you pass --system.")
     print_info("  Keep one of these:")
-    print_info("    hermes gateway uninstall")
-    print_info("    sudo hermes gateway uninstall --system")
+    print_info("    avoi gateway uninstall")
+    print_info("    sudo avoi gateway uninstall --system")
 
 
 def _require_root_for_system_service(action: str) -> None:
@@ -1291,10 +1291,10 @@ def install_linux_gateway_from_setup(force: bool = False) -> tuple[str | None, b
         if os.geteuid() != 0:
             print_warning("  System service install requires sudo, so Hermes can't create it from this user session.")
             if run_as_user:
-                print_info(f"  After setup, run: sudo hermes gateway install --system --run-as-user {run_as_user}")
+                print_info(f"  After setup, run: sudo avoi gateway install --system --run-as-user {run_as_user}")
             else:
-                print_info("  After setup, run: sudo hermes gateway install --system --run-as-user <your-user>")
-            print_info("  Then start it with: sudo hermes gateway start --system")
+                print_info("  After setup, run: sudo avoi gateway install --system --run-as-user <your-user>")
+            print_info("  Then start it with: sudo avoi gateway start --system")
             return scope, False
 
         if not run_as_user:
@@ -1388,11 +1388,11 @@ def _launchd_user_home() -> Path:
 def get_launchd_plist_path() -> Path:
     """Return the launchd plist path, scoped per profile.
 
-    Default ``~/.hermes`` → ``ai.hermes.gateway.plist`` (backward compatible).
-    Profile ``~/.hermes/profiles/coder`` → ``ai.hermes.gateway-coder.plist``.
+    Default ``~/.avoi`` → ``ai.avoi.gateway.plist`` (backward compatible).
+    Profile ``~/.avoi/profiles/coder`` → ``ai.avoi.gateway-coder.plist``.
     """
     suffix = _profile_suffix()
-    name = f"ai.hermes.gateway-{suffix}" if suffix else "ai.hermes.gateway"
+    name = f"ai.avoi.gateway-{suffix}" if suffix else "ai.avoi.gateway"
     return _launchd_user_home() / "Library" / "LaunchAgents" / f"{name}.plist"
 
 def _detect_venv_dir() -> Path | None:
@@ -1461,8 +1461,8 @@ def _remap_path_for_user(path: str, target_home_dir: str) -> str:
     If *path* lives under ``Path.home()`` the corresponding prefix is swapped
     to *target_home_dir*; otherwise the path is returned unchanged.
 
-      /root/.hermes/hermes-agent  -> /home/alice/.hermes/hermes-agent
-      /opt/hermes                 -> /opt/hermes  (kept as-is)
+      /root/.avoi/avoi-agent  -> /home/alice/.avoi/avoi-agent
+      /opt/avoi                 -> /opt/avoi  (kept as-is)
 
     Note: this function intentionally does NOT resolve symlinks. A venv's
     ``bin/python`` is typically a symlink to the base interpreter (e.g. a
@@ -1481,30 +1481,30 @@ def _remap_path_for_user(path: str, target_home_dir: str) -> str:
         return str(p)
 
 
-def _hermes_home_for_target_user(target_home_dir: str) -> str:
-    """Remap the current HERMES_HOME to the equivalent under a target user's home.
+def _avoi_home_for_target_user(target_home_dir: str) -> str:
+    """Remap the current AVOI_HOME to the equivalent under a target user's home.
 
-    When installing a system service via sudo, get_hermes_home() resolves to
+    When installing a system service via sudo, get_avoi_home() resolves to
     root's home.  This translates it to the target user's equivalent path:
-      /root/.hermes                    → /home/alice/.hermes
-      /root/.hermes/profiles/coder     → /home/alice/.hermes/profiles/coder
-      /opt/custom-hermes               → /opt/custom-hermes  (kept as-is)
+      /root/.avoi                    → /home/alice/.avoi
+      /root/.avoi/profiles/coder     → /home/alice/.avoi/profiles/coder
+      /opt/custom-avoi               → /opt/custom-avoi  (kept as-is)
     """
-    current_hermes = get_hermes_home().resolve()
-    current_default = (Path.home() / ".hermes").resolve()
-    target_default = Path(target_home_dir) / ".hermes"
+    current_avoi = get_avoi_home().resolve()
+    current_default = (Path.home() / ".avoi").resolve()
+    target_default = Path(target_home_dir) / ".avoi"
 
-    # Default ~/.hermes → remap to target user's default
-    if current_hermes == current_default:
+    # Default ~/.avoi → remap to target user's default
+    if current_avoi == current_default:
         return str(target_default)
 
-    # Profile or subdir of ~/.hermes → preserve the relative structure
+    # Profile or subdir of ~/.avoi → preserve the relative structure
     try:
-        relative = current_hermes.relative_to(current_default)
+        relative = current_avoi.relative_to(current_default)
         return str(target_default / relative)
     except ValueError:
-        # Completely custom path (not under ~/.hermes) — keep as-is
-        return str(current_hermes)
+        # Completely custom path (not under ~/.avoi) — keep as-is
+        return str(current_avoi)
 
 
 def generate_systemd_unit(system: bool = False, run_as_user: str | None = None) -> str:
@@ -1534,8 +1534,8 @@ def generate_systemd_unit(system: bool = False, run_as_user: str | None = None) 
 
     if system:
         username, group_name, home_dir = _system_service_identity(run_as_user)
-        hermes_home = _hermes_home_for_target_user(home_dir)
-        profile_arg = _profile_arg(hermes_home)
+        avoi_home = _avoi_home_for_target_user(home_dir)
+        profile_arg = _profile_arg(avoi_home)
         # Remap all paths that may resolve under the calling user's home
         # (e.g. /root/) to the target user's home so the service can
         # actually access them.
@@ -1559,14 +1559,14 @@ StartLimitBurst=5
 Type=simple
 User={username}
 Group={group_name}
-ExecStart={python_path} -m hermes_cli.main{f" {profile_arg}" if profile_arg else ""} gateway run --replace
+ExecStart={python_path} -m avoi_cli.main{f" {profile_arg}" if profile_arg else ""} gateway run --replace
 WorkingDirectory={working_dir}
 Environment="HOME={home_dir}"
 Environment="USER={username}"
 Environment="LOGNAME={username}"
 Environment="PATH={sane_path}"
 Environment="VIRTUAL_ENV={venv_dir}"
-Environment="HERMES_HOME={hermes_home}"
+Environment="AVOI_HOME={avoi_home}"
 Restart=on-failure
 RestartSec=30
 RestartForceExitStatus={GATEWAY_SERVICE_RESTART_EXIT_CODE}
@@ -1581,8 +1581,8 @@ StandardError=journal
 WantedBy=multi-user.target
 """
 
-    hermes_home = str(get_hermes_home().resolve())
-    profile_arg = _profile_arg(hermes_home)
+    avoi_home = str(get_avoi_home().resolve())
+    profile_arg = _profile_arg(avoi_home)
     path_entries.extend(_build_user_local_paths(Path.home(), path_entries))
     path_entries.extend(common_bin_paths)
     sane_path = ":".join(path_entries)
@@ -1594,11 +1594,11 @@ StartLimitBurst=5
 
 [Service]
 Type=simple
-ExecStart={python_path} -m hermes_cli.main{f" {profile_arg}" if profile_arg else ""} gateway run --replace
+ExecStart={python_path} -m avoi_cli.main{f" {profile_arg}" if profile_arg else ""} gateway run --replace
 WorkingDirectory={working_dir}
 Environment="PATH={sane_path}"
 Environment="VIRTUAL_ENV={venv_dir}"
-Environment="HERMES_HOME={hermes_home}"
+Environment="AVOI_HOME={avoi_home}"
 Restart=on-failure
 RestartSec=30
 RestartForceExitStatus={GATEWAY_SERVICE_RESTART_EXIT_CODE}
@@ -1630,7 +1630,7 @@ def _normalize_launchd_plist_for_comparison(text: str) -> str:
     normalized = _normalize_service_definition(text)
     return re.sub(
         r'(<key>PATH</key>\s*<string>)(.*?)(</string>)',
-        r'\1__HERMES_PATH__\3',
+        r'\1__AVOI_PATH__\3',
         normalized,
         flags=re.S,
     )
@@ -1728,7 +1728,7 @@ def _select_systemd_scope(system: bool = False) -> bool:
 
 def _get_restart_drain_timeout() -> float:
     """Return the configured gateway restart drain timeout in seconds."""
-    raw = os.getenv("HERMES_RESTART_DRAIN_TIMEOUT", "").strip()
+    raw = os.getenv("AVOI_RESTART_DRAIN_TIMEOUT", "").strip()
     if not raw:
         cfg = read_raw_config()
         agent_cfg = cfg.get("agent", {}) if isinstance(cfg, dict) else {}
@@ -1744,17 +1744,17 @@ def systemd_install(force: bool = False, system: bool = False, run_as_user: str 
     if system:
         _require_root_for_system_service("install")
 
-    # Offer to remove legacy units (hermes.service from pre-rename installs)
-    # before installing the new hermes-gateway.service. If both remain, they
+    # Offer to remove legacy units (avoi.service from pre-rename installs)
+    # before installing the new avoi-gateway.service. If both remain, they
     # flap-fight for the Telegram bot token on every gateway startup.
     # Only removes units matching _LEGACY_SERVICE_NAMES + our ExecStart
     # signature — profile units are never touched.
-    if has_legacy_hermes_units():
+    if has_legacy_avoi_units():
         print()
         print_legacy_unit_warning()
         print()
         if prompt_yes_no("Remove the legacy unit(s) before installing?", True):
-            remove_legacy_hermes_units(interactive=False)
+            remove_legacy_avoi_units(interactive=False)
             print()
 
     unit_path = get_systemd_unit_path(system=system)
@@ -1782,8 +1782,8 @@ def systemd_install(force: bool = False, system: bool = False, run_as_user: str 
     print(f"✓ {_service_scope_label(system).capitalize()} service installed and enabled!")
     print()
     print("Next steps:")
-    print(f"  {'sudo ' if system else ''}hermes gateway start{scope_flag}              # Start the service")
-    print(f"  {'sudo ' if system else ''}hermes gateway status{scope_flag}             # Check status")
+    print(f"  {'sudo ' if system else ''}avoi gateway start{scope_flag}              # Start the service")
+    print(f"  {'sudo ' if system else ''}avoi gateway status{scope_flag}             # Check status")
     print(f"  {'journalctl' if system else 'journalctl --user'} -u {get_service_name()} -f  # View logs")
     print()
 
@@ -1870,7 +1870,7 @@ def systemd_restart(system: bool = False):
         # systemd can sit in the RestartSec window or even wedge itself into a
         # failed/rate-limited state if the operator asks for another restart in
         # the middle of that handoff. Clear any stale failed state and kick the
-        # unit immediately so `hermes gateway restart` behaves idempotently.
+        # unit immediately so `avoi gateway restart` behaves idempotently.
         _run_systemctl(
             ["reset-failed", svc],
             system=system,
@@ -1907,20 +1907,20 @@ def systemd_status(deep: bool = False, system: bool = False, full: bool = False)
 
     if not unit_path.exists():
         print("✗ Gateway service is not installed")
-        print(f"  Run: {'sudo ' if system else ''}hermes gateway install{scope_flag}")
+        print(f"  Run: {'sudo ' if system else ''}avoi gateway install{scope_flag}")
         return
 
     if has_conflicting_systemd_units():
         print_systemd_scope_conflict_warning()
         print()
 
-    if has_legacy_hermes_units():
+    if has_legacy_avoi_units():
         print_legacy_unit_warning()
         print()
 
     if not systemd_unit_is_current(system=system):
         print("⚠ Installed gateway service definition is outdated")
-        print(f"  Run: {'sudo ' if system else ''}hermes gateway restart{scope_flag}  # auto-refreshes the unit")
+        print(f"  Run: {'sudo ' if system else ''}avoi gateway restart{scope_flag}  # auto-refreshes the unit")
         print()
 
     status_cmd = ["status", get_service_name(), "--no-pager"]
@@ -1948,7 +1948,7 @@ def systemd_status(deep: bool = False, system: bool = False, full: bool = False)
         print(f"✓ {_service_scope_label(system).capitalize()} gateway service is running")
     else:
         print(f"✗ {_service_scope_label(system).capitalize()} gateway service is stopped")
-        print(f"  Run: {'sudo ' if system else ''}hermes gateway start{scope_flag}")
+        print(f"  Run: {'sudo ' if system else ''}avoi gateway start{scope_flag}")
 
     configured_user = _read_systemd_user_from_unit(unit_path) if system else None
     if configured_user:
@@ -1970,7 +1970,7 @@ def systemd_status(deep: bool = False, system: bool = False, full: bool = False)
         print("  ⏳ Restart pending: systemd is waiting to relaunch the gateway")
     elif active_state == "failed" and exec_main_status == str(GATEWAY_SERVICE_RESTART_EXIT_CODE):
         print("  ⚠ Planned restart is stuck in systemd failed state (exit 75)")
-        print(f"  Run: systemctl {'--user ' if not system else ''}reset-failed {get_service_name()} && {'sudo ' if system else ''}hermes gateway start{scope_flag}")
+        print(f"  Run: systemctl {'--user ' if not system else ''}reset-failed {get_service_name()} && {'sudo ' if system else ''}avoi gateway start{scope_flag}")
     elif active_state == "failed" and result_code:
         print(f"  ⚠ Systemd unit result: {result_code}")
 
@@ -2002,7 +2002,7 @@ def systemd_status(deep: bool = False, system: bool = False, full: bool = False)
 def get_launchd_label() -> str:
     """Return the launchd service label, scoped per profile."""
     suffix = _profile_suffix()
-    return f"ai.hermes.gateway-{suffix}" if suffix else "ai.hermes.gateway"
+    return f"ai.avoi.gateway-{suffix}" if suffix else "ai.avoi.gateway"
 
 
 def _launchd_domain() -> str:
@@ -2012,11 +2012,11 @@ def _launchd_domain() -> str:
 def generate_launchd_plist() -> str:
     python_path = get_python_path()
     working_dir = str(PROJECT_ROOT)
-    hermes_home = str(get_hermes_home().resolve())
-    log_dir = get_hermes_home() / "logs"
+    avoi_home = str(get_avoi_home().resolve())
+    log_dir = get_avoi_home() / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     label = get_launchd_label()
-    profile_arg = _profile_arg(hermes_home)
+    profile_arg = _profile_arg(avoi_home)
     # Build a sane PATH for the launchd plist.  launchd provides only a
     # minimal default (/usr/bin:/bin:/usr/sbin:/sbin) which misses Homebrew,
     # nvm, cargo, etc.  We prepend venv/bin and node_modules/.bin (matching
@@ -2042,7 +2042,7 @@ def generate_launchd_plist() -> str:
     prog_args = [
         f"<string>{python_path}</string>",
         "<string>-m</string>",
-        "<string>hermes_cli.main</string>",
+        "<string>avoi_cli.main</string>",
     ]
     if profile_arg:
         for part in profile_arg.split():
@@ -2075,8 +2075,8 @@ def generate_launchd_plist() -> str:
         <string>{sane_path}</string>
         <key>VIRTUAL_ENV</key>
         <string>{venv_dir}</string>
-        <key>HERMES_HOME</key>
-        <string>{hermes_home}</string>
+        <key>AVOI_HOME</key>
+        <string>{avoi_home}</string>
     </dict>
     
     <key>RunAtLoad</key>
@@ -2151,8 +2151,8 @@ def launchd_install(force: bool = False):
     print("✓ Service installed and loaded!")
     print()
     print("Next steps:")
-    print("  hermes gateway status             # Check status")
-    from hermes_constants import display_hermes_home as _dhh
+    print("  avoi gateway status             # Check status")
+    from avoi_constants import display_avoi_home as _dhh
     print(f"  tail -f {_dhh()}/logs/gateway.log  # View logs")
 
 def launchd_uninstall():
@@ -2197,7 +2197,7 @@ def launchd_stop():
     # bootout unloads the service definition so KeepAlive doesn't respawn
     # the process.  A plain `kill SIGTERM` only signals the process — launchd
     # immediately restarts it because KeepAlive.SuccessfulExit = false.
-    # `hermes gateway start` re-bootstraps when it detects the job is unloaded.
+    # `avoi gateway start` re-bootstraps when it detects the job is unloaded.
     try:
         subprocess.run(["launchctl", "bootout", target], check=True, timeout=90)
     except subprocess.CalledProcessError as e:
@@ -2213,7 +2213,7 @@ def _wait_for_gateway_exit(timeout: float = 10.0, force_after: float | None = 5.
 
     Uses the PID from the gateway.pid file — not launchd labels — so this
     works correctly when multiple gateway instances run under separate
-    HERMES_HOME directories.
+    AVOI_HOME directories.
 
     Args:
         timeout: Total seconds to wait before giving up.
@@ -2303,7 +2303,7 @@ def launchd_status(deep: bool = False):
         print("✓ Service definition matches the current Hermes install")
     else:
         print("⚠ Service definition is stale relative to the current Hermes install")
-        print("  Run: hermes gateway start")
+        print("  Run: avoi gateway start")
 
     if loaded:
         print("✓ Gateway service is loaded")
@@ -2311,10 +2311,10 @@ def launchd_status(deep: bool = False):
     else:
         print("✗ Gateway service is not loaded")
         print("  Service definition exists locally but launchd has not loaded it.")
-        print("  Run: hermes gateway start")
+        print("  Run: avoi gateway start")
     
     if deep:
-        log_file = get_hermes_home() / "logs" / "gateway.log"
+        log_file = get_avoi_home() / "logs" / "gateway.log"
         if log_file.exists():
             print()
             print("Recent logs:")
@@ -2463,7 +2463,7 @@ _PLATFORMS = [
             {"name": "MATRIX_ACCESS_TOKEN", "prompt": "Access token (leave empty to use password login instead)", "password": True,
              "help": "Paste your access token, or leave empty and provide user ID + password below."},
             {"name": "MATRIX_USER_ID", "prompt": "User ID (@bot:server — required for password login)", "password": False,
-             "help": "Full Matrix user ID, e.g. @hermes:matrix.example.org"},
+             "help": "Full Matrix user ID, e.g. @avoi:matrix.example.org"},
             {"name": "MATRIX_ALLOWED_USERS", "prompt": "Allowed user IDs (comma-separated, e.g. @you:server)", "password": False,
              "is_allowlist": True,
              "help": "Matrix user IDs who can interact with the bot."},
@@ -2479,7 +2479,7 @@ _PLATFORMS = [
         "setup_instructions": [
             "1. In Mattermost: Integrations → Bot Accounts → Add Bot Account",
             "   (System Console → Integrations → Bot Accounts must be enabled)",
-            "2. Give it a username (e.g. hermes) and copy the bot token",
+            "2. Give it a username (e.g. avoi) and copy the bot token",
             "3. Works with any self-hosted Mattermost instance — enter your server URL",
             "4. To find your user ID: click your avatar (top-left) → Profile",
             "   Your user ID is displayed there — click it to copy.",
@@ -2518,7 +2518,7 @@ _PLATFORMS = [
         "emoji": "📧",
         "token_var": "EMAIL_ADDRESS",
         "setup_instructions": [
-            "1. Use a dedicated email account for your Hermes agent",
+            "1. Use a dedicated email account for your AVOI agent",
             "2. For Gmail: enable 2FA, then create an App Password at",
             "   https://myaccount.google.com/apppasswords",
             "3. For other providers: use your email password or app-specific password",
@@ -2526,7 +2526,7 @@ _PLATFORMS = [
         ],
         "vars": [
             {"name": "EMAIL_ADDRESS", "prompt": "Email address", "password": False,
-             "help": "The email address Hermes will use (e.g., hermes@gmail.com)."},
+             "help": "The email address Hermes will use (e.g., avoi@gmail.com)."},
             {"name": "EMAIL_PASSWORD", "prompt": "Email password (or app password)", "password": True,
              "help": "For Gmail, use an App Password (not your regular password)."},
             {"name": "EMAIL_IMAP_HOST", "prompt": "IMAP host", "password": False,
@@ -2686,7 +2686,7 @@ _PLATFORMS = [
             "4. The server URL is typically http://<your-mac-ip>:1234",
             "5. Hermes connects via the BlueBubbles REST API and receives",
             "   incoming messages via a local webhook",
-            "6. To authorize users, use DM pairing: hermes pairing generate bluebubbles",
+            "6. To authorize users, use DM pairing: avoi pairing generate bluebubbles",
             "   Share the code — the user sends it via iMessage to get approved",
         ],
         "vars": [
@@ -2737,7 +2737,7 @@ def _platform_status(platform: dict) -> str:
     val = get_env_value(token_var)
     if token_var == "WHATSAPP_ENABLED":
         if val and val.lower() == "true":
-            session_file = get_hermes_home() / "whatsapp" / "session" / "creds.json"
+            session_file = get_avoi_home() / "whatsapp" / "session" / "creds.json"
             if session_file.exists():
                 return "configured + paired"
             return "enabled, not paired"
@@ -2875,7 +2875,7 @@ def _setup_standard_platform(platform: dict):
                 print()
                 access_choices = [
                     "Enable open access (anyone can message the bot)",
-                    "Use DM pairing (unknown users request access, you approve with 'hermes pairing approve')",
+                    "Use DM pairing (unknown users request access, you approve with 'avoi pairing approve')",
                     "Skip for now (bot will deny all users until configured)",
                 ]
                 access_idx = prompt_choice("  How should unauthorized users be handled?", access_choices, 1)
@@ -2884,9 +2884,9 @@ def _setup_standard_platform(platform: dict):
                     print_warning("  Open access enabled — anyone can use your bot!")
                 elif access_idx == 1:
                     print_success("  DM pairing mode — users will receive a code to request access.")
-                    print_info("  Approve with: hermes pairing approve <platform> <code>")
+                    print_info("  Approve with: avoi pairing approve <platform> <code>")
                 else:
-                    print_info("  Skipped — configure later with 'hermes gateway setup'")
+                    print_info("  Skipped — configure later with 'avoi gateway setup'")
             continue
 
         value = prompt(f"  {var['prompt']}", password=var.get("password", False))
@@ -2915,7 +2915,7 @@ def _setup_standard_platform(platform: dict):
 
 def _setup_whatsapp():
     """Delegate to the existing WhatsApp setup flow."""
-    from hermes_cli.main import cmd_whatsapp
+    from avoi_cli.main import cmd_whatsapp
     import argparse
     cmd_whatsapp(argparse.Namespace())
 
@@ -2934,7 +2934,7 @@ def _setup_sms():
 
 def _setup_dingtalk():
     """Configure DingTalk — QR scan (recommended) or manual credential entry."""
-    from hermes_cli.setup import (
+    from avoi_cli.setup import (
         prompt_choice, prompt_yes_no, print_info, print_success, print_warning,
     )
 
@@ -2965,7 +2965,7 @@ def _setup_dingtalk():
     if method == 0:
         # ── QR-code device-flow authorization ──
         try:
-            from hermes_cli.dingtalk_auth import dingtalk_qr_auth
+            from avoi_cli.dingtalk_auth import dingtalk_qr_auth
         except ImportError as exc:
             print_warning(f"  QR auth module failed to load ({exc}), falling back to manual input.")
             _setup_standard_platform(dingtalk_platform)
@@ -3077,7 +3077,7 @@ def _setup_wecom():
         print()
         access_choices = [
             "Enable open access (anyone can message the bot)",
-            "Use DM pairing (unknown users request access, you approve with 'hermes pairing approve')",
+            "Use DM pairing (unknown users request access, you approve with 'avoi pairing approve')",
             "Disable direct messages",
             "Skip for now (bot will deny all users until configured)",
         ]
@@ -3089,12 +3089,12 @@ def _setup_wecom():
         elif access_idx == 1:
             save_env_value("WECOM_DM_POLICY", "pairing")
             print_success("  DM pairing mode — users will receive a code to request access.")
-            print_info("  Approve with: hermes pairing approve <platform> <code>")
+            print_info("  Approve with: avoi pairing approve <platform> <code>")
         elif access_idx == 2:
             save_env_value("WECOM_DM_POLICY", "disabled")
             print_warning("  Direct messages disabled.")
         else:
-            print_info("  Skipped — configure later with 'hermes gateway setup'")
+            print_info("  Skipped — configure later with 'avoi gateway setup'")
 
     # ── Home channel (optional) ──
     print()
@@ -3166,7 +3166,7 @@ def _setup_weixin():
     print()
     print_info("  1. Hermes will open Tencent iLink QR login in this terminal.")
     print_info("  2. Use WeChat to scan and confirm the QR code.")
-    print_info("  3. Hermes will store the returned account_id/token in ~/.hermes/.env.")
+    print_info("  3. Hermes will store the returned account_id/token in ~/.avoi/.env.")
     print_info("  4. This adapter supports native text, image, video, and document delivery.")
 
     existing_account = get_env_value("WEIXIN_ACCOUNT_ID")
@@ -3186,7 +3186,7 @@ def _setup_weixin():
 
     if not check_weixin_requirements():
         print_error("  Missing dependencies: Weixin needs aiohttp and cryptography.")
-        print_info("  Install them, then rerun `hermes gateway setup`.")
+        print_info("  Install them, then rerun `avoi gateway setup`.")
         return
 
     print()
@@ -3196,7 +3196,7 @@ def _setup_weixin():
 
     import asyncio
     try:
-        credentials = asyncio.run(qr_login(str(get_hermes_home())))
+        credentials = asyncio.run(qr_login(str(get_avoi_home())))
     except KeyboardInterrupt:
         print()
         print_warning("  Weixin setup cancelled.")
@@ -3233,7 +3233,7 @@ def _setup_weixin():
         save_env_value("WEIXIN_ALLOW_ALL_USERS", "false")
         save_env_value("WEIXIN_ALLOWED_USERS", "")
         print_success("  DM pairing enabled.")
-        print_info("  Unknown DM users can request access and you approve them with `hermes pairing approve`.")
+        print_info("  Unknown DM users can request access and you approve them with `avoi pairing approve`.")
     elif access_idx == 1:
         save_env_value("WEIXIN_DM_POLICY", "open")
         save_env_value("WEIXIN_ALLOW_ALL_USERS", "true")
@@ -3417,7 +3417,7 @@ def _setup_feishu():
         save_env_value("FEISHU_ALLOW_ALL_USERS", "false")
         save_env_value("FEISHU_ALLOWED_USERS", "")
         print_success("  DM pairing enabled.")
-        print_info("  Unknown users can request access; approve with `hermes pairing approve`.")
+        print_info("  Unknown users can request access; approve with `avoi pairing approve`.")
     elif access_idx == 1:
         save_env_value("FEISHU_ALLOW_ALL_USERS", "true")
         save_env_value("FEISHU_ALLOWED_USERS", "")
@@ -3538,7 +3538,7 @@ def _setup_qqbot():
         else:
             save_env_value("QQ_ALLOWED_USERS", "")
         print_success("  DM pairing enabled.")
-        print_info("  Unknown users can request access; approve with `hermes pairing approve`.")
+        print_info("  Unknown users can request access; approve with `avoi pairing approve`.")
     elif access_idx == 1:
         save_env_value("QQ_ALLOW_ALL_USERS", "true")
         save_env_value("QQ_ALLOWED_USERS", "")
@@ -3705,7 +3705,7 @@ def gateway_setup():
         print_systemd_scope_conflict_warning()
         print()
 
-    if supports_systemd_services() and has_legacy_hermes_units():
+    if supports_systemd_services() and has_legacy_avoi_units():
         print_legacy_unit_warning()
         print()
 
@@ -3786,7 +3786,7 @@ def gateway_setup():
                         launchd_restart()
                     else:
                         stop_profile_gateway()
-                        print_info("Start manually: hermes gateway")
+                        print_info("Start manually: avoi gateway")
                 except UserSystemdUnavailableError as e:
                     print_error("  Restart failed — user systemd not reachable:")
                     for line in str(e).splitlines():
@@ -3835,29 +3835,29 @@ def gateway_setup():
                                 print_error(f"  Start failed: {e}")
                     except subprocess.CalledProcessError as e:
                         print_error(f"  Install failed: {e}")
-                        print_info("  You can try manually: hermes gateway install")
+                        print_info("  You can try manually: avoi gateway install")
                 else:
-                    print_info("  You can install later: hermes gateway install")
+                    print_info("  You can install later: avoi gateway install")
                     if supports_systemd_services():
-                        print_info("  Or as a boot-time service: sudo hermes gateway install --system")
-                    print_info("  Or run in foreground:  hermes gateway run")
+                        print_info("  Or as a boot-time service: sudo avoi gateway install --system")
+                    print_info("  Or run in foreground:  avoi gateway run")
             elif is_wsl():
                 print_info("  WSL detected but systemd is not running.")
-                print_info("  Run in foreground: hermes gateway run")
-                print_info("  For persistence:   tmux new -s hermes 'hermes gateway run'")
+                print_info("  Run in foreground: avoi gateway run")
+                print_info("  For persistence:   tmux new -s avoi 'avoi gateway run'")
                 print_info("  To enable systemd: add systemd=true to /etc/wsl.conf, then 'wsl --shutdown'")
             else:
                 if is_termux():
-                    from hermes_constants import display_hermes_home as _dhh
+                    from avoi_constants import display_avoi_home as _dhh
                     print_info("  Termux does not use systemd/launchd services.")
-                    print_info("  Run in foreground: hermes gateway run")
-                    print_info(f"  Or start it manually in the background (best effort): nohup hermes gateway run >{_dhh()}/logs/gateway.log 2>&1 &")
+                    print_info("  Run in foreground: avoi gateway run")
+                    print_info(f"  Or start it manually in the background (best effort): nohup avoi gateway run >{_dhh()}/logs/gateway.log 2>&1 &")
                 else:
                     print_info("  Service install not supported on this platform.")
-                    print_info("  Run in foreground: hermes gateway run")
+                    print_info("  Run in foreground: avoi gateway run")
     else:
         print()
-        print_info("No platforms configured. Run 'hermes gateway setup' when ready.")
+        print_info("No platforms configured. Run 'avoi gateway setup' when ready.")
 
     print()
 
@@ -3904,13 +3904,13 @@ def _gateway_command_inner(args):
         run_as_user = getattr(args, 'run_as_user', None)
         if is_termux():
             print("Gateway service installation is not supported on Termux.")
-            print("Run manually: hermes gateway")
+            print("Run manually: avoi gateway")
             sys.exit(1)
         if supports_systemd_services():
             if is_wsl():
                 print_warning("WSL detected — systemd services may not survive WSL restarts.")
-                print_info("  Consider running in foreground instead: hermes gateway run")
-                print_info("  Or use tmux/screen for persistence: tmux new -s hermes 'hermes gateway run'")
+                print_info("  Consider running in foreground instead: avoi gateway run")
+                print_info("  Or use tmux/screen for persistence: tmux new -s avoi 'avoi gateway run'")
                 print()
             systemd_install(force=force, system=system, run_as_user=run_as_user)
         elif is_macos():
@@ -3920,9 +3920,9 @@ def _gateway_command_inner(args):
             print("Either enable systemd (add systemd=true to /etc/wsl.conf and restart WSL)")
             print("or run the gateway in foreground mode:")
             print()
-            print("  hermes gateway run                              # direct foreground")
-            print("  tmux new -s hermes 'hermes gateway run'         # persistent via tmux")
-            print("  nohup hermes gateway run > ~/.hermes/logs/gateway.log 2>&1 &  # background")
+            print("  avoi gateway run                              # direct foreground")
+            print("  tmux new -s avoi 'avoi gateway run'         # persistent via tmux")
+            print("  nohup avoi gateway run > ~/.avoi/logs/gateway.log 2>&1 &  # background")
             sys.exit(1)
         elif is_container():
             print("Service installation is not needed inside a Docker container.")
@@ -3931,11 +3931,11 @@ def _gateway_command_inner(args):
             print("  docker run --restart unless-stopped ...   # auto-restart on crash/reboot")
             print("  docker restart <container>                # manual restart")
             print()
-            print("To run the gateway: hermes gateway run")
+            print("To run the gateway: avoi gateway run")
             sys.exit(0)
         else:
             print("Service installation not supported on this platform.")
-            print("Run manually: hermes gateway run")
+            print("Run manually: avoi gateway run")
             sys.exit(1)
     
     elif subcmd == "uninstall":
@@ -3945,7 +3945,7 @@ def _gateway_command_inner(args):
         system = getattr(args, 'system', False)
         if is_termux():
             print("Gateway service uninstall is not supported on Termux because there is no managed service to remove.")
-            print("Stop manual runs with: hermes gateway stop")
+            print("Stop manual runs with: avoi gateway stop")
             sys.exit(1)
         if supports_systemd_services():
             systemd_uninstall(system=system)
@@ -3975,7 +3975,7 @@ def _gateway_command_inner(args):
 
         if is_termux():
             print("Gateway service start is not supported on Termux because there is no system service manager.")
-            print("Run manually: hermes gateway")
+            print("Run manually: avoi gateway")
             sys.exit(1)
         if supports_systemd_services():
             systemd_start(system=system)
@@ -3985,9 +3985,9 @@ def _gateway_command_inner(args):
             print("WSL detected but systemd is not available.")
             print("Run the gateway in foreground mode instead:")
             print()
-            print("  hermes gateway run                              # direct foreground")
-            print("  tmux new -s hermes 'hermes gateway run'         # persistent via tmux")
-            print("  nohup hermes gateway run > ~/.hermes/logs/gateway.log 2>&1 &  # background")
+            print("  avoi gateway run                              # direct foreground")
+            print("  tmux new -s avoi 'avoi gateway run'         # persistent via tmux")
+            print("  nohup avoi gateway run > ~/.avoi/logs/gateway.log 2>&1 &  # background")
             print()
             print("To enable systemd: add systemd=true to /etc/wsl.conf and run 'wsl --shutdown' from PowerShell.")
             sys.exit(1)
@@ -3998,7 +3998,7 @@ def _gateway_command_inner(args):
             print("  docker start <container>     # start a stopped container")
             print("  docker restart <container>   # restart a running container")
             print()
-            print("Or run the gateway directly: hermes gateway run")
+            print("Or run the gateway directly: avoi gateway run")
             sys.exit(0)
         else:
             print("Not supported on this platform.")
@@ -4121,14 +4121,14 @@ def _gateway_command_inner(args):
                     print(f"  Run:  sudo loginctl enable-linger {_username}")
                     print()
                     print("  Then restart the gateway:")
-                    print("    hermes gateway restart")
+                    print("    avoi gateway restart")
                     return
 
             if service_configured:
                 print()
                 print("✗ Gateway service restart failed.")
                 print("  The service definition exists, but the service manager did not recover it.")
-                print("  Fix the service, then retry: hermes gateway start")
+                print("  Fix the service, then retry: avoi gateway start")
                 sys.exit(1)
 
             # Manual restart: stop only this profile's gateway
@@ -4176,8 +4176,8 @@ def _gateway_command_inner(args):
                     print("  Use tmux or screen for persistence across terminal closes.")
                 else:
                     print("To install as a service:")
-                    print("  hermes gateway install")
-                    print("  sudo hermes gateway install --system")
+                    print("  avoi gateway install")
+                    print("  sudo avoi gateway install --system")
             else:
                 print("✗ Gateway is not running")
                 runtime_lines = _runtime_health_lines()
@@ -4188,23 +4188,23 @@ def _gateway_command_inner(args):
                         print(f"  {line}")
                 print()
                 print("To start:")
-                print("  hermes gateway run      # Run in foreground")
+                print("  avoi gateway run      # Run in foreground")
                 if is_termux():
-                    print("  nohup hermes gateway run > ~/.hermes/logs/gateway.log 2>&1 &  # Best-effort background start")
+                    print("  nohup avoi gateway run > ~/.avoi/logs/gateway.log 2>&1 &  # Best-effort background start")
                 elif is_wsl():
-                    print("  tmux new -s hermes 'hermes gateway run'         # persistent via tmux")
-                    print("  nohup hermes gateway run > ~/.hermes/logs/gateway.log 2>&1 &  # background")
+                    print("  tmux new -s avoi 'avoi gateway run'         # persistent via tmux")
+                    print("  nohup avoi gateway run > ~/.avoi/logs/gateway.log 2>&1 &  # background")
                 else:
-                    print("  hermes gateway install  # Install as user service")
-                    print("  sudo hermes gateway install --system  # Install as boot-time system service")
+                    print("  avoi gateway install  # Install as user service")
+                    print("  sudo avoi gateway install --system  # Install as boot-time system service")
 
     elif subcmd == "migrate-legacy":
         # Stop, disable, and remove legacy Hermes gateway unit files from
-        # pre-rename installs (e.g. hermes.service). Profile units and
+        # pre-rename installs (e.g. avoi.service). Profile units and
         # unrelated third-party services are never touched.
         dry_run = getattr(args, 'dry_run', False)
         yes = getattr(args, 'yes', False)
         if not supports_systemd_services() and not is_macos():
             print("Legacy unit migration only applies to systemd-based Linux hosts.")
             return
-        remove_legacy_hermes_units(interactive=not yes, dry_run=dry_run)
+        remove_legacy_avoi_units(interactive=not yes, dry_run=dry_run)

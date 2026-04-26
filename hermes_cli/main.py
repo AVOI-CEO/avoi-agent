@@ -3,44 +3,44 @@
 Hermes CLI - Main entry point.
 
 Usage:
-    hermes                     # Interactive chat (default)
-    hermes chat                # Interactive chat
-    hermes gateway             # Run gateway in foreground
-    hermes gateway start       # Start gateway as service
-    hermes gateway stop        # Stop gateway service
-    hermes gateway status      # Show gateway status
-    hermes gateway install     # Install gateway service
-    hermes gateway uninstall   # Uninstall gateway service
-    hermes setup               # Interactive setup wizard
-    hermes logout              # Clear stored authentication
-    hermes status              # Show status of all components
-    hermes cron                # Manage cron jobs
-    hermes cron list           # List cron jobs
-    hermes cron status         # Check if cron scheduler is running
-    hermes doctor              # Check configuration and dependencies
-    hermes honcho setup                    # Configure Honcho AI memory integration
-    hermes honcho status                   # Show Honcho config and connection status
-    hermes honcho sessions                 # List directory → session name mappings
-    hermes honcho map <name>               # Map current directory to a session name
-    hermes honcho peer                     # Show peer names and dialectic settings
-    hermes honcho peer --user NAME         # Set user peer name
-    hermes honcho peer --ai NAME           # Set AI peer name
-    hermes honcho peer --reasoning LEVEL   # Set dialectic reasoning level
-    hermes honcho mode                     # Show current memory mode
-    hermes honcho mode [hybrid|honcho|local]  # Set memory mode
-    hermes honcho tokens                   # Show token budget settings
-    hermes honcho tokens --context N       # Set session.context() token cap
-    hermes honcho tokens --dialectic N     # Set dialectic result char cap
-    hermes honcho identity                 # Show AI peer identity representation
-    hermes honcho identity <file>          # Seed AI peer identity from a file (SOUL.md etc.)
-    hermes honcho migrate                  # Step-by-step migration guide: OpenClaw native → Hermes + Honcho
-    hermes version             Show version
-    hermes update              Update to latest version
-    hermes uninstall           Uninstall Hermes Agent
-    hermes acp                 Run as an ACP server for editor integration
-    hermes sessions browse     Interactive session picker with search
+    avoi                     # Interactive chat (default)
+    avoi chat                # Interactive chat
+    avoi gateway             # Run gateway in foreground
+    avoi gateway start       # Start gateway as service
+    avoi gateway stop        # Stop gateway service
+    avoi gateway status      # Show gateway status
+    avoi gateway install     # Install gateway service
+    avoi gateway uninstall   # Uninstall gateway service
+    avoi setup               # Interactive setup wizard
+    avoi logout              # Clear stored authentication
+    avoi status              # Show status of all components
+    avoi cron                # Manage cron jobs
+    avoi cron list           # List cron jobs
+    avoi cron status         # Check if cron scheduler is running
+    avoi doctor              # Check configuration and dependencies
+    avoi honcho setup                    # Configure Honcho AI memory integration
+    avoi honcho status                   # Show Honcho config and connection status
+    avoi honcho sessions                 # List directory → session name mappings
+    avoi honcho map <name>               # Map current directory to a session name
+    avoi honcho peer                     # Show peer names and dialectic settings
+    avoi honcho peer --user NAME         # Set user peer name
+    avoi honcho peer --ai NAME           # Set AI peer name
+    avoi honcho peer --reasoning LEVEL   # Set dialectic reasoning level
+    avoi honcho mode                     # Show current memory mode
+    avoi honcho mode [hybrid|honcho|local]  # Set memory mode
+    avoi honcho tokens                   # Show token budget settings
+    avoi honcho tokens --context N       # Set session.context() token cap
+    avoi honcho tokens --dialectic N     # Set dialectic result char cap
+    avoi honcho identity                 # Show AI peer identity representation
+    avoi honcho identity <file>          # Seed AI peer identity from a file (SOUL.md etc.)
+    avoi honcho migrate                  # Step-by-step migration guide: OpenClaw native → Hermes + Honcho
+    avoi version             Show version
+    avoi update              Update to latest version
+    avoi uninstall           Uninstall AVOI Agent
+    avoi acp                 Run as an ACP server for editor integration
+    avoi sessions browse     Interactive session picker with search
 
-    hermes claw migrate --dry-run  # Preview migration without changes
+    avoi claw migrate --dry-run  # Preview migration without changes
 """
 
 import argparse
@@ -60,7 +60,7 @@ def _add_accept_hooks_flag(parser) -> None:
         default=argparse.SUPPRESS,
         help=(
             "Auto-approve unseen shell hooks without a TTY prompt "
-            "(equivalent to HERMES_ACCEPT_HOOKS=1 / hooks_auto_accept: true)."
+            "(equivalent to AVOI_ACCEPT_HOOKS=1 / hooks_auto_accept: true)."
         ),
     )
 
@@ -68,13 +68,13 @@ def _add_accept_hooks_flag(parser) -> None:
 def _require_tty(command_name: str) -> None:
     """Exit with a clear error if stdin is not a terminal.
 
-    Interactive TUI commands (hermes tools, hermes setup, hermes model) use
+    Interactive TUI commands (avoi tools, avoi setup, avoi model) use
     curses or input() prompts that spin at 100% CPU when stdin is a pipe.
     This guard prevents accidental non-interactive invocation.
     """
     if not sys.stdin.isatty():
         print(
-            f"Error: 'hermes {command_name}' requires an interactive terminal.\n"
+            f"Error: 'avoi {command_name}' requires an interactive terminal.\n"
             f"It cannot be run through a pipe or non-interactive subprocess.\n"
             f"Run it directly in your terminal instead.",
             file=sys.stderr,
@@ -88,16 +88,16 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 
 # ---------------------------------------------------------------------------
-# Profile override — MUST happen before any hermes module import.
+# Profile override — MUST happen before any avoi module import.
 #
-# Many modules cache HERMES_HOME at import time (module-level constants).
+# Many modules cache AVOI_HOME at import time (module-level constants).
 # We intercept --profile/-p from sys.argv here and set the env var so that
-# every subsequent ``os.getenv("HERMES_HOME", ...)`` resolves correctly.
+# every subsequent ``os.getenv("AVOI_HOME", ...)`` resolves correctly.
 # The flag is stripped from sys.argv so argparse never sees it.
-# Falls back to ~/.hermes/active_profile for sticky default.
+# Falls back to ~/.avoi/active_profile for sticky default.
 # ---------------------------------------------------------------------------
 def _apply_profile_override() -> None:
-    """Pre-parse --profile/-p and set HERMES_HOME before module imports."""
+    """Pre-parse --profile/-p and set AVOI_HOME before module imports."""
     argv = sys.argv[1:]
     profile_name = None
     consume = 0
@@ -113,12 +113,12 @@ def _apply_profile_override() -> None:
             consume = 1
             break
 
-    # 2. If no flag, check active_profile in the hermes root
+    # 2. If no flag, check active_profile in the avoi root
     if profile_name is None:
         try:
-            from hermes_constants import get_default_hermes_root
+            from avoi_constants import get_default_avoi_root
 
-            active_path = get_default_hermes_root() / "active_profile"
+            active_path = get_default_avoi_root() / "active_profile"
             if active_path.exists():
                 name = active_path.read_text().strip()
                 if name and name != "default":
@@ -127,23 +127,23 @@ def _apply_profile_override() -> None:
         except (UnicodeDecodeError, OSError):
             pass  # corrupted file, skip
 
-    # 3. If we found a profile, resolve and set HERMES_HOME
+    # 3. If we found a profile, resolve and set AVOI_HOME
     if profile_name is not None:
         try:
-            from hermes_cli.profiles import resolve_profile_env
+            from avoi_cli.profiles import resolve_profile_env
 
-            hermes_home = resolve_profile_env(profile_name)
+            avoi_home = resolve_profile_env(profile_name)
         except (ValueError, FileNotFoundError) as exc:
             print(f"Error: {exc}", file=sys.stderr)
             sys.exit(1)
         except Exception as exc:
-            # A bug in profiles.py must NEVER prevent hermes from starting
+            # A bug in profiles.py must NEVER prevent avoi from starting
             print(
                 f"Warning: profile override failed ({exc}), using default",
                 file=sys.stderr,
             )
             return
-        os.environ["HERMES_HOME"] = hermes_home
+        os.environ["AVOI_HOME"] = avoi_home
         # Strip the flag from argv so argparse doesn't choke
         if consume > 0:
             for i, arg in enumerate(argv):
@@ -159,38 +159,38 @@ def _apply_profile_override() -> None:
 
 _apply_profile_override()
 
-# Load .env from ~/.hermes/.env first, then project root as dev fallback.
+# Load .env from ~/.avoi/.env first, then project root as dev fallback.
 # User-managed env files should override stale shell exports on restart.
-from hermes_cli.config import get_hermes_home
-from hermes_cli.env_loader import load_hermes_dotenv
+from avoi_cli.config import get_avoi_home
+from avoi_cli.env_loader import load_avoi_dotenv
 
-load_hermes_dotenv(project_env=PROJECT_ROOT / ".env")
+load_avoi_dotenv(project_env=PROJECT_ROOT / ".env")
 
-# Bridge security.redact_secrets from config.yaml → HERMES_REDACT_SECRETS env
-# var BEFORE hermes_logging imports agent.redact (which snapshots the flag at
+# Bridge security.redact_secrets from config.yaml → AVOI_REDACT_SECRETS env
+# var BEFORE avoi_logging imports agent.redact (which snapshots the flag at
 # module-import time). Without this, config.yaml's toggle is ignored because
 # the setup_logging() call below imports agent.redact, which reads the env var
 # exactly once. Env var in .env still wins — this is config.yaml fallback only.
 try:
-    if "HERMES_REDACT_SECRETS" not in os.environ:
+    if "AVOI_REDACT_SECRETS" not in os.environ:
         import yaml as _yaml_early
-        _cfg_path = get_hermes_home() / "config.yaml"
+        _cfg_path = get_avoi_home() / "config.yaml"
         if _cfg_path.exists():
             with open(_cfg_path, encoding="utf-8") as _f:
                 _early_sec_cfg = (_yaml_early.safe_load(_f) or {}).get("security", {})
             if isinstance(_early_sec_cfg, dict):
                 _early_redact = _early_sec_cfg.get("redact_secrets")
                 if _early_redact is not None:
-                    os.environ["HERMES_REDACT_SECRETS"] = str(_early_redact).lower()
+                    os.environ["AVOI_REDACT_SECRETS"] = str(_early_redact).lower()
             del _early_sec_cfg
         del _cfg_path
 except Exception:
     pass  # best-effort — redaction stays at default (enabled) on config errors
 
-# Initialize centralized file logging early — all `hermes` subcommands
+# Initialize centralized file logging early — all `avoi` subcommands
 # (chat, setup, gateway, config, etc.) write to agent.log + errors.log.
 try:
-    from hermes_logging import setup_logging as _setup_logging
+    from avoi_logging import setup_logging as _setup_logging
 
     _setup_logging(mode="cli")
 except Exception:
@@ -198,8 +198,8 @@ except Exception:
 
 # Apply IPv4 preference early, before any HTTP clients are created.
 try:
-    from hermes_cli.config import load_config as _load_config_early
-    from hermes_constants import apply_ipv4_preference as _apply_ipv4
+    from avoi_cli.config import load_config as _load_config_early
+    from avoi_constants import apply_ipv4_preference as _apply_ipv4
 
     _early_cfg = _load_config_early()
     _net = _early_cfg.get("network", {})
@@ -213,8 +213,8 @@ import logging
 import time as _time
 from datetime import datetime
 
-from hermes_cli import __version__, __release_date__
-from hermes_constants import AI_GATEWAY_BASE_URL, OPENROUTER_BASE_URL
+from avoi_cli import __version__, __release_date__
+from avoi_constants import AI_GATEWAY_BASE_URL, OPENROUTER_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -239,14 +239,14 @@ def _relative_time(ts) -> str:
 
 def _has_any_provider_configured() -> bool:
     """Check if at least one inference provider is usable."""
-    from hermes_cli.config import get_env_path, get_hermes_home, load_config
-    from hermes_cli.auth import get_auth_status
+    from avoi_cli.config import get_env_path, get_avoi_home, load_config
+    from avoi_cli.auth import get_auth_status
 
     # Determine whether Hermes itself has been explicitly configured (model
     # in config that isn't the hardcoded default). Used below to gate external
     # tool credentials (Claude Code, Codex CLI) that shouldn't silently skip
     # the setup wizard on a fresh install.
-    from hermes_cli.config import DEFAULT_CONFIG
+    from avoi_cli.config import DEFAULT_CONFIG
 
     _DEFAULT_MODEL = DEFAULT_CONFIG.get("model", "")
     cfg = load_config()
@@ -257,12 +257,12 @@ def _has_any_provider_configured() -> bool:
         _model_name = model_cfg.strip()
     else:
         _model_name = ""
-    _has_hermes_config = _model_name and _model_name != _DEFAULT_MODEL
+    _has_avoi_config = _model_name and _model_name != _DEFAULT_MODEL
 
     # Check env vars (may be set by .env or shell).
     # OPENAI_BASE_URL alone counts — local models (vLLM, llama.cpp, etc.)
     # often don't require an API key.
-    from hermes_cli.auth import PROVIDER_REGISTRY
+    from avoi_cli.auth import PROVIDER_REGISTRY
 
     # Collect all provider env vars
     provider_env_vars = {
@@ -305,7 +305,7 @@ def _has_any_provider_configured() -> bool:
         pass
 
     # Check for Nous Portal OAuth credentials
-    auth_file = get_hermes_home() / "auth.json"
+    auth_file = get_avoi_home() / "auth.json"
     if auth_file.exists():
         try:
             import json
@@ -333,7 +333,7 @@ def _has_any_provider_configured() -> bool:
     # Check for Claude Code OAuth credentials (~/.claude/.credentials.json)
     # Only count these if Hermes has been explicitly configured — Claude Code
     # being installed doesn't mean the user wants Hermes to use their tokens.
-    if _has_hermes_config:
+    if _has_avoi_config:
         try:
             from agent.anthropic_adapter import (
                 read_claude_code_credentials,
@@ -597,7 +597,7 @@ def _session_browse_picker(sessions: list) -> Optional[str]:
 def _resolve_last_session(source: str = "cli") -> Optional[str]:
     """Look up the most recent session ID for a source."""
     try:
-        from hermes_state import SessionDB
+        from avoi_state import SessionDB
 
         db = SessionDB()
         sessions = db.search_sessions(source=source, limit=1)
@@ -636,14 +636,14 @@ def _exec_in_container(container_info: dict, cli_args: list):
     On failure, OSError propagates naturally.
 
     Args:
-        container_info: dict with backend, container_name, exec_user, hermes_bin
-        cli_args: the original CLI arguments (everything after 'hermes')
+        container_info: dict with backend, container_name, exec_user, avoi_bin
+        cli_args: the original CLI arguments (everything after 'avoi')
     """
 
     backend = container_info["backend"]
     container_name = container_info["container_name"]
     exec_user = container_info["exec_user"]
-    hermes_bin = container_info["hermes_bin"]
+    avoi_bin = container_info["avoi_bin"]
 
     runtime = shutil.which(backend)
     if not runtime:
@@ -685,14 +685,14 @@ def _exec_in_container(container_info: dict, cli_args: list):
                     f'    commands = [{{ command = "{runtime}"; options = [ "NOPASSWD" ]; }}];\n'
                     f"  }}];\n"
                     f"\n"
-                    f"Or run: sudo hermes {' '.join(cli_args)}",
+                    f"Or run: sudo avoi {' '.join(cli_args)}",
                     file=sys.stderr,
                 )
                 sys.exit(1)
         else:
             print(
                 f"Error: container '{container_name}' not found via {backend}.\n"
-                f"The container may be running under root. Try: sudo hermes {' '.join(cli_args)}",
+                f"The container may be running under root. Try: sudo avoi {' '.join(cli_args)}",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -713,7 +713,7 @@ def _exec_in_container(container_info: dict, cli_args: list):
         + tty_flags
         + ["-u", exec_user]
         + env_flags
-        + [container_name, hermes_bin]
+        + [container_name, avoi_bin]
         + cli_args
     )
 
@@ -732,7 +732,7 @@ def _resolve_session_by_name_or_id(name_or_id: str) -> Optional[str]:
       resumed at the live tip instead of a stale parent with no messages.
     """
     try:
-        from hermes_state import SessionDB
+        from avoi_state import SessionDB
 
         db = SessionDB()
 
@@ -768,7 +768,7 @@ def _print_tui_exit_summary(session_id: Optional[str]) -> None:
 
     db = None
     try:
-        from hermes_state import SessionDB
+        from avoi_state import SessionDB
 
         db = SessionDB()
         session = db.get_session(target)
@@ -797,9 +797,9 @@ def _print_tui_exit_summary(session_id: Optional[str]) -> None:
 
     print()
     print("Resume this session with:")
-    print(f"  hermes --tui --resume {target}")
+    print(f"  avoi --tui --resume {target}")
     if title:
-        print(f'  hermes --tui -c "{title}"')
+        print(f'  avoi --tui -c "{title}"')
     print()
     print(f"Session:        {target}")
     if title:
@@ -813,8 +813,8 @@ def _print_tui_exit_summary(session_id: Optional[str]) -> None:
 
 
 def _tui_need_npm_install(root: Path) -> bool:
-    """True when @hermes/ink is missing or node_modules is behind package-lock.json (post-pull)."""
-    ink = root / "node_modules" / "@hermes" / "ink" / "package.json"
+    """True when @avoi/ink is missing or node_modules is behind package-lock.json (post-pull)."""
+    ink = root / "node_modules" / "@avoi" / "ink" / "package.json"
     if not ink.is_file():
         return True
     lock = root / "package-lock.json"
@@ -827,8 +827,8 @@ def _tui_need_npm_install(root: Path) -> bool:
 
 
 def _find_bundled_tui(tui_dir: Path) -> Optional[Path]:
-    """Directory whose dist/entry.js we should run: HERMES_TUI_DIR first, else repo ui-tui."""
-    env = os.environ.get("HERMES_TUI_DIR")
+    """Directory whose dist/entry.js we should run: AVOI_TUI_DIR first, else repo ui-tui."""
+    env = os.environ.get("AVOI_TUI_DIR")
     if env:
         p = Path(env)
         if (p / "dist" / "entry.js").exists() and not _tui_need_npm_install(p):
@@ -839,7 +839,7 @@ def _find_bundled_tui(tui_dir: Path) -> Optional[Path]:
 
 
 def _tui_build_needed(tui_dir: Path) -> bool:
-    if _hermes_ink_bundle_stale(tui_dir):
+    if _avoi_ink_bundle_stale(tui_dir):
         return True
     entry = tui_dir / "dist" / "entry.js"
     if not entry.exists():
@@ -864,8 +864,8 @@ def _tui_build_needed(tui_dir: Path) -> bool:
     return False
 
 
-def _hermes_ink_bundle_stale(tui_dir: Path) -> bool:
-    ink_root = tui_dir / "packages" / "hermes-ink"
+def _avoi_ink_bundle_stale(tui_dir: Path) -> bool:
+    ink_root = tui_dir / "packages" / "avoi-ink"
     bundle = ink_root / "dist" / "ink-bundle.js"
     if not bundle.exists():
         return True
@@ -894,18 +894,18 @@ def _ensure_tui_node() -> None:
     was used (nvm, fnm, proto, brew, or the bundled fallback).
 
     Idempotent no-op when node+npm are already discoverable. Set
-    ``HERMES_SKIP_NODE_BOOTSTRAP=1`` to disable auto-install.
+    ``AVOI_SKIP_NODE_BOOTSTRAP=1`` to disable auto-install.
     """
     if shutil.which("node") and shutil.which("npm"):
         return
-    if os.environ.get("HERMES_SKIP_NODE_BOOTSTRAP"):
+    if os.environ.get("AVOI_SKIP_NODE_BOOTSTRAP"):
         return
 
     helper = PROJECT_ROOT / "scripts" / "lib" / "node-bootstrap.sh"
     if not helper.is_file():
         return
 
-    hermes_home = os.environ.get("HERMES_HOME") or str(Path.home() / ".hermes")
+    avoi_home = os.environ.get("AVOI_HOME") or str(Path.home() / ".avoi")
     try:
         # Helper writes logs to stderr; we ask bash to print `command -v node`
         # on stdout once ensure_node succeeds. Subshell PATH edits don't leak
@@ -916,7 +916,7 @@ def _ensure_tui_node() -> None:
                 "-c",
                 f'source "{helper}" >&2 && ensure_node >&2 && command -v node',
             ],
-            env={**os.environ, "HERMES_HOME": hermes_home},
+            env={**os.environ, "AVOI_HOME": avoi_home},
             capture_output=True,
             text=True,
             check=False,
@@ -931,7 +931,7 @@ def _ensure_tui_node() -> None:
     if resolved:
         extras.append(Path(resolved).resolve().parent)
 
-    extras.extend([Path(hermes_home) / "node" / "bin", Path.home() / ".local" / "bin"])
+    extras.extend([Path(avoi_home) / "node" / "bin", Path.home() / ".local" / "bin"])
 
     for extra in extras:
         s = str(extra)
@@ -941,12 +941,12 @@ def _ensure_tui_node() -> None:
 
 
 def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
-    """TUI: --dev → tsx src; else node dist (HERMES_TUI_DIR or ui-tui, build when stale)."""
+    """TUI: --dev → tsx src; else node dist (AVOI_TUI_DIR or ui-tui, build when stale)."""
     _ensure_tui_node()
 
     def _node_bin(bin: str) -> str:
         if bin == "node":
-            env_node = os.environ.get("HERMES_NODE")
+            env_node = os.environ.get("AVOI_NODE")
             if env_node and os.path.isfile(env_node) and os.access(env_node, os.X_OK):
                 return env_node
         path = shutil.which(bin)
@@ -955,9 +955,9 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
             sys.exit(1)
         return path
 
-    # pre-built dist + node_modules (nix / full HERMES_TUI_DIR) skips npm.
+    # pre-built dist + node_modules (nix / full AVOI_TUI_DIR) skips npm.
     if not tui_dev:
-        ext_dir = os.environ.get("HERMES_TUI_DIR")
+        ext_dir = os.environ.get("AVOI_TUI_DIR")
         if ext_dir:
             p = Path(ext_dir)
             if (p / "dist" / "entry.js").exists() and not _tui_need_npm_install(p):
@@ -966,7 +966,7 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
 
     npm = _node_bin("npm")
     if _tui_need_npm_install(tui_dir):
-        if not os.environ.get("HERMES_QUIET"):
+        if not os.environ.get("AVOI_QUIET"):
             print("Installing TUI dependencies…")
         result = subprocess.run(
             [npm, "install", "--silent", "--no-fund", "--no-audit", "--progress=false"],
@@ -985,9 +985,9 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
             sys.exit(1)
 
     if tui_dev:
-        if _hermes_ink_bundle_stale(tui_dir):
+        if _avoi_ink_bundle_stale(tui_dir):
             result = subprocess.run(
-                [npm, "run", "build", "--prefix", "packages/hermes-ink"],
+                [npm, "run", "build", "--prefix", "packages/avoi-ink"],
                 cwd=str(tui_dir),
                 capture_output=True,
                 text=True,
@@ -995,7 +995,7 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
             if result.returncode != 0:
                 combined = f"{result.stdout or ''}{result.stderr or ''}".strip()
                 preview = "\n".join(combined.splitlines()[-30:])
-                print("@hermes/ink build failed.")
+                print("@avoi/ink build failed.")
                 if preview:
                     print(preview)
                 sys.exit(1)
@@ -1038,17 +1038,17 @@ def _launch_tui(
     tui_dir = PROJECT_ROOT / "ui-tui"
 
     env = os.environ.copy()
-    env["HERMES_PYTHON_SRC_ROOT"] = os.environ.get(
-        "HERMES_PYTHON_SRC_ROOT", str(PROJECT_ROOT)
+    env["AVOI_PYTHON_SRC_ROOT"] = os.environ.get(
+        "AVOI_PYTHON_SRC_ROOT", str(PROJECT_ROOT)
     )
-    env.setdefault("HERMES_PYTHON", sys.executable)
-    env.setdefault("HERMES_CWD", os.getcwd())
+    env.setdefault("AVOI_PYTHON", sys.executable)
+    env.setdefault("AVOI_CWD", os.getcwd())
     if model:
-        env["HERMES_MODEL"] = model
-        env["HERMES_INFERENCE_MODEL"] = model
+        env["AVOI_MODEL"] = model
+        env["AVOI_INFERENCE_MODEL"] = model
     if provider:
-        env["HERMES_TUI_PROVIDER"] = provider
-        env["HERMES_INFERENCE_PROVIDER"] = provider
+        env["AVOI_TUI_PROVIDER"] = provider
+        env["AVOI_INFERENCE_PROVIDER"] = provider
     # Guarantee an 8GB V8 heap + exposed GC for the TUI. Default node cap is
     # ~1.5–4GB depending on version and can fatal-OOM on long sessions with
     # large transcripts / reasoning blobs. Token-level merge: respect any
@@ -1061,7 +1061,7 @@ def _launch_tui(
         _tokens.append("--expose-gc")
     env["NODE_OPTIONS"] = " ".join(_tokens)
     if resume_session_id:
-        env["HERMES_TUI_RESUME"] = resume_session_id
+        env["AVOI_TUI_RESUME"] = resume_session_id
 
     argv, cwd = _make_tui_argv(tui_dir, tui_dev)
     try:
@@ -1077,7 +1077,7 @@ def _launch_tui(
 
 def cmd_chat(args):
     """Run interactive chat CLI."""
-    use_tui = getattr(args, "tui", False) or os.environ.get("HERMES_TUI") == "1"
+    use_tui = getattr(args, "tui", False) or os.environ.get("AVOI_TUI") == "1"
 
     # Resolve --continue into --resume with the latest session or by name
     continue_val = getattr(args, "continue_last", None)
@@ -1089,7 +1089,7 @@ def cmd_chat(args):
                 args.resume = resolved
             else:
                 print(f"No session found matching '{continue_val}'.")
-                print("Use 'hermes sessions list' to see available sessions.")
+                print("Use 'avoi sessions list' to see available sessions.")
                 sys.exit(1)
         else:
             # -c with no argument — continue the most recent session
@@ -1120,10 +1120,10 @@ def cmd_chat(args):
             "It looks like Hermes isn't configured yet -- no API keys or providers found."
         )
         print()
-        print("  Run:  hermes setup")
+        print("  Run:  avoi setup")
         print()
 
-        from hermes_cli.setup import (
+        from avoi_cli.setup import (
             is_interactive_stdin,
             print_noninteractive_setup_guidance,
         )
@@ -1142,12 +1142,12 @@ def cmd_chat(args):
             cmd_setup(args)
             return
         print()
-        print("You can run 'hermes setup' at any time to configure.")
+        print("You can run 'avoi setup' at any time to configure.")
         sys.exit(1)
 
     # Start update check in background (runs while other init happens)
     try:
-        from hermes_cli.banner import prefetch_update_check
+        from avoi_cli.banner import prefetch_update_check
 
         prefetch_update_check()
     except Exception:
@@ -1163,25 +1163,25 @@ def cmd_chat(args):
 
     # --yolo: bypass all dangerous command approvals
     if getattr(args, "yolo", False):
-        os.environ["HERMES_YOLO_MODE"] = "1"
+        os.environ["AVOI_YOLO_MODE"] = "1"
 
     # --ignore-user-config: make load_cli_config() / load_config() skip the
-    # user's ~/.hermes/config.yaml and return built-in defaults. Set BEFORE
+    # user's ~/.avoi/config.yaml and return built-in defaults. Set BEFORE
     # importing cli (which runs `CLI_CONFIG = load_cli_config()` at module
     # import time). Credentials in .env are still loaded — this flag only
     # ignores behavioral/config settings.
     if getattr(args, "ignore_user_config", False):
-        os.environ["HERMES_IGNORE_USER_CONFIG"] = "1"
+        os.environ["AVOI_IGNORE_USER_CONFIG"] = "1"
 
     # --ignore-rules: skip auto-injection of AGENTS.md/SOUL.md/.cursorrules
     # (rules), memory entries, and any preloaded skills coming from user config.
     # Maps to AIAgent(skip_context_files=True, skip_memory=True).
     if getattr(args, "ignore_rules", False):
-        os.environ["HERMES_IGNORE_RULES"] = "1"
+        os.environ["AVOI_IGNORE_RULES"] = "1"
 
     # --source: tag session source for filtering (e.g. 'tool' for third-party integrations)
     if getattr(args, "source", None):
-        os.environ["HERMES_SESSION_SOURCE"] = args.source
+        os.environ["AVOI_SESSION_SOURCE"] = args.source
 
     if use_tui:
         _launch_tui(
@@ -1224,7 +1224,7 @@ def cmd_chat(args):
 
 def cmd_gateway(args):
     """Gateway management commands."""
-    from hermes_cli.gateway import gateway_command
+    from avoi_cli.gateway import gateway_command
 
     gateway_command(args)
 
@@ -1232,7 +1232,7 @@ def cmd_gateway(args):
 def cmd_whatsapp(args):
     """Set up WhatsApp: choose mode, configure, install bridge, pair via QR."""
     _require_tty("whatsapp")
-    from hermes_cli.config import get_env_value, save_env_value
+    from avoi_cli.config import get_env_value, save_env_value
 
     print()
     print("⚕ WhatsApp Setup")
@@ -1367,7 +1367,7 @@ def cmd_whatsapp(args):
         print("✓ Bridge dependencies already installed")
 
     # ── Step 5: Check for existing session ───────────────────────────────
-    session_dir = get_hermes_home() / "whatsapp" / "session"
+    session_dir = get_avoi_home() / "whatsapp" / "session"
     session_dir.mkdir(parents=True, exist_ok=True)
 
     if (session_dir / "creds.json").exists():
@@ -1384,7 +1384,7 @@ def cmd_whatsapp(args):
             print("  ✓ Session cleared")
         else:
             print("\n✓ WhatsApp is configured and paired!")
-            print("  Start the gateway with: hermes gateway")
+            print("  Start the gateway with: avoi gateway")
             return
 
     # ── Step 6: QR code pairing ──────────────────────────────────────────
@@ -1415,28 +1415,28 @@ def cmd_whatsapp(args):
         print()
         if wa_mode == "bot":
             print("  Next steps:")
-            print("    1. Start the gateway:  hermes gateway")
+            print("    1. Start the gateway:  avoi gateway")
             print("    2. Send a message to the bot's WhatsApp number")
             print("    3. The agent will reply automatically")
             print()
-            print("  Tip: Agent responses are prefixed with '⚕ Hermes Agent'")
+            print("  Tip: Agent responses are prefixed with '⚕ AVOI Agent'")
         else:
             print("  Next steps:")
-            print("    1. Start the gateway:  hermes gateway")
+            print("    1. Start the gateway:  avoi gateway")
             print("    2. Open WhatsApp → Message Yourself")
             print("    3. Type a message — the agent will reply")
             print()
-            print("  Tip: Agent responses are prefixed with '⚕ Hermes Agent'")
+            print("  Tip: Agent responses are prefixed with '⚕ AVOI Agent'")
             print("  so you can tell them apart from your own messages.")
         print()
-        print("  Or install as a service: hermes gateway install")
+        print("  Or install as a service: avoi gateway install")
     else:
-        print("⚠ Pairing may not have completed. Run 'hermes whatsapp' to try again.")
+        print("⚠ Pairing may not have completed. Run 'avoi whatsapp' to try again.")
 
 
 def cmd_setup(args):
     """Interactive setup wizard."""
-    from hermes_cli.setup import run_setup_wizard
+    from avoi_cli.setup import run_setup_wizard
 
     run_setup_wizard(args)
 
@@ -1450,22 +1450,22 @@ def cmd_model(args):
 def select_provider_and_model(args=None):
     """Core provider selection + model picking logic.
 
-    Shared by ``cmd_model`` (``hermes model``) and the setup wizard
+    Shared by ``cmd_model`` (``avoi model``) and the setup wizard
     (``setup_model_provider`` in setup.py).  Handles the full flow:
     provider picker, credential prompting, model selection, and config
     persistence.
     """
-    from hermes_cli.auth import (
+    from avoi_cli.auth import (
         resolve_provider,
         AuthError,
         format_auth_error,
     )
-    from hermes_cli.config import (
+    from avoi_cli.config import (
         get_compatible_custom_providers,
         load_config,
         get_env_value,
     )
-    from hermes_cli.providers import resolve_provider_full
+    from avoi_cli.providers import resolve_provider_full
 
     config = load_config()
     current_model = config.get("model")
@@ -1481,7 +1481,7 @@ def select_provider_and_model(args=None):
         config_provider = model_cfg.get("provider")
 
     effective_provider = (
-        config_provider or os.getenv("HERMES_INFERENCE_PROVIDER") or "auto"
+        config_provider or os.getenv("AVOI_INFERENCE_PROVIDER") or "auto"
     )
     compatible_custom_providers = get_compatible_custom_providers(config)
     active = None
@@ -1495,8 +1495,8 @@ def select_provider_and_model(args=None):
             active = active_def.id
         else:
             warning = (
-                f"Unknown provider '{effective_provider}'. Check 'hermes model' for "
-                "available providers, or run 'hermes doctor' to diagnose config "
+                f"Unknown provider '{effective_provider}'. Check 'avoi model' for "
+                "available providers, or run 'avoi doctor' to diagnose config "
                 "issues."
             )
             print(f"Warning: {warning} Falling back to auto provider detection.")
@@ -1513,7 +1513,7 @@ def select_provider_and_model(args=None):
     if active == "openrouter" and get_env_value("OPENAI_BASE_URL"):
         active = "custom"
 
-    from hermes_cli.models import CANONICAL_PROVIDERS, _PROVIDER_LABELS
+    from avoi_cli.models import CANONICAL_PROVIDERS, _PROVIDER_LABELS
 
     provider_labels = dict(_PROVIDER_LABELS)  # derive from canonical list
     active_label = provider_labels.get(active, active) if active else "none"
@@ -1527,7 +1527,7 @@ def select_provider_and_model(args=None):
     all_providers = [(p.slug, p.tui_desc) for p in CANONICAL_PROVIDERS]
 
     def _named_custom_provider_map(cfg) -> dict[str, dict[str, str]]:
-        from hermes_cli.config import read_raw_config
+        from avoi_cli.config import read_raw_config
 
         # Build a lookup of raw (un-expanded) api_key templates keyed by a
         # stable identity. We intentionally bypass
@@ -1743,7 +1743,7 @@ def select_provider_and_model(args=None):
 
     # ── Post-switch cleanup: clear stale OPENAI_BASE_URL ──────────────
     # When the user switches to a named provider (anything except "custom"),
-    # a leftover OPENAI_BASE_URL in ~/.hermes/.env can poison auxiliary
+    # a leftover OPENAI_BASE_URL in ~/.avoi/.env can poison auxiliary
     # clients that use provider:auto. Clear it proactively.  (#5161)
     if selected_provider not in (
         "custom",
@@ -1754,14 +1754,14 @@ def select_provider_and_model(args=None):
 
 
 def _clear_stale_openai_base_url():
-    """Remove OPENAI_BASE_URL from ~/.hermes/.env if the active provider is not 'custom'.
+    """Remove OPENAI_BASE_URL from ~/.avoi/.env if the active provider is not 'custom'.
 
     After a provider switch, a leftover OPENAI_BASE_URL causes auxiliary
     clients (compression, vision, delegation) with provider:auto to route
     requests to the old custom endpoint instead of the newly selected
     provider.  See issue #5161.
     """
-    from hermes_cli.config import get_env_value, save_env_value, load_config
+    from avoi_cli.config import get_env_value, save_env_value, load_config
 
     cfg = load_config()
     model_cfg = cfg.get("model", {})
@@ -1791,9 +1791,9 @@ def _clear_stale_openai_base_url():
 # its own provider+model pair in config.yaml under `auxiliary.<task>`.
 #
 # The UI lives behind "Configure auxiliary models..." at the bottom of the
-# `hermes model` provider picker. It does NOT re-run credential setup — it
+# `avoi model` provider picker. It does NOT re-run credential setup — it
 # only routes already-authenticated providers to specific aux tasks. Users
-# configure new providers through the normal `hermes model` flow first.
+# configure new providers through the normal `avoi model` flow first.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # (task_key, display_name, short_description)
@@ -1840,7 +1840,7 @@ def _save_aux_choice(
     other task-specific settings are preserved untouched. The main model
     config (``model.default``/``model.provider``) is never modified.
     """
-    from hermes_cli.config import load_config, save_config
+    from avoi_cli.config import load_config, save_config
 
     cfg = load_config()
     aux = cfg.setdefault("auxiliary", {})
@@ -1860,7 +1860,7 @@ def _save_aux_choice(
 
 def _reset_aux_to_auto() -> int:
     """Reset every known aux task back to auto/empty. Returns number reset."""
-    from hermes_cli.config import load_config, save_config
+    from avoi_cli.config import load_config, save_config
 
     cfg = load_config()
     aux = cfg.setdefault("auxiliary", {})
@@ -1894,7 +1894,7 @@ def _aux_config_menu() -> None:
     Loops until the user picks "Back" so multiple tasks can be configured
     without returning to the main provider menu.
     """
-    from hermes_cli.config import load_config
+    from avoi_cli.config import load_config
 
     while True:
         cfg = load_config()
@@ -1948,10 +1948,10 @@ def _aux_select_for_task(task: str) -> None:
     Uses ``list_authenticated_providers()`` to only show providers the user
     has already configured. This avoids re-running OAuth/credential flows
     inside the aux picker — users set up new providers through the normal
-    ``hermes model`` flow, then route aux tasks to them here.
+    ``avoi model`` flow, then route aux tasks to them here.
     """
-    from hermes_cli.config import load_config
-    from hermes_cli.model_switch import list_authenticated_providers
+    from avoi_cli.config import load_config
+    from avoi_cli.model_switch import list_authenticated_providers
 
     cfg = load_config()
     aux = cfg.get("auxiliary", {}) if isinstance(cfg.get("auxiliary"), dict) else {}
@@ -2020,8 +2020,8 @@ def _aux_flow_provider_model(
     current_model: str = "",
 ) -> None:
     """Prompt for a model under an already-authenticated provider, save to aux."""
-    from hermes_cli.auth import _prompt_model_selection
-    from hermes_cli.models import get_pricing_for_provider
+    from avoi_cli.auth import _prompt_model_selection
+    from avoi_cli.models import get_pricing_for_provider
 
     display_name = next((name for key, name, _ in _AUX_TASKS if key == task), task)
 
@@ -2112,7 +2112,7 @@ def _prompt_provider_choice(choices, *, default=0):
     if the user cancels.
     """
     try:
-        from hermes_cli.setup import _curses_prompt_choice
+        from avoi_cli.setup import _curses_prompt_choice
 
         idx = _curses_prompt_choice("Select provider:", choices, default)
         if idx >= 0:
@@ -2145,12 +2145,12 @@ def _prompt_provider_choice(choices, *, default=0):
 
 def _model_flow_openrouter(config, current_model=""):
     """OpenRouter provider: ensure API key, then pick model."""
-    from hermes_cli.auth import (
+    from avoi_cli.auth import (
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
-    from hermes_cli.config import get_env_value, save_env_value
+    from avoi_cli.config import get_env_value, save_env_value
 
     api_key = get_env_value("OPENROUTER_API_KEY")
     if not api_key:
@@ -2171,7 +2171,7 @@ def _model_flow_openrouter(config, current_model=""):
         print("API key saved.")
         print()
 
-    from hermes_cli.models import model_ids, get_pricing_for_provider
+    from avoi_cli.models import model_ids, get_pricing_for_provider
 
     openrouter_models = model_ids(force_refresh=True)
 
@@ -2185,7 +2185,7 @@ def _model_flow_openrouter(config, current_model=""):
         _save_model_choice(selected)
 
         # Update config provider and deactivate any OAuth provider
-        from hermes_cli.config import load_config, save_config
+        from avoi_cli.config import load_config, save_config
 
         cfg = load_config()
         model = cfg.get("model")
@@ -2204,12 +2204,12 @@ def _model_flow_openrouter(config, current_model=""):
 
 def _model_flow_ai_gateway(config, current_model=""):
     """Vercel AI Gateway provider: ensure API key, then pick model with pricing."""
-    from hermes_cli.auth import (
+    from avoi_cli.auth import (
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
-    from hermes_cli.config import get_env_value, save_env_value
+    from avoi_cli.config import get_env_value, save_env_value
 
     api_key = get_env_value("AI_GATEWAY_API_KEY")
     if not api_key:
@@ -2231,7 +2231,7 @@ def _model_flow_ai_gateway(config, current_model=""):
         print("API key saved.")
         print()
 
-    from hermes_cli.models import ai_gateway_model_ids, get_pricing_for_provider
+    from avoi_cli.models import ai_gateway_model_ids, get_pricing_for_provider
 
     models_list = ai_gateway_model_ids(force_refresh=True)
     pricing = get_pricing_for_provider("ai-gateway", force_refresh=True)
@@ -2242,7 +2242,7 @@ def _model_flow_ai_gateway(config, current_model=""):
     if selected:
         _save_model_choice(selected)
 
-        from hermes_cli.config import load_config, save_config
+        from avoi_cli.config import load_config, save_config
 
         cfg = load_config()
         model = cfg.get("model")
@@ -2261,24 +2261,24 @@ def _model_flow_ai_gateway(config, current_model=""):
 
 def _model_flow_nous(config, current_model="", args=None):
     """Nous Portal provider: ensure logged in, then pick model."""
-    from hermes_cli.auth import (
+    from avoi_cli.auth import (
         get_provider_auth_state,
         _prompt_model_selection,
         _save_model_choice,
         _update_config_for_provider,
-        resolve_nous_runtime_credentials,
+        resolve_avoi_runtime_credentials,
         AuthError,
         format_auth_error,
         _login_nous,
         PROVIDER_REGISTRY,
     )
-    from hermes_cli.config import (
+    from avoi_cli.config import (
         get_env_value,
         load_config,
         save_config,
         save_env_value,
     )
-    from hermes_cli.nous_subscription import prompt_enable_tool_gateway
+    from avoi_cli.avoi_subscription import prompt_enable_tool_gateway
 
     state = get_provider_auth_state("nous")
     if not state or not state.get("access_token"):
@@ -2314,11 +2314,11 @@ def _model_flow_nous(config, current_model="", args=None):
     # Already logged in — use curated model list (same as OpenRouter defaults).
     # The live /models endpoint returns hundreds of models; the curated list
     # shows only agentic models users recognize from OpenRouter.
-    from hermes_cli.models import (
+    from avoi_cli.models import (
         _PROVIDER_MODELS,
         get_pricing_for_provider,
-        check_nous_free_tier,
-        partition_nous_models_by_tier,
+        check_avoi_free_tier,
+        partition_avoi_models_by_tier,
     )
 
     model_ids = _PROVIDER_MODELS.get("nous", [])
@@ -2328,7 +2328,7 @@ def _model_flow_nous(config, current_model="", args=None):
 
     # Verify credentials are still valid (catches expired sessions early)
     try:
-        creds = resolve_nous_runtime_credentials(min_key_ttl_seconds=5 * 60)
+        creds = resolve_avoi_runtime_credentials(min_key_ttl_seconds=5 * 60)
     except Exception as exc:
         relogin = isinstance(exc, AuthError) and exc.relogin_required
         msg = format_auth_error(exc) if isinstance(exc, AuthError) else str(exc)
@@ -2357,13 +2357,13 @@ def _model_flow_nous(config, current_model="", args=None):
     pricing = get_pricing_for_provider("nous")
 
     # Check if user is on free tier
-    free_tier = check_nous_free_tier()
+    free_tier = check_avoi_free_tier()
 
     # For free users: partition models into selectable/unavailable based on
     # whether they are free per the Portal-reported pricing.
     unavailable_models: list[str] = []
     if free_tier:
-        model_ids, unavailable_models = partition_nous_models_by_tier(
+        model_ids, unavailable_models = partition_avoi_models_by_tier(
             model_ids, pricing, free_tier=True
         )
 
@@ -2372,20 +2372,20 @@ def _model_flow_nous(config, current_model="", args=None):
         return
 
     # Resolve portal URL for upgrade links (may differ on staging)
-    _nous_portal_url = ""
+    _avoi_portal_url = ""
     try:
-        _nous_state = get_provider_auth_state("nous")
-        if _nous_state:
-            _nous_portal_url = _nous_state.get("portal_base_url", "")
+        _avoi_state = get_provider_auth_state("nous")
+        if _avoi_state:
+            _avoi_portal_url = _avoi_state.get("portal_base_url", "")
     except Exception:
         pass
 
     if free_tier and not model_ids:
         print("No free models currently available.")
         if unavailable_models:
-            from hermes_cli.auth import DEFAULT_NOUS_PORTAL_URL
+            from avoi_cli.auth import DEFAULT_NOUS_PORTAL_URL
 
-            _url = (_nous_portal_url or DEFAULT_NOUS_PORTAL_URL).rstrip("/")
+            _url = (_avoi_portal_url or DEFAULT_NOUS_PORTAL_URL).rstrip("/")
             print(f"Upgrade at {_url} to access paid models.")
         return
 
@@ -2398,7 +2398,7 @@ def _model_flow_nous(config, current_model="", args=None):
         current_model=current_model,
         pricing=pricing,
         unavailable_models=unavailable_models,
-        portal_url=_nous_portal_url,
+        portal_url=_avoi_portal_url,
     )
     if selected:
         _save_model_choice(selected)
@@ -2433,7 +2433,7 @@ def _model_flow_nous(config, current_model="", args=None):
 
 def _model_flow_openai_codex(config, current_model=""):
     """OpenAI Codex provider: ensure logged in, then pick model."""
-    from hermes_cli.auth import (
+    from avoi_cli.auth import (
         get_codex_auth_status,
         _prompt_model_selection,
         _save_model_choice,
@@ -2442,7 +2442,7 @@ def _model_flow_openai_codex(config, current_model=""):
         PROVIDER_REGISTRY,
         DEFAULT_CODEX_BASE_URL,
     )
-    from hermes_cli.codex_models import get_codex_model_ids
+    from avoi_cli.codex_models import get_codex_model_ids
 
     status = get_codex_auth_status()
     if status.get("logged_in"):
@@ -2493,7 +2493,7 @@ def _model_flow_openai_codex(config, current_model=""):
             return
 
     _codex_token = None
-    # Prefer credential pool (where `hermes auth` stores device_code tokens),
+    # Prefer credential pool (where `avoi auth` stores device_code tokens),
     # fall back to legacy provider state.
     try:
         _codex_status = get_codex_auth_status()
@@ -2503,7 +2503,7 @@ def _model_flow_openai_codex(config, current_model=""):
         pass
     if not _codex_token:
         try:
-            from hermes_cli.auth import resolve_codex_runtime_credentials
+            from avoi_cli.auth import resolve_codex_runtime_credentials
 
             _codex_creds = resolve_codex_runtime_credentials()
             _codex_token = _codex_creds.get("api_key")
@@ -2529,7 +2529,7 @@ _DEFAULT_QWEN_PORTAL_MODELS = [
 
 def _model_flow_qwen_oauth(_config, current_model=""):
     """Qwen OAuth provider: reuse local Qwen CLI login, then pick model."""
-    from hermes_cli.auth import (
+    from avoi_cli.auth import (
         get_qwen_auth_status,
         resolve_qwen_runtime_credentials,
         _prompt_model_selection,
@@ -2537,7 +2537,7 @@ def _model_flow_qwen_oauth(_config, current_model=""):
         _update_config_for_provider,
         DEFAULT_QWEN_BASE_URL,
     )
-    from hermes_cli.models import fetch_api_models
+    from avoi_cli.models import fetch_api_models
 
     status = get_qwen_auth_status()
     if not status.get("logged_in"):
@@ -2578,9 +2578,9 @@ def _model_flow_google_gemini_cli(_config, current_model=""):
       2. If creds missing, run PKCE browser OAuth via agent.google_oauth.
       3. Resolve project context (env -> config -> auto-discover -> free tier).
       4. Prompt user to pick a model.
-      5. Save to ~/.hermes/config.yaml.
+      5. Save to ~/.avoi/config.yaml.
     """
-    from hermes_cli.auth import (
+    from avoi_cli.auth import (
         DEFAULT_GEMINI_CLOUDCODE_BASE_URL,
         get_gemini_oauth_auth_status,
         resolve_gemini_oauth_runtime_credentials,
@@ -2588,7 +2588,7 @@ def _model_flow_google_gemini_cli(_config, current_model=""):
         _save_model_choice,
         _update_config_for_provider,
     )
-    from hermes_cli.models import _PROVIDER_MODELS
+    from avoi_cli.models import _PROVIDER_MODELS
 
     print()
     print("⚠  Google considers using the Gemini CLI OAuth client with third-party")
@@ -2651,8 +2651,8 @@ def _model_flow_custom(config):
     Automatically saves the endpoint to ``custom_providers`` in config.yaml
     so it appears in the provider menu on subsequent runs.
     """
-    from hermes_cli.auth import _save_model_choice, deactivate_provider
-    from hermes_cli.config import get_env_value, load_config, save_config
+    from avoi_cli.auth import _save_model_choice, deactivate_provider
+    from avoi_cli.config import get_env_value, load_config, save_config
 
     current_url = get_env_value("OPENAI_BASE_URL") or ""
     current_key = get_env_value("OPENAI_API_KEY") or ""
@@ -2713,7 +2713,7 @@ def _model_flow_custom(config):
             print(f"  Updated URL: {effective_url}")
         print()
 
-    from hermes_cli.models import probe_api_models
+    from avoi_cli.models import probe_api_models
 
     probe = probe_api_models(effective_key, effective_url)
     if probe.get("used_fallback") and probe.get("resolved_base_url"):
@@ -2831,7 +2831,7 @@ def _model_flow_custom(config):
             _caller_model["api_key"] = effective_key
         _caller_model.pop("api_mode", None)
         config["model"] = _caller_model
-        print("Endpoint saved. Use `/model` in chat or `hermes model` to set a model.")
+        print("Endpoint saved. Use `/model` in chat or `avoi model` to set a model.")
 
     # Auto-save to custom_providers so it appears in the menu next time
     _save_custom_provider(
@@ -2886,7 +2886,7 @@ def _save_custom_provider(
     model name and context_length but doesn't add a duplicate entry.
     Uses *name* when provided, otherwise auto-generates from the URL.
     """
-    from hermes_cli.config import load_config, save_config
+    from avoi_cli.config import load_config, save_config
 
     cfg = load_config()
     providers = cfg.get("custom_providers") or []
@@ -2949,9 +2949,9 @@ def _model_flow_azure_foundry(config, current_model=""):
     :func:`agent.model_metadata.get_model_context_length` chain
     (models.dev, provider metadata, hardcoded family fallbacks).
     """
-    from hermes_cli.auth import _save_model_choice, deactivate_provider  # noqa: F401
-    from hermes_cli.config import get_env_value, save_env_value, load_config, save_config
-    from hermes_cli import azure_detect
+    from avoi_cli.auth import _save_model_choice, deactivate_provider  # noqa: F401
+    from avoi_cli.config import get_env_value, save_env_value, load_config, save_config
+    from avoi_cli import azure_detect
     import getpass
 
     # ── Load current Azure Foundry configuration ─────────────────────
@@ -3131,7 +3131,7 @@ def _model_flow_azure_foundry(config, current_model=""):
 
 def _remove_custom_provider(config):
     """Let the user remove a saved custom provider from config.yaml."""
-    from hermes_cli.config import load_config, save_config
+    from avoi_cli.config import load_config, save_config
 
     cfg = load_config()
     providers = cfg.get("custom_providers") or []
@@ -3166,7 +3166,7 @@ def _remove_custom_provider(config):
             title="Select provider to remove:",
         )
         idx = menu.show()
-        from hermes_cli.curses_ui import flush_stdin
+        from avoi_cli.curses_ui import flush_stdin
 
         flush_stdin()
         print()
@@ -3200,9 +3200,9 @@ def _model_flow_named_custom(config, provider_info):
     If a model was previously saved, it is pre-selected in the menu.
     Falls back to the saved model if probing fails.
     """
-    from hermes_cli.auth import _save_model_choice, deactivate_provider
-    from hermes_cli.config import load_config, save_config
-    from hermes_cli.models import fetch_api_models
+    from avoi_cli.auth import _save_model_choice, deactivate_provider
+    from avoi_cli.config import load_config, save_config
+    from avoi_cli.models import fetch_api_models
 
     name = provider_info["name"]
     base_url = provider_info["base_url"]
@@ -3252,7 +3252,7 @@ def _model_flow_named_custom(config, provider_info):
                 title=f"Select model from {name}:",
             )
             idx = menu.show()
-            from hermes_cli.curses_ui import flush_stdin
+            from avoi_cli.curses_ui import flush_stdin
 
             flush_stdin()
             print()
@@ -3346,7 +3346,7 @@ def _model_flow_named_custom(config, provider_info):
 
 
 # Curated model lists for direct API-key providers — single source in models.py
-from hermes_cli.models import _PROVIDER_MODELS
+from avoi_cli.models import _PROVIDER_MODELS
 
 
 def _current_reasoning_effort(config) -> str:
@@ -3411,7 +3411,7 @@ def _prompt_reasoning_effort_selection(efforts, current_effort=""):
             title="Select reasoning effort:",
         )
         idx = menu.show()
-        from hermes_cli.curses_ui import flush_stdin
+        from avoi_cli.curses_ui import flush_stdin
 
         flush_stdin()
         if idx is None:
@@ -3454,15 +3454,15 @@ def _prompt_reasoning_effort_selection(efforts, current_effort=""):
 
 def _model_flow_copilot(config, current_model=""):
     """GitHub Copilot flow using env vars, gh CLI, or OAuth device code."""
-    from hermes_cli.auth import (
+    from avoi_cli.auth import (
         PROVIDER_REGISTRY,
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
         resolve_api_key_provider_credentials,
     )
-    from hermes_cli.config import save_env_value, load_config, save_config
-    from hermes_cli.models import (
+    from avoi_cli.config import save_env_value, load_config, save_config
+    from avoi_cli.models import (
         fetch_api_models,
         fetch_github_model_catalog,
         github_model_reasoning_efforts,
@@ -3501,7 +3501,7 @@ def _model_flow_copilot(config, current_model=""):
 
         if choice == "1":
             try:
-                from hermes_cli.copilot_auth import copilot_device_code_login
+                from avoi_cli.copilot_auth import copilot_device_code_login
 
                 token = copilot_device_code_login()
                 if token:
@@ -3527,7 +3527,7 @@ def _model_flow_copilot(config, current_model=""):
                 return
             # Validate token type
             try:
-                from hermes_cli.copilot_auth import validate_copilot_token
+                from avoi_cli.copilot_auth import validate_copilot_token
 
                 valid, msg = validate_copilot_token(new_key)
                 if not valid:
@@ -3645,7 +3645,7 @@ def _model_flow_copilot(config, current_model=""):
 
 def _model_flow_copilot_acp(config, current_model=""):
     """GitHub Copilot ACP flow using the local Copilot CLI."""
-    from hermes_cli.auth import (
+    from avoi_cli.auth import (
         PROVIDER_REGISTRY,
         _prompt_model_selection,
         _save_model_choice,
@@ -3654,11 +3654,11 @@ def _model_flow_copilot_acp(config, current_model=""):
         resolve_api_key_provider_credentials,
         resolve_external_process_provider_credentials,
     )
-    from hermes_cli.models import (
+    from avoi_cli.models import (
         fetch_github_model_catalog,
         normalize_copilot_model_id,
     )
-    from hermes_cli.config import load_config, save_config
+    from avoi_cli.config import load_config, save_config
 
     del config
 
@@ -3683,7 +3683,7 @@ def _model_flow_copilot_acp(config, current_model=""):
     except Exception as exc:
         print(f"  ⚠ {exc}")
         print(
-            "  Set HERMES_COPILOT_ACP_COMMAND or COPILOT_CLI_PATH if Copilot CLI is installed elsewhere."
+            "  Set AVOI_COPILOT_ACP_COMMAND or COPILOT_CLI_PATH if Copilot CLI is installed elsewhere."
         )
         return
 
@@ -3764,14 +3764,14 @@ def _model_flow_kimi(config, current_model=""):
 
     No manual base URL prompt — endpoint is determined by key prefix.
     """
-    from hermes_cli.auth import (
+    from avoi_cli.auth import (
         PROVIDER_REGISTRY,
         KIMI_CODE_BASE_URL,
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
-    from hermes_cli.config import (
+    from avoi_cli.config import (
         get_env_value,
         save_env_value,
         load_config,
@@ -3876,7 +3876,7 @@ def _infer_stepfun_region(base_url: str) -> str:
 
 
 def _stepfun_base_url_for_region(region: str) -> str:
-    from hermes_cli.auth import (
+    from avoi_cli.auth import (
         STEPFUN_STEP_PLAN_CN_BASE_URL,
         STEPFUN_STEP_PLAN_INTL_BASE_URL,
     )
@@ -3890,14 +3890,14 @@ def _stepfun_base_url_for_region(region: str) -> str:
 
 def _model_flow_stepfun(config, current_model=""):
     """StepFun Step Plan flow with region-specific endpoints."""
-    from hermes_cli.auth import (
+    from avoi_cli.auth import (
         PROVIDER_REGISTRY,
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
-    from hermes_cli.config import get_env_value, save_env_value, load_config, save_config
-    from hermes_cli.models import fetch_api_models
+    from avoi_cli.config import get_env_value, save_env_value, load_config, save_config
+    from avoi_cli.models import fetch_api_models
 
     provider_id = "stepfun"
     pconfig = PROVIDER_REGISTRY[provider_id]
@@ -4007,18 +4007,18 @@ def _model_flow_bedrock_api_key(config, region, current_model=""):
     For developers who don't have an AWS account but received a Bedrock API Key
     from their AWS admin. Works like any OpenAI-compatible endpoint.
     """
-    from hermes_cli.auth import (
+    from avoi_cli.auth import (
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
-    from hermes_cli.config import (
+    from avoi_cli.config import (
         load_config,
         save_config,
         get_env_value,
         save_env_value,
     )
-    from hermes_cli.models import _PROVIDER_MODELS
+    from avoi_cli.models import _PROVIDER_MODELS
 
     mantle_base_url = f"https://bedrock-mantle.{region}.api.aws/v1"
 
@@ -4076,7 +4076,7 @@ def _model_flow_bedrock_api_key(config, region, current_model=""):
         bedrock_cfg["region"] = region
         cfg["bedrock"] = bedrock_cfg
 
-        # Save the API key env var name so hermes knows where to find it
+        # Save the API key env var name so avoi knows where to find it
         save_env_value("OPENAI_API_KEY", existing_key)
         save_env_value("OPENAI_BASE_URL", mantle_base_url)
 
@@ -4096,13 +4096,13 @@ def _model_flow_bedrock(config, current_model=""):
     Auth is handled by the AWS SDK default credential chain (env vars, profile,
     instance role), so no API key prompt is needed.
     """
-    from hermes_cli.auth import (
+    from avoi_cli.auth import (
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
-    from hermes_cli.config import load_config, save_config
-    from hermes_cli.models import _PROVIDER_MODELS
+    from avoi_cli.config import load_config, save_config
+    from avoi_cli.models import _PROVIDER_MODELS
 
     # 1. Check for AWS credentials
     try:
@@ -4274,19 +4274,19 @@ def _model_flow_bedrock(config, current_model=""):
 
 def _model_flow_api_key_provider(config, provider_id, current_model=""):
     """Generic flow for API-key providers (z.ai, MiniMax, OpenCode, etc.)."""
-    from hermes_cli.auth import (
+    from avoi_cli.auth import (
         PROVIDER_REGISTRY,
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
-    from hermes_cli.config import (
+    from avoi_cli.config import (
         get_env_value,
         save_env_value,
         load_config,
         save_config,
     )
-    from hermes_cli.models import (
+    from avoi_cli.models import (
         fetch_api_models,
         opencode_model_api_mode,
         normalize_opencode_model_id,
@@ -4409,7 +4409,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
     #
     # Ollama Cloud: dedicated merged discovery (live API + models.dev + disk cache)
     if provider_id == "ollama-cloud":
-        from hermes_cli.models import fetch_ollama_cloud_models
+        from avoi_cli.models import fetch_ollama_cloud_models
 
         api_key_for_probe = existing_key or (get_env_value(key_env) if key_env else "")
         model_list = fetch_ollama_cloud_models(
@@ -4513,7 +4513,7 @@ def _run_anthropic_oauth_flow(save_env_value):
         read_claude_code_credentials,
         is_claude_code_token_valid,
     )
-    from hermes_cli.config import (
+    from avoi_cli.config import (
         save_anthropic_oauth_token,
         use_anthropic_claude_code_credentials,
     )
@@ -4528,7 +4528,7 @@ def _run_anthropic_oauth_flow(save_env_value):
         ):
             use_anthropic_claude_code_credentials(save_fn=save_env_value)
             print("  ✓ Claude Code credentials linked.")
-            from hermes_constants import display_hermes_home as _dhh_fn
+            from avoi_constants import display_avoi_home as _dhh_fn
 
             print(
                 f"    Hermes will use Claude's credential store directly instead of copying a setup-token into {_dhh_fn()}/.env."
@@ -4580,7 +4580,7 @@ def _run_anthropic_oauth_flow(save_env_value):
         print("    1. Install Claude Code:  npm install -g @anthropic-ai/claude-code")
         print("    2. Run:                  claude setup-token")
         print("    3. Follow the browser prompts to authorize")
-        print("    4. Re-run:               hermes model")
+        print("    4. Re-run:               avoi model")
         print()
         print("  Or paste an existing setup-token now (sk-ant-oat-...):")
         print()
@@ -4601,21 +4601,21 @@ def _run_anthropic_oauth_flow(save_env_value):
 
 def _model_flow_anthropic(config, current_model=""):
     """Flow for Anthropic provider — OAuth subscription, API key, or Claude Code creds."""
-    from hermes_cli.auth import (
+    from avoi_cli.auth import (
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
-    from hermes_cli.config import (
+    from avoi_cli.config import (
         save_env_value,
         load_config,
         save_config,
         save_anthropic_api_key,
     )
-    from hermes_cli.models import _PROVIDER_MODELS
+    from avoi_cli.models import _PROVIDER_MODELS
 
     # Check ALL credential sources
-    from hermes_cli.auth import get_anthropic_key
+    from avoi_cli.auth import get_anthropic_key
 
     existing_key = get_anthropic_key()
     cc_available = False
@@ -4722,7 +4722,7 @@ def _model_flow_anthropic(config, current_model=""):
         # Update config with provider — clear base_url since
         # resolve_runtime_provider() always hardcodes Anthropic's URL.
         # Leaving a stale base_url in config can contaminate other
-        # providers if the user switches without running 'hermes model'.
+        # providers if the user switches without running 'avoi model'.
         cfg = load_config()
         model = cfg.get("model")
         if not isinstance(model, dict):
@@ -4740,76 +4740,76 @@ def _model_flow_anthropic(config, current_model=""):
 
 def cmd_login(args):
     """Authenticate Hermes CLI with a provider."""
-    from hermes_cli.auth import login_command
+    from avoi_cli.auth import login_command
 
     login_command(args)
 
 
 def cmd_logout(args):
     """Clear provider authentication."""
-    from hermes_cli.auth import logout_command
+    from avoi_cli.auth import logout_command
 
     logout_command(args)
 
 
 def cmd_auth(args):
     """Manage pooled credentials."""
-    from hermes_cli.auth_commands import auth_command
+    from avoi_cli.auth_commands import auth_command
 
     auth_command(args)
 
 
 def cmd_status(args):
     """Show status of all components."""
-    from hermes_cli.status import show_status
+    from avoi_cli.status import show_status
 
     show_status(args)
 
 
 def cmd_cron(args):
     """Cron job management."""
-    from hermes_cli.cron import cron_command
+    from avoi_cli.cron import cron_command
 
     cron_command(args)
 
 
 def cmd_webhook(args):
     """Webhook subscription management."""
-    from hermes_cli.webhook import webhook_command
+    from avoi_cli.webhook import webhook_command
 
     webhook_command(args)
 
 
 def cmd_hooks(args):
     """Shell-hook inspection and management."""
-    from hermes_cli.hooks import hooks_command
+    from avoi_cli.hooks import hooks_command
     hooks_command(args)
 
 
 def cmd_doctor(args):
     """Check configuration and dependencies."""
-    from hermes_cli.doctor import run_doctor
+    from avoi_cli.doctor import run_doctor
 
     run_doctor(args)
 
 
 def cmd_dump(args):
     """Dump setup summary for support/debugging."""
-    from hermes_cli.dump import run_dump
+    from avoi_cli.dump import run_dump
 
     run_dump(args)
 
 
 def cmd_debug(args):
     """Debug tools (share report, etc.)."""
-    from hermes_cli.debug import run_debug
+    from avoi_cli.debug import run_debug
 
     run_debug(args)
 
 
 def cmd_config(args):
     """Configuration management."""
-    from hermes_cli.config import config_command
+    from avoi_cli.config import config_command
 
     config_command(args)
 
@@ -4817,25 +4817,25 @@ def cmd_config(args):
 def cmd_backup(args):
     """Back up Hermes home directory to a zip file."""
     if getattr(args, "quick", False):
-        from hermes_cli.backup import run_quick_backup
+        from avoi_cli.backup import run_quick_backup
 
         run_quick_backup(args)
     else:
-        from hermes_cli.backup import run_backup
+        from avoi_cli.backup import run_backup
 
         run_backup(args)
 
 
 def cmd_import(args):
     """Restore a Hermes backup from a zip file."""
-    from hermes_cli.backup import run_import
+    from avoi_cli.backup import run_import
 
     run_import(args)
 
 
 def cmd_version(args):
     """Show version."""
-    print(f"Hermes Agent v{__version__} ({__release_date__})")
+    print(f"AVOI Agent v{__version__} ({__release_date__})")
     print(f"Project: {PROJECT_ROOT}")
 
     # Show Python version
@@ -4851,8 +4851,8 @@ def cmd_version(args):
 
     # Show update status (synchronous — acceptable since user asked for version info)
     try:
-        from hermes_cli.banner import check_for_updates
-        from hermes_cli.config import recommended_update_command
+        from avoi_cli.banner import check_for_updates
+        from avoi_cli.config import recommended_update_command
 
         behind = check_for_updates()
         if behind and behind > 0:
@@ -4868,9 +4868,9 @@ def cmd_version(args):
 
 
 def cmd_uninstall(args):
-    """Uninstall Hermes Agent."""
+    """Uninstall AVOI Agent."""
     _require_tty("uninstall")
-    from hermes_cli.uninstall import run_uninstall
+    from avoi_cli.uninstall import run_uninstall
 
     run_uninstall(args)
 
@@ -4909,15 +4909,15 @@ def _gateway_prompt(prompt_text: str, default: str = "", timeout: float = 300.0)
     Writes a prompt marker file so the gateway can forward the question to the
     user, then polls for a response file.  Falls back to *default* on timeout.
 
-    Used by ``hermes update --gateway`` so interactive prompts (stash restore,
+    Used by ``avoi update --gateway`` so interactive prompts (stash restore,
     config migration) are forwarded to the messenger instead of being silently
     skipped.
     """
     import json as _json
     import uuid as _uuid
-    from hermes_constants import get_hermes_home
+    from avoi_constants import get_avoi_home
 
-    home = get_hermes_home()
+    home = get_avoi_home()
     prompt_path = home / ".update_prompt.json"
     response_path = home / ".update_response"
 
@@ -4959,7 +4959,7 @@ def _build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
     Args:
         web_dir: Path to the ``web/`` source directory.
         fatal: If True, print error guidance and return False on failure
-               instead of a soft warning (used by ``hermes web``).
+               instead of a soft warning (used by ``avoi web``).
 
     Returns True if the build succeeded or was skipped (no package.json).
     """
@@ -4977,7 +4977,7 @@ def _build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
     if r1.returncode != 0:
         print(
             f"  {'✗' if fatal else '⚠'} Web UI npm install failed"
-            + ("" if fatal else " (hermes web will not be available)")
+            + ("" if fatal else " (avoi web will not be available)")
         )
         if fatal:
             print("  Run manually:  cd web && npm install && npm run build")
@@ -4986,7 +4986,7 @@ def _build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
     if r2.returncode != 0:
         print(
             f"  {'✗' if fatal else '⚠'} Web UI build failed"
-            + ("" if fatal else " (hermes web will not be available)")
+            + ("" if fatal else " (avoi web will not be available)")
         )
         if fatal:
             print("  Run manually:  cd web && npm install && npm run build")
@@ -4996,7 +4996,7 @@ def _build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
 
 
 def _update_via_zip(args):
-    """Update Hermes Agent by downloading a ZIP archive.
+    """Update AVOI Agent by downloading a ZIP archive.
 
     Used on Windows when git file I/O is broken (antivirus, NTFS filter
     drivers causing 'Invalid argument' errors on file creation).
@@ -5007,13 +5007,13 @@ def _update_via_zip(args):
 
     branch = "main"
     zip_url = (
-        f"https://github.com/NousResearch/hermes-agent/archive/refs/heads/{branch}.zip"
+        f"https://github.com/avoi-ai/avoi-agent/archive/refs/heads/{branch}.zip"
     )
 
     print("→ Downloading latest version...")
     try:
-        tmp_dir = tempfile.mkdtemp(prefix="hermes-update-")
-        zip_path = os.path.join(tmp_dir, f"hermes-agent-{branch}.zip")
+        tmp_dir = tempfile.mkdtemp(prefix="avoi-update-")
+        zip_path = os.path.join(tmp_dir, f"avoi-agent-{branch}.zip")
         urlretrieve(zip_url, zip_path)
 
         print("→ Extracting...")
@@ -5031,8 +5031,8 @@ def _update_via_zip(args):
                     )
             zf.extractall(tmp_dir)
 
-        # GitHub ZIPs extract to hermes-agent-<branch>/
-        extracted = os.path.join(tmp_dir, f"hermes-agent-{branch}")
+        # GitHub ZIPs extract to avoi-agent-<branch>/
+        extracted = os.path.join(tmp_dir, f"avoi-agent-{branch}")
         if not os.path.isdir(extracted):
             # Try to find it
             for d in os.listdir(tmp_dir):
@@ -5159,7 +5159,7 @@ def _stash_local_changes_if_needed(git_cmd: list[str], cwd: Path) -> Optional[st
     from datetime import datetime, timezone
 
     stash_name = datetime.now(timezone.utc).strftime(
-        "hermes-update-autostash-%Y%m%d-%H%M%S"
+        "avoi-update-autostash-%Y%m%d-%H%M%S"
     )
     print("→ Local changes detected — stashing before update...")
     subprocess.run(
@@ -5269,7 +5269,7 @@ def _restore_stashed_changes(
         print(f"  Stash ref: {stash_ref}")
 
         # Always reset to clean state — leaving conflict markers in source
-        # files makes hermes completely unrunnable (SyntaxError on import).
+        # files makes avoi completely unrunnable (SyntaxError on import).
         # The user's changes are safe in the stash for manual recovery.
         subprocess.run(
             git_cmd + ["reset", "--hard", "HEAD"],
@@ -5318,16 +5318,16 @@ def _restore_stashed_changes(
 
 
 # =========================================================================
-# Fork detection and upstream management for `hermes update`
+# Fork detection and upstream management for `avoi update`
 # =========================================================================
 
 OFFICIAL_REPO_URLS = {
-    "https://github.com/NousResearch/hermes-agent.git",
-    "git@github.com:NousResearch/hermes-agent.git",
-    "https://github.com/NousResearch/hermes-agent",
-    "git@github.com:NousResearch/hermes-agent",
+    "https://github.com/avoi-ai/avoi-agent.git",
+    "git@github.com:avoi-ai/avoi-agent.git",
+    "https://github.com/avoi-ai/avoi-agent",
+    "git@github.com:avoi-ai/avoi-agent",
 }
-OFFICIAL_REPO_URL = "https://github.com/NousResearch/hermes-agent.git"
+OFFICIAL_REPO_URL = "https://github.com/avoi-ai/avoi-agent.git"
 SKIP_UPSTREAM_PROMPT_FILE = ".skip_upstream_prompt"
 
 
@@ -5410,17 +5410,17 @@ def _count_commits_between(git_cmd: list[str], cwd: Path, base: str, head: str) 
 
 def _should_skip_upstream_prompt() -> bool:
     """Check if user previously declined to add upstream."""
-    from hermes_constants import get_hermes_home
+    from avoi_constants import get_avoi_home
 
-    return (get_hermes_home() / SKIP_UPSTREAM_PROMPT_FILE).exists()
+    return (get_avoi_home() / SKIP_UPSTREAM_PROMPT_FILE).exists()
 
 
 def _mark_skip_upstream_prompt():
     """Create marker file to skip future upstream prompts."""
     try:
-        from hermes_constants import get_hermes_home
+        from avoi_constants import get_avoi_home
 
-        (get_hermes_home() / SKIP_UPSTREAM_PROMPT_FILE).touch()
+        (get_avoi_home() / SKIP_UPSTREAM_PROMPT_FILE).touch()
     except Exception:
         pass
 
@@ -5461,7 +5461,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
         # Ask user if they want to add upstream
         print()
         print("ℹ Your fork is not tracking the official Hermes repository.")
-        print("  This means you may miss updates from NousResearch/hermes-agent.")
+        print("  This means you may miss updates from avoi-ai/avoi-agent.")
         print()
         try:
             response = (
@@ -5475,7 +5475,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
             print("→ Adding upstream remote...")
             if _add_upstream_remote(git_cmd, cwd):
                 print(
-                    "  ✓ Added upstream: https://github.com/NousResearch/hermes-agent.git"
+                    "  ✓ Added upstream: https://github.com/avoi-ai/avoi-agent.git"
                 )
                 has_upstream = True
             else:
@@ -5483,7 +5483,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
                 return
         else:
             print(
-                "  Skipped. Run 'git remote add upstream https://github.com/NousResearch/hermes-agent.git' to add later."
+                "  Skipped. Run 'git remote add upstream https://github.com/avoi-ai/avoi-agent.git' to add later."
             )
             _mark_skip_upstream_prompt()
             return
@@ -5561,13 +5561,13 @@ def _invalidate_update_cache():
     reports a stale "commits behind" count after a successful update.
 
     The git repo is shared across profiles — when one profile runs
-    ``hermes update``, every profile is now current.
+    ``avoi update``, every profile is now current.
     """
     homes = []
     # Default profile home (Docker-aware — uses /opt/data in Docker)
-    from hermes_constants import get_default_hermes_root
+    from avoi_constants import get_default_avoi_root
 
-    default_home = get_default_hermes_root()
+    default_home = get_default_avoi_root()
     homes.append(default_home)
     # Named profiles under <root>/profiles/
     profiles_root = default_home / "profiles"
@@ -5605,7 +5605,7 @@ def _load_installable_optional_extras() -> list[str]:
         return []
 
     # Parse the [all] group to find which extras it references.
-    # Entries look like "hermes-agent[matrix]" or "package-name[extra]".
+    # Entries look like "avoi-agent[matrix]" or "package-name[extra]".
     all_refs = optional_deps.get("all", [])
     referenced: list[str] = []
     for ref in all_refs:
@@ -5702,12 +5702,12 @@ def _update_node_dependencies() -> None:
 
 
 class _UpdateOutputStream:
-    """Stream wrapper used during ``hermes update`` to survive terminal loss.
+    """Stream wrapper used during ``avoi update`` to survive terminal loss.
 
     Wraps the process's original stdout/stderr so that:
 
     * Every write is also mirrored to an append-only log file
-      (``~/.hermes/logs/update.log``) that users can inspect after the
+      (``~/.avoi/logs/update.log``) that users can inspect after the
       terminal disconnects.
     * Writes to the original stream that fail with ``BrokenPipeError`` /
       ``OSError`` / ``ValueError`` (closed file) no longer cascade into
@@ -5715,7 +5715,7 @@ class _UpdateOutputStream:
       stops.
 
     Combined with ``SIGHUP -> SIG_IGN`` installed by
-    ``_install_hangup_protection``, this makes ``hermes update`` safe to
+    ``_install_hangup_protection``, this makes ``avoi update`` safe to
     run in a plain SSH session that might disconnect mid-install.
     """
 
@@ -5777,7 +5777,7 @@ class _UpdateOutputStream:
 def _install_hangup_protection(gateway_mode: bool = False):
     """Protect ``cmd_update`` from SIGHUP and broken terminal pipes.
 
-    Users commonly run ``hermes update`` in an SSH session or a terminal
+    Users commonly run ``avoi update`` in an SSH session or a terminal
     that may close mid-install.  Without protection, ``SIGHUP`` from the
     terminal kills the Python process during ``pip install`` and leaves
     the venv half-installed; the documented workaround ("use screen /
@@ -5789,14 +5789,14 @@ def _install_hangup_protection(gateway_mode: bool = False):
        across ``exec()``, so pip and git subprocesses also stop dying on
        hangup.
     2. ``sys.stdout`` / ``sys.stderr`` are wrapped to mirror output to
-       ``~/.hermes/logs/update.log`` and to silently absorb
+       ``~/.avoi/logs/update.log`` and to silently absorb
        ``BrokenPipeError`` when the terminal vanishes.
 
     ``SIGINT`` (Ctrl-C) and ``SIGTERM`` (systemd shutdown) are
     **intentionally left alone** — those are legitimate cancellation
     signals the user or OS sent on purpose.
 
-    In gateway mode (``hermes update --gateway``) the update is already
+    In gateway mode (``avoi update --gateway``) the update is already
     spawned detached from a terminal, so this function is a no-op.
 
     Returns a dict that ``cmd_update`` can pass to
@@ -5828,10 +5828,10 @@ def _install_hangup_protection(gateway_mode: bool = False):
     # tolerance.  Any failure here is non-fatal; we just skip the wrap.
     try:
         # Late-bound import so tests can monkeypatch
-        # hermes_cli.config.get_hermes_home to simulate setup failure.
-        from hermes_cli.config import get_hermes_home as _get_hermes_home
+        # avoi_cli.config.get_avoi_home to simulate setup failure.
+        from avoi_cli.config import get_avoi_home as _get_avoi_home
 
-        logs_dir = _get_hermes_home() / "logs"
+        logs_dir = _get_avoi_home() / "logs"
         logs_dir.mkdir(parents=True, exist_ok=True)
         log_path = logs_dir / "update.log"
         log_file = open(log_path, "a", buffering=1, encoding="utf-8")
@@ -5839,7 +5839,7 @@ def _install_hangup_protection(gateway_mode: bool = False):
         import datetime as _dt
 
         log_file.write(
-            f"\n=== hermes update started "
+            f"\n=== avoi update started "
             f"{_dt.datetime.now().isoformat(timespec='seconds')} ===\n"
         )
 
@@ -5878,7 +5878,7 @@ def _finalize_update_output(state):
 
 
 def _cmd_update_check():
-    """Implement ``hermes update --check``: fetch and report without installing."""
+    """Implement ``avoi update --check``: fetch and report without installing."""
     git_dir = PROJECT_ROOT / ".git"
     if not git_dir.exists():
         print("✗ Not a git repository — cannot check for updates.")
@@ -5921,21 +5921,21 @@ def _cmd_update_check():
     else:
         commits_word = "commit" if behind == 1 else "commits"
         print(f"⚕ Update available: {behind} {commits_word} behind origin/main.")
-        from hermes_cli.config import recommended_update_command
+        from avoi_cli.config import recommended_update_command
         print(f"  Run '{recommended_update_command()}' to install.")
 
 
 def cmd_update(args):
-    """Update Hermes Agent to the latest version.
+    """Update AVOI Agent to the latest version.
 
     Thin wrapper around ``_cmd_update_impl``: installs hangup protection,
     runs the update, then restores stdio on the way out (even on
     ``sys.exit`` or unhandled exceptions).
     """
-    from hermes_cli.config import is_managed, managed_error
+    from avoi_cli.config import is_managed, managed_error
 
     if is_managed():
-        managed_error("update Hermes Agent")
+        managed_error("update AVOI Agent")
         return
 
     if getattr(args, "check", False):
@@ -5964,7 +5964,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         else None
     )
 
-    print("⚕ Updating Hermes Agent...")
+    print("⚕ Updating AVOI Agent...")
     print()
 
     # Try git-based update first, fall back to ZIP download on Windows
@@ -5978,7 +5978,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         else:
             print("✗ Not a git repository. Please reinstall:")
             print(
-                "  curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash"
+                "  curl -fsSL https://raw.githubusercontent.com/avoi-ai/avoi-agent/main/scripts/install.sh | bash"
             )
             sys.exit(1)
 
@@ -6169,7 +6169,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
         # Clear stale .pyc bytecode cache — prevents ImportError on gateway
         # restart when updated source references names that didn't exist in
-        # the old bytecode (e.g. get_hermes_home added to hermes_constants).
+        # the old bytecode (e.g. get_avoi_home added to avoi_constants).
         removed = _clear_bytecode_cache(PROJECT_ROOT)
         if removed:
             print(
@@ -6218,12 +6218,12 @@ def _cmd_update_impl(args, gateway_mode: bool):
         print("✓ Code updated!")
 
         # After git pull, source files on disk are newer than cached Python
-        # modules in this process.  Reload hermes_constants so that any lazy
+        # modules in this process.  Reload avoi_constants so that any lazy
         # import executed below (skills sync, gateway restart) sees new
-        # attributes like display_hermes_home() added since the last release.
+        # attributes like display_avoi_home() added since the last release.
         try:
             import importlib
-            import hermes_constants as _hc
+            import avoi_constants as _hc
 
             importlib.reload(_hc)
         except Exception:
@@ -6253,7 +6253,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
         # Sync bundled skills to all other profiles
         try:
-            from hermes_cli.profiles import (
+            from avoi_cli.profiles import (
                 list_profiles,
                 get_active_profile_name,
                 seed_profile_skills,
@@ -6301,7 +6301,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         print()
         print("→ Checking configuration for new options...")
 
-        from hermes_cli.config import (
+        from avoi_cli.config import (
             get_missing_env_vars,
             get_missing_config_fields,
             check_config_version,
@@ -6335,7 +6335,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             elif not (sys.stdin.isatty() and sys.stdout.isatty()):
                 print("  ℹ Non-interactive session — skipping config migration prompt.")
                 print(
-                    "    Run 'hermes config migrate' later to apply any new config/env options."
+                    "    Run 'avoi config migrate' later to apply any new config/env options."
                 )
                 response = "n"
             else:
@@ -6358,10 +6358,10 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     print()
                     print("✓ Configuration updated!")
                 if gateway_mode and missing_env:
-                    print("  ℹ API keys require manual entry: hermes config migrate")
+                    print("  ℹ API keys require manual entry: avoi config migrate")
             else:
                 print()
-                print("Skipped. Run 'hermes config migrate' later to configure.")
+                print("Skipped. Run 'avoi config migrate' later to configure.")
         else:
             print("  ✓ Configuration is up to date")
 
@@ -6369,7 +6369,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         print("✓ Update complete!")
 
         # Write exit code *before* the gateway restart attempt.
-        # When running as ``hermes update --gateway`` (spawned by the gateway's
+        # When running as ``avoi update --gateway`` (spawned by the gateway's
         # /update command), this process lives inside the gateway's systemd
         # cgroup.  A graceful SIGUSR1 restart keeps the drain loop alive long
         # enough for the exit-code marker to be written below, but the
@@ -6385,7 +6385,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         # before we attempt the restart — ensures the new gateway sees it
         # regardless of how we die.
         if gateway_mode:
-            _exit_code_path = get_hermes_home() / ".update_exit_code"
+            _exit_code_path = get_avoi_home() / ".update_exit_code"
             try:
                 _exit_code_path.write_text("0")
             except OSError:
@@ -6395,7 +6395,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         # The code update (git pull) is shared across all profiles, so every
         # running gateway needs restarting to pick up the new code.
         try:
-            from hermes_cli.gateway import (
+            from avoi_cli.gateway import (
                 is_macos,
                 supports_systemd_services,
                 _ensure_user_systemd_env,
@@ -6481,14 +6481,14 @@ def _cmd_update_impl(args, gateway_mode: bool):
             # systemd units without SIGUSR1 wiring this wait just times out
             # and we fall back to ``systemctl restart`` (the old behaviour).
             try:
-                from hermes_constants import (
+                from avoi_constants import (
                     DEFAULT_GATEWAY_RESTART_DRAIN_TIMEOUT as _DEFAULT_DRAIN,
                 )
             except Exception:
                 _DEFAULT_DRAIN = 60.0
             _cfg_drain = None
             try:
-                from hermes_cli.config import load_config
+                from avoi_cli.config import load_config
                 _cfg_agent = (load_config().get("agent") or {})
                 _cfg_drain = _cfg_agent.get("restart_drain_timeout")
             except Exception:
@@ -6505,7 +6505,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             killed_pids = set()
 
             # --- Systemd services (Linux) ---
-            # Discover all hermes-gateway* units (default + profiles)
+            # Discover all avoi-gateway* units (default + profiles)
             if supports_systemd_services():
                 try:
                     _ensure_user_systemd_env()
@@ -6521,7 +6521,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                             scope_cmd
                             + [
                                 "list-units",
-                                "hermes-gateway*",
+                                "avoi-gateway*",
                                 "--plain",
                                 "--no-legend",
                                 "--no-pager",
@@ -6536,7 +6536,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                                 continue
                             unit = parts[
                                 0
-                            ]  # e.g. hermes-gateway.service or hermes-gateway-coder.service
+                            ]  # e.g. avoi-gateway.service or avoi-gateway-coder.service
                             if not unit.endswith(".service"):
                                 continue
                             svc_name = unit.removesuffix(".service")
@@ -6660,7 +6660,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             # --- Launchd services (macOS) ---
             if is_macos():
                 try:
-                    from hermes_cli.gateway import (
+                    from avoi_cli.gateway import (
                         launchd_restart,
                         get_launchd_label,
                         get_launchd_plist_path,
@@ -6705,11 +6705,11 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     print(f"  ✓ Restarted {svc}")
                 if killed_pids:
                     print(f"  → Stopped {len(killed_pids)} manual gateway process(es)")
-                    print("    Restart manually: hermes gateway run")
+                    print("    Restart manually: avoi gateway run")
                     # Also restart for each profile if needed
                     if len(killed_pids) > 1:
                         print(
-                            "    (or: hermes -p <profile> gateway run  for each profile)"
+                            "    (or: avoi -p <profile> gateway run  for each profile)"
                         )
 
             if not restarted_services and not killed_pids:
@@ -6720,29 +6720,29 @@ def _cmd_update_impl(args, gateway_mode: bool):
             logger.debug("Gateway restart during update failed: %s", e)
 
         # Warn if legacy Hermes gateway unit files are still installed.
-        # When both hermes.service (from a pre-rename install) and the
-        # current hermes-gateway.service are enabled, they SIGTERM-fight
+        # When both avoi.service (from a pre-rename install) and the
+        # current avoi-gateway.service are enabled, they SIGTERM-fight
         # for the same bot token (see PR #11909). Flagging here means
-        # every `hermes update` surfaces the issue until the user migrates.
+        # every `avoi update` surfaces the issue until the user migrates.
         try:
-            from hermes_cli.gateway import (
-                has_legacy_hermes_units,
-                _find_legacy_hermes_units,
+            from avoi_cli.gateway import (
+                has_legacy_avoi_units,
+                _find_legacy_avoi_units,
                 supports_systemd_services,
             )
 
-            if supports_systemd_services() and has_legacy_hermes_units():
+            if supports_systemd_services() and has_legacy_avoi_units():
                 print()
                 print("⚠ Legacy Hermes gateway unit(s) detected:")
-                for name, path, is_sys in _find_legacy_hermes_units():
+                for name, path, is_sys in _find_legacy_avoi_units():
                     scope = "system" if is_sys else "user"
                     print(f"    {path}  ({scope} scope)")
                 print()
-                print("  These pre-rename units (hermes.service) fight the current")
-                print("  hermes-gateway.service for the bot token and cause SIGTERM")
+                print("  These pre-rename units (avoi.service) fight the current")
+                print("  avoi-gateway.service for the bot token and cause SIGTERM")
                 print("  flap loops. Remove them with:")
                 print()
-                print("    hermes gateway migrate-legacy")
+                print("    avoi gateway migrate-legacy")
                 print()
                 print("  (add `sudo` if any are in system scope)")
         except Exception as e:
@@ -6750,7 +6750,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
         print()
         print("Tip: You can now select a provider and model:")
-        print("  hermes model              # Select provider and model")
+        print("  avoi model              # Select provider and model")
 
     except subprocess.CalledProcessError as e:
         if sys.platform == "win32":
@@ -6766,7 +6766,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
 def _coalesce_session_name_args(argv: list) -> list:
     """Join unquoted multi-word session names after -c/--continue and -r/--resume.
 
-    When a user types ``hermes -c Pokemon Agent Dev`` without quoting the
+    When a user types ``avoi -c Pokemon Agent Dev`` without quoting the
     session name, argparse sees three separate tokens.  This function merges
     them into a single argument so argparse receives
     ``['-c', 'Pokemon Agent Dev']`` instead.
@@ -6839,7 +6839,7 @@ def _coalesce_session_name_args(argv: list) -> list:
 
 def cmd_profile(args):
     """Profile management — create, delete, list, switch, alias."""
-    from hermes_cli.profiles import (
+    from avoi_cli.profiles import (
         list_profiles,
         create_profile,
         delete_profile,
@@ -6852,14 +6852,14 @@ def cmd_profile(args):
         _is_wrapper_dir_in_path,
         _get_wrapper_dir,
     )
-    from hermes_constants import display_hermes_home
+    from avoi_constants import display_avoi_home
 
     action = getattr(args, "profile_action", None)
 
     if action is None:
-        # Bare `hermes profile` — show current profile status
+        # Bare `avoi profile` — show current profile status
         profile_name = get_active_profile_name()
-        dhh = display_hermes_home()
+        dhh = display_avoi_home()
         print(f"\nActive profile: {profile_name}")
         print(f"Path:           {dhh}")
 
@@ -6876,7 +6876,7 @@ def cmd_profile(args):
                 )
                 print(f"Skills:         {p.skill_count} installed")
                 if p.alias_path:
-                    print(f"Alias:          {p.name} → hermes -p {p.name}")
+                    print(f"Alias:          {p.name} → avoi -p {p.name}")
                 break
         print()
         return
@@ -6913,7 +6913,7 @@ def cmd_profile(args):
         try:
             set_active_profile(name)
             if name == "default":
-                print(f"Switched to: default (~/.hermes)")
+                print(f"Switched to: default (~/.avoi)")
             else:
                 print(f"Switched to: {name}")
         except (ValueError, FileNotFoundError) as e:
@@ -6976,9 +6976,9 @@ def cmd_profile(args):
                 if collision:
                     print(f"\n⚠ Cannot create alias '{name}' — {collision}")
                     print(
-                        f"  Choose a custom alias:  hermes profile alias {name} --name <custom>"
+                        f"  Choose a custom alias:  avoi profile alias {name} --name <custom>"
                     )
-                    print(f"  Or access via flag:     hermes -p {name} chat")
+                    print(f"  Or access via flag:     avoi -p {name} chat")
                 else:
                     wrapper_path = create_wrapper_script(name)
                     if wrapper_path:
@@ -7027,7 +7027,7 @@ def cmd_profile(args):
 
     elif action == "show":
         name = args.profile_name
-        from hermes_cli.profiles import (
+        from avoi_cli.profiles import (
             get_profile_dir,
             profile_exists,
             _read_config_model,
@@ -7065,7 +7065,7 @@ def cmd_profile(args):
         remove = getattr(args, "remove", False)
         custom_name = getattr(args, "alias_name", None)
 
-        from hermes_cli.profiles import profile_exists
+        from avoi_cli.profiles import profile_exists
 
         if not profile_exists(name):
             print(f"Error: Profile '{name}' does not exist.")
@@ -7087,13 +7087,13 @@ def cmd_profile(args):
             if wrapper_path:
                 # If custom name, write the profile name into the wrapper
                 if custom_name:
-                    wrapper_path.write_text(f'#!/bin/sh\nexec hermes -p {name} "$@"\n')
+                    wrapper_path.write_text(f'#!/bin/sh\nexec avoi -p {name} "$@"\n')
                 print(f"✓ Alias created: {wrapper_path}")
                 if not _is_wrapper_dir_in_path():
                     print(f"⚠ {_get_wrapper_dir()} is not in your PATH.")
 
     elif action == "rename":
-        from hermes_cli.profiles import rename_profile
+        from avoi_cli.profiles import rename_profile
 
         try:
             new_dir = rename_profile(args.old_name, args.new_name)
@@ -7104,7 +7104,7 @@ def cmd_profile(args):
             sys.exit(1)
 
     elif action == "export":
-        from hermes_cli.profiles import export_profile
+        from avoi_cli.profiles import export_profile
 
         name = args.profile_name
         output = args.output or f"{name}.tar.gz"
@@ -7116,7 +7116,7 @@ def cmd_profile(args):
             sys.exit(1)
 
     elif action == "import":
-        from hermes_cli.profiles import import_profile
+        from avoi_cli.profiles import import_profile
 
         try:
             profile_dir = import_profile(
@@ -7153,13 +7153,13 @@ def cmd_dashboard(args):
         print(f"Import error: {e}")
         sys.exit(1)
 
-    if "HERMES_WEB_DIST" not in os.environ:
+    if "AVOI_WEB_DIST" not in os.environ:
         if not _build_web_ui(PROJECT_ROOT / "web", fatal=True):
             sys.exit(1)
 
-    from hermes_cli.web_server import start_server
+    from avoi_cli.web_server import start_server
 
-    embedded_chat = args.tui or os.environ.get("HERMES_DASHBOARD_TUI") == "1"
+    embedded_chat = args.tui or os.environ.get("AVOI_DASHBOARD_TUI") == "1"
     start_server(
         host=args.host,
         port=args.port,
@@ -7171,7 +7171,7 @@ def cmd_dashboard(args):
 
 def cmd_completion(args, parser=None):
     """Print shell completion script."""
-    from hermes_cli.completion import generate_bash, generate_zsh, generate_fish
+    from avoi_cli.completion import generate_bash, generate_zsh, generate_fish
 
     shell = getattr(args, "shell", "bash")
     if shell == "zsh":
@@ -7184,7 +7184,7 @@ def cmd_completion(args, parser=None):
 
 def cmd_logs(args):
     """View and filter Hermes log files."""
-    from hermes_cli.logs import tail_log, list_logs
+    from avoi_cli.logs import tail_log, list_logs
 
     log_name = getattr(args, "log_name", "agent") or "agent"
 
@@ -7204,44 +7204,44 @@ def cmd_logs(args):
 
 
 def main():
-    """Main entry point for hermes CLI."""
+    """Main entry point for avoi CLI."""
     parser = argparse.ArgumentParser(
-        prog="hermes",
-        description="Hermes Agent - AI assistant with tool-calling capabilities",
+        prog="avoi",
+        description="AVOI Agent - AI assistant with tool-calling capabilities",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-    hermes                        Start interactive chat
-    hermes chat -q "Hello"        Single query mode
-    hermes -c                     Resume the most recent session
-    hermes -c "my project"        Resume a session by name (latest in lineage)
-    hermes --resume <session_id>  Resume a specific session by ID
-    hermes setup                  Run setup wizard
-    hermes logout                 Clear stored authentication
-    hermes auth add <provider>    Add a pooled credential
-    hermes auth list              List pooled credentials
-    hermes auth remove <p> <t>    Remove pooled credential by index, id, or label
-    hermes auth reset <provider>  Clear exhaustion status for a provider
-    hermes model                  Select default model
-    hermes config                 View configuration
-    hermes config edit            Edit config in $EDITOR
-    hermes config set model gpt-4 Set a config value
-    hermes gateway                Run messaging gateway
-    hermes -s hermes-agent-dev,github-auth
-    hermes -w                     Start in isolated git worktree
-    hermes gateway install        Install gateway background service
-    hermes sessions list          List past sessions
-    hermes sessions browse        Interactive session picker
-    hermes sessions rename ID T   Rename/title a session
-    hermes logs                   View agent.log (last 50 lines)
-    hermes logs -f                Follow agent.log in real time
-    hermes logs errors            View errors.log
-    hermes logs --since 1h        Lines from the last hour
-    hermes debug share             Upload debug report for support
-    hermes update                 Update to latest version
+    avoi                        Start interactive chat
+    avoi chat -q "Hello"        Single query mode
+    avoi -c                     Resume the most recent session
+    avoi -c "my project"        Resume a session by name (latest in lineage)
+    avoi --resume <session_id>  Resume a specific session by ID
+    avoi setup                  Run setup wizard
+    avoi logout                 Clear stored authentication
+    avoi auth add <provider>    Add a pooled credential
+    avoi auth list              List pooled credentials
+    avoi auth remove <p> <t>    Remove pooled credential by index, id, or label
+    avoi auth reset <provider>  Clear exhaustion status for a provider
+    avoi model                  Select default model
+    avoi config                 View configuration
+    avoi config edit            Edit config in $EDITOR
+    avoi config set model gpt-4 Set a config value
+    avoi gateway                Run messaging gateway
+    avoi -s avoi-agent-dev,github-auth
+    avoi -w                     Start in isolated git worktree
+    avoi gateway install        Install gateway background service
+    avoi sessions list          List past sessions
+    avoi sessions browse        Interactive session picker
+    avoi sessions rename ID T   Rename/title a session
+    avoi logs                   View agent.log (last 50 lines)
+    avoi logs -f                Follow agent.log in real time
+    avoi logs errors            View errors.log
+    avoi logs --since 1h        Lines from the last hour
+    avoi debug share             Upload debug report for support
+    avoi update                 Update to latest version
 
 For more help on a command:
-    hermes <command> --help
+    avoi <command> --help
 """,
     )
 
@@ -7264,14 +7264,14 @@ For more help on a command:
     # --model / --provider are accepted at the top level so they can pair
     # with -z without needing the `chat` subcommand.  If neither -z nor a
     # subcommand consumes them, they fall through harmlessly as None.
-    # Mirrors `hermes chat --model ... --provider ...` semantics.
+    # Mirrors `avoi chat --model ... --provider ...` semantics.
     parser.add_argument(
         "-m",
         "--model",
         default=None,
         help=(
             "Model override for this invocation (e.g. anthropic/claude-sonnet-4.6). "
-            "Applies to -z/--oneshot and --tui. Also settable via HERMES_INFERENCE_MODEL env var."
+            "Applies to -z/--oneshot and --tui. Also settable via AVOI_INFERENCE_MODEL env var."
         ),
     )
     parser.add_argument(
@@ -7279,7 +7279,7 @@ For more help on a command:
         default=None,
         help=(
             "Provider override for this invocation (e.g. openrouter, anthropic). "
-            "Applies to -z/--oneshot and --tui. Also settable via HERMES_INFERENCE_PROVIDER env var."
+            "Applies to -z/--oneshot and --tui. Also settable via AVOI_INFERENCE_PROVIDER env var."
         ),
     )
     parser.add_argument(
@@ -7312,7 +7312,7 @@ For more help on a command:
         default=False,
         help=(
             "Auto-approve any unseen shell hooks declared in config.yaml "
-            "without a TTY prompt.  Equivalent to HERMES_ACCEPT_HOOKS=1 or "
+            "without a TTY prompt.  Equivalent to AVOI_ACCEPT_HOOKS=1 or "
             "hooks_auto_accept: true in config.yaml.  Use on CI / headless "
             "runs that can't prompt."
         ),
@@ -7340,7 +7340,7 @@ For more help on a command:
         "--ignore-user-config",
         action="store_true",
         default=False,
-        help="Ignore ~/.hermes/config.yaml and fall back to built-in defaults (credentials in .env are still loaded)",
+        help="Ignore ~/.avoi/config.yaml and fall back to built-in defaults (credentials in .env are still loaded)",
     )
     parser.add_argument(
         "--ignore-rules",
@@ -7370,7 +7370,7 @@ For more help on a command:
     chat_parser = subparsers.add_parser(
         "chat",
         help="Interactive chat with the agent",
-        description="Start an interactive chat session with Hermes Agent",
+        description="Start an interactive chat session with AVOI Agent",
     )
     chat_parser.add_argument(
         "-q", "--query", help="Single query (non-interactive mode)"
@@ -7458,7 +7458,7 @@ For more help on a command:
         default=argparse.SUPPRESS,
         help=(
             "Auto-approve any unseen shell hooks declared in config.yaml "
-            "without a TTY prompt (see also HERMES_ACCEPT_HOOKS env var and "
+            "without a TTY prompt (see also AVOI_ACCEPT_HOOKS env var and "
             "hooks_auto_accept: in config.yaml)."
         ),
     )
@@ -7491,7 +7491,7 @@ For more help on a command:
         "--ignore-user-config",
         action="store_true",
         default=argparse.SUPPRESS,
-        help="Ignore ~/.hermes/config.yaml and fall back to built-in defaults (credentials in .env are still loaded). Useful for isolated CI runs, reproduction, and third-party integrations.",
+        help="Ignore ~/.avoi/config.yaml and fall back to built-in defaults (credentials in .env are still loaded). Useful for isolated CI runs, reproduction, and third-party integrations.",
     )
     chat_parser.add_argument(
         "--ignore-rules",
@@ -7538,7 +7538,7 @@ For more help on a command:
     model_parser.add_argument(
         "--client-id",
         default=None,
-        help="OAuth client id to use for Nous login (default: hermes-cli)",
+        help="OAuth client id to use for Nous login (default: avoi-cli)",
     )
     model_parser.add_argument(
         "--scope", default=None, help="OAuth scope to request for Nous login"
@@ -7686,11 +7686,11 @@ For more help on a command:
     # gateway migrate-legacy
     gateway_migrate_legacy = gateway_subparsers.add_parser(
         "migrate-legacy",
-        help="Remove legacy hermes.service units from pre-rename installs",
+        help="Remove legacy avoi.service units from pre-rename installs",
         description=(
             "Stop, disable, and remove legacy Hermes gateway unit files "
-            "(e.g. hermes.service) left over from older installs. Profile "
-            "units (hermes-gateway-<profile>.service) and unrelated "
+            "(e.g. avoi.service) left over from older installs. Profile "
+            "units (avoi-gateway-<profile>.service) and unrelated "
             "third-party services are never touched."
         ),
     )
@@ -7716,8 +7716,8 @@ For more help on a command:
     setup_parser = subparsers.add_parser(
         "setup",
         help="Interactive setup wizard",
-        description="Configure Hermes Agent with an interactive wizard. "
-        "Run a specific section: hermes setup model|tts|terminal|gateway|tools|agent",
+        description="Configure AVOI Agent with an interactive wizard. "
+        "Run a specific section: avoi setup model|tts|terminal|gateway|tools|agent",
     )
     setup_parser.add_argument(
         "section",
@@ -7768,7 +7768,7 @@ For more help on a command:
         help="Inference API base URL (default: production inference API)",
     )
     login_parser.add_argument(
-        "--client-id", default=None, help="OAuth client id to use (default: hermes-cli)"
+        "--client-id", default=None, help="OAuth client id to use (default: avoi-cli)"
     )
     login_parser.add_argument("--scope", default=None, help="OAuth scope to request")
     login_parser.add_argument(
@@ -7865,7 +7865,7 @@ For more help on a command:
     auth_logout.add_argument("provider", help="Provider id")
     auth_spotify = auth_subparsers.add_parser("spotify", help="Authenticate Hermes with Spotify via PKCE")
     auth_spotify.add_argument("spotify_action", nargs="?", choices=["login", "status", "logout"], default="login")
-    auth_spotify.add_argument("--client-id", help="Spotify app client_id (or set HERMES_SPOTIFY_CLIENT_ID)")
+    auth_spotify.add_argument("--client-id", help="Spotify app client_id (or set AVOI_SPOTIFY_CLIENT_ID)")
     auth_spotify.add_argument("--redirect-uri", help="Allow-listed localhost redirect URI for your Spotify app")
     auth_spotify.add_argument("--scope", help="Override requested Spotify scopes")
     auth_spotify.add_argument("--no-browser", action="store_true", help="Do not attempt to open the browser automatically")
@@ -7878,7 +7878,7 @@ For more help on a command:
     status_parser = subparsers.add_parser(
         "status",
         help="Show status of all components",
-        description="Display status of Hermes Agent components",
+        description="Display status of AVOI Agent components",
     )
     status_parser.add_argument(
         "--all", action="store_true", help="Show all details (redacted for sharing)"
@@ -8071,9 +8071,9 @@ For more help on a command:
         "hooks",
         help="Inspect and manage shell-script hooks",
         description=(
-            "Inspect shell-script hooks declared in ~/.hermes/config.yaml, "
+            "Inspect shell-script hooks declared in ~/.avoi/config.yaml, "
             "test them against synthetic payloads, and manage the first-use "
-            "consent allowlist at ~/.hermes/shell-hooks-allowlist.json."
+            "consent allowlist at ~/.avoi/shell-hooks-allowlist.json."
         ),
     )
     hooks_subparsers = hooks_parser.add_subparsers(dest="hooks_action")
@@ -8131,7 +8131,7 @@ For more help on a command:
     doctor_parser = subparsers.add_parser(
         "doctor",
         help="Check configuration and dependencies",
-        description="Diagnose issues with Hermes Agent setup",
+        description="Diagnose issues with AVOI Agent setup",
     )
     doctor_parser.add_argument(
         "--fix", action="store_true", help="Attempt to fix issues automatically"
@@ -8160,17 +8160,17 @@ For more help on a command:
     debug_parser = subparsers.add_parser(
         "debug",
         help="Debug tools — upload logs and system info for support",
-        description="Debug utilities for Hermes Agent. Use 'hermes debug share' to "
+        description="Debug utilities for AVOI Agent. Use 'avoi debug share' to "
         "upload a debug report (system info + recent logs) to a paste "
         "service and get a shareable URL.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Examples:
-    hermes debug share              Upload debug report and print URL
-    hermes debug share --lines 500  Include more log lines
-    hermes debug share --expire 30  Keep paste for 30 days
-    hermes debug share --local      Print report locally (no upload)
-    hermes debug delete <url>       Delete a previously uploaded paste
+    avoi debug share              Upload debug report and print URL
+    avoi debug share --lines 500  Include more log lines
+    avoi debug share --expire 30  Keep paste for 30 days
+    avoi debug share --local      Print report locally (no upload)
+    avoi debug delete <url>       Delete a previously uploaded paste
 """,
     )
     debug_sub = debug_parser.add_subparsers(dest="debug_command")
@@ -8197,7 +8197,7 @@ Examples:
     )
     delete_parser = debug_sub.add_parser(
         "delete",
-        help="Delete a paste uploaded by 'hermes debug share'",
+        help="Delete a paste uploaded by 'avoi debug share'",
     )
     delete_parser.add_argument(
         "urls",
@@ -8214,13 +8214,13 @@ Examples:
         "backup",
         help="Back up Hermes home directory to a zip file",
         description="Create a zip archive of your entire Hermes configuration, "
-        "skills, sessions, and data (excludes the hermes-agent codebase). "
+        "skills, sessions, and data (excludes the avoi-agent codebase). "
         "Use --quick for a fast snapshot of just critical state files.",
     )
     backup_parser.add_argument(
         "-o",
         "--output",
-        help="Output path for the zip file (default: ~/hermes-backup-<timestamp>.zip)",
+        help="Output path for the zip file (default: ~/avoi-backup-<timestamp>.zip)",
     )
     backup_parser.add_argument(
         "-q",
@@ -8258,7 +8258,7 @@ Examples:
     config_parser = subparsers.add_parser(
         "config",
         help="View and edit configuration",
-        description="Manage Hermes Agent configuration",
+        description="Manage AVOI Agent configuration",
     )
     config_subparsers = config_parser.add_subparsers(dest="config_command")
 
@@ -8316,7 +8316,7 @@ Examples:
     pairing_sub.add_parser("clear-pending", help="Clear all pending codes")
 
     def cmd_pairing(args):
-        from hermes_cli.pairing import pairing_command
+        from avoi_cli.pairing import pairing_command
 
         pairing_command(args)
 
@@ -8434,8 +8434,8 @@ Examples:
         "reset",
         help="Reset a bundled skill — clears 'user-modified' tracking so updates work again",
         description=(
-            "Clear a bundled skill's entry from the sync manifest (~/.hermes/skills/.bundled_manifest) "
-            "so future 'hermes update' runs stop marking it as user-modified. Pass --restore to also "
+            "Clear a bundled skill's entry from the sync manifest (~/.avoi/skills/.bundled_manifest) "
+            "so future 'avoi update' runs stop marking it as user-modified. Pass --restore to also "
             "replace the current copy with the bundled version."
         ),
     )
@@ -8499,11 +8499,11 @@ Examples:
         # Route 'config' action to skills_config module
         if getattr(args, "skills_action", None) == "config":
             _require_tty("skills config")
-            from hermes_cli.skills_config import skills_command as skills_config_command
+            from avoi_cli.skills_config import skills_command as skills_config_command
 
             skills_config_command(args)
         else:
-            from hermes_cli.skills_hub import skills_command
+            from avoi_cli.skills_hub import skills_command
 
             skills_command(args)
 
@@ -8524,7 +8524,7 @@ Examples:
     )
     plugins_install.add_argument(
         "identifier",
-        help="Git URL or owner/repo shorthand (e.g. anpicasso/hermes-plugin-chrome-profiles)",
+        help="Git URL or owner/repo shorthand (e.g. anpicasso/avoi-plugin-chrome-profiles)",
     )
     plugins_install.add_argument(
         "--force",
@@ -8541,7 +8541,7 @@ Examples:
     _install_enable_group.add_argument(
         "--no-enable",
         action="store_true",
-        help="Install disabled (skip confirmation prompt); enable later with `hermes plugins enable <name>`",
+        help="Install disabled (skip confirmation prompt); enable later with `avoi plugins enable <name>`",
     )
 
     plugins_update = plugins_subparsers.add_parser(
@@ -8567,7 +8567,7 @@ Examples:
     plugins_disable.add_argument("name", help="Plugin name to disable")
 
     def cmd_plugins(args):
-        from hermes_cli.plugins_cmd import plugins_command
+        from avoi_cli.plugins_cmd import plugins_command
 
         plugins_command(args)
 
@@ -8632,7 +8632,7 @@ Examples:
     def cmd_memory(args):
         sub = getattr(args, "memory_command", None)
         if sub == "off":
-            from hermes_cli.config import load_config, save_config
+            from avoi_cli.config import load_config, save_config
 
             config = load_config()
             if not isinstance(config.get("memory"), dict):
@@ -8642,9 +8642,9 @@ Examples:
             print("\n  ✓ Memory provider: built-in only")
             print("  Saved to config.yaml\n")
         elif sub == "reset":
-            from hermes_constants import get_hermes_home, display_hermes_home
+            from avoi_constants import get_avoi_home, display_avoi_home
 
-            mem_dir = get_hermes_home() / "memories"
+            mem_dir = get_avoi_home() / "memories"
             target = getattr(args, "target", "all")
             files_to_reset = []
             if target in ("all", "memory"):
@@ -8658,7 +8658,7 @@ Examples:
             ]
             if not existing:
                 print(
-                    f"\n  Nothing to reset — no memory files found in {display_hermes_home()}/memories/\n"
+                    f"\n  Nothing to reset — no memory files found in {display_avoi_home()}/memories/\n"
                 )
                 return
 
@@ -8685,9 +8685,9 @@ Examples:
             print(
                 f"\n  Memory reset complete. New sessions will start with a blank slate."
             )
-            print(f"  Files were in: {display_hermes_home()}/memories/\n")
+            print(f"  Files were in: {display_avoi_home()}/memories/\n")
         else:
-            from hermes_cli.memory_setup import memory_command
+            from avoi_cli.memory_setup import memory_command
 
             memory_command(args)
 
@@ -8703,7 +8703,7 @@ Examples:
             "Enable, disable, or list tools for CLI, Telegram, Discord, etc.\n\n"
             "Built-in toolsets use plain names (e.g. web, memory).\n"
             "MCP tools use server:tool notation (e.g. github:create_issue).\n\n"
-            "Run 'hermes tools' with no subcommand for the interactive configuration UI."
+            "Run 'avoi tools' with no subcommand for the interactive configuration UI."
         ),
     )
     tools_parser.add_argument(
@@ -8713,7 +8713,7 @@ Examples:
     )
     tools_sub = tools_parser.add_subparsers(dest="tools_action")
 
-    # hermes tools list [--platform cli]
+    # avoi tools list [--platform cli]
     tools_list_p = tools_sub.add_parser(
         "list",
         help="Show all tools and their enabled/disabled status",
@@ -8724,7 +8724,7 @@ Examples:
         help="Platform to show (default: cli)",
     )
 
-    # hermes tools disable <name...> [--platform cli]
+    # avoi tools disable <name...> [--platform cli]
     tools_disable_p = tools_sub.add_parser(
         "disable",
         help="Disable toolsets or MCP tools",
@@ -8741,7 +8741,7 @@ Examples:
         help="Platform to apply to (default: cli)",
     )
 
-    # hermes tools enable <name...> [--platform cli]
+    # avoi tools enable <name...> [--platform cli]
     tools_enable_p = tools_sub.add_parser(
         "enable",
         help="Enable toolsets or MCP tools",
@@ -8761,12 +8761,12 @@ Examples:
     def cmd_tools(args):
         action = getattr(args, "tools_action", None)
         if action in ("list", "disable", "enable"):
-            from hermes_cli.tools_config import tools_disable_enable_command
+            from avoi_cli.tools_config import tools_disable_enable_command
 
             tools_disable_enable_command(args)
         else:
             _require_tty("tools")
-            from hermes_cli.tools_config import tools_command
+            from avoi_cli.tools_config import tools_command
 
             tools_command(args)
 
@@ -8780,8 +8780,8 @@ Examples:
         description=(
             "Manage MCP server connections and run Hermes as an MCP server.\n\n"
             "MCP servers provide additional tools via the Model Context Protocol.\n"
-            "Use 'hermes mcp add' to connect to a new server, or\n"
-            "'hermes mcp serve' to expose Hermes conversations over MCP."
+            "Use 'avoi mcp add' to connect to a new server, or\n"
+            "'avoi mcp serve' to expose Hermes conversations over MCP."
         ),
     )
     mcp_sub = mcp_parser.add_subparsers(dest="mcp_action")
@@ -8838,7 +8838,7 @@ Examples:
     _add_accept_hooks_flag(mcp_parser)
 
     def cmd_mcp(args):
-        from hermes_cli.mcp_config import mcp_command
+        from avoi_cli.mcp_config import mcp_command
 
         mcp_command(args)
 
@@ -8921,7 +8921,7 @@ Examples:
         import json as _json
 
         try:
-            from hermes_state import SessionDB
+            from avoi_state import SessionDB
 
             db = SessionDB()
         except Exception as e:
@@ -9052,16 +9052,16 @@ Examples:
                 print("Cancelled.")
                 return
 
-            # Launch hermes --resume <id> by replacing the current process
+            # Launch avoi --resume <id> by replacing the current process
             print(f"Resuming session: {selected_id}")
-            hermes_bin = shutil.which("hermes")
-            if hermes_bin:
-                os.execvp(hermes_bin, ["hermes", "--resume", selected_id])
+            avoi_bin = shutil.which("avoi")
+            if avoi_bin:
+                os.execvp(avoi_bin, ["avoi", "--resume", selected_id])
             else:
                 # Fallback: re-invoke via python -m
                 os.execvp(
                     sys.executable,
-                    [sys.executable, "-m", "hermes_cli.main", "--resume", selected_id],
+                    [sys.executable, "-m", "avoi_cli.main", "--resume", selected_id],
                 )
             return  # won't reach here after execvp
 
@@ -9103,7 +9103,7 @@ Examples:
 
     def cmd_insights(args):
         try:
-            from hermes_state import SessionDB
+            from avoi_state import SessionDB
             from agent.insights import InsightsEngine
 
             db = SessionDB()
@@ -9190,7 +9190,7 @@ Examples:
     )
 
     def cmd_claw(args):
-        from hermes_cli.claw import claw_command
+        from avoi_cli.claw import claw_command
 
         claw_command(args)
 
@@ -9207,7 +9207,7 @@ Examples:
     # =========================================================================
     update_parser = subparsers.add_parser(
         "update",
-        help="Update Hermes Agent to the latest version",
+        help="Update AVOI Agent to the latest version",
         description="Pull the latest changes from git and reinstall dependencies",
     )
     update_parser.add_argument(
@@ -9229,8 +9229,8 @@ Examples:
     # =========================================================================
     uninstall_parser = subparsers.add_parser(
         "uninstall",
-        help="Uninstall Hermes Agent",
-        description="Remove Hermes Agent from your system. Can keep configs/data for reinstall.",
+        help="Uninstall AVOI Agent",
+        description="Remove AVOI Agent from your system. Can keep configs/data for reinstall.",
     )
     uninstall_parser.add_argument(
         "--full",
@@ -9247,13 +9247,13 @@ Examples:
     # =========================================================================
     acp_parser = subparsers.add_parser(
         "acp",
-        help="Run Hermes Agent as an ACP (Agent Client Protocol) server",
-        description="Start Hermes Agent in ACP mode for editor integration (VS Code, Zed, JetBrains)",
+        help="Run AVOI Agent as an ACP (Agent Client Protocol) server",
+        description="Start AVOI Agent in ACP mode for editor integration (VS Code, Zed, JetBrains)",
     )
     _add_accept_hooks_flag(acp_parser)
 
     def cmd_acp(args):
-        """Launch Hermes Agent as an ACP server."""
+        """Launch AVOI Agent as an ACP server."""
         try:
             from acp_adapter.entry import main as acp_main
 
@@ -9375,7 +9375,7 @@ Examples:
     dashboard_parser = subparsers.add_parser(
         "dashboard",
         help="Start the web UI dashboard",
-        description="Launch the Hermes Agent web dashboard for managing config, API keys, and sessions",
+        description="Launch the AVOI Agent web dashboard for managing config, API keys, and sessions",
     )
     dashboard_parser.add_argument(
         "--port", type=int, default=9119, help="Port (default 9119)"
@@ -9395,8 +9395,8 @@ Examples:
         "--tui",
         action="store_true",
         help=(
-            "Expose the in-browser Chat tab (embedded `hermes --tui` via PTY/WebSocket). "
-            "Alternatively set HERMES_DASHBOARD_TUI=1."
+            "Expose the in-browser Chat tab (embedded `avoi --tui` via PTY/WebSocket). "
+            "Alternatively set AVOI_DASHBOARD_TUI=1."
         ),
     )
     dashboard_parser.set_defaults(func=cmd_dashboard)
@@ -9411,16 +9411,16 @@ Examples:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Examples:
-    hermes logs                    Show last 50 lines of agent.log
-    hermes logs -f                 Follow agent.log in real time
-    hermes logs errors             Show last 50 lines of errors.log
-    hermes logs gateway -n 100     Show last 100 lines of gateway.log
-    hermes logs --level WARNING    Only show WARNING and above
-    hermes logs --session abc123   Filter by session ID
-    hermes logs --component tools  Only show tool-related lines
-    hermes logs --since 1h         Lines from the last hour
-    hermes logs --since 30m -f     Follow, starting from 30 min ago
-    hermes logs list               List available log files with sizes
+    avoi logs                    Show last 50 lines of agent.log
+    avoi logs -f                 Follow agent.log in real time
+    avoi logs errors             Show last 50 lines of errors.log
+    avoi logs gateway -n 100     Show last 100 lines of gateway.log
+    avoi logs --level WARNING    Only show WARNING and above
+    avoi logs --session abc123   Filter by session ID
+    avoi logs --component tools  Only show tool-related lines
+    avoi logs --since 1h         Lines from the last hour
+    avoi logs --since 30m -f     Follow, starting from 30 min ago
+    avoi logs list               List available log files with sizes
 """,
     )
     logs_parser.add_argument(
@@ -9469,13 +9469,13 @@ Examples:
     # =========================================================================
     # Pre-process argv so unquoted multi-word session names after -c / -r
     # are merged into a single token before argparse sees them.
-    # e.g. ``hermes -c Pokemon Agent Dev`` → ``hermes -c 'Pokemon Agent Dev'``
+    # e.g. ``avoi -c Pokemon Agent Dev`` → ``avoi -c 'Pokemon Agent Dev'``
     # ── Container-aware routing ────────────────────────────────────────
     # When NixOS container mode is active, route ALL subcommands into
     # the managed container.  This MUST run before parse_args() so that
     # --help, unrecognised flags, and every subcommand are forwarded
     # transparently instead of being intercepted by argparse on the host.
-    from hermes_cli.config import get_container_exec_info
+    from avoi_cli.config import get_container_exec_info
 
     container_info = get_container_exec_info()
     if container_info:
@@ -9494,7 +9494,7 @@ Examples:
     #
     # Fix: when argv contains a token matching a known subcommand, set
     # subparsers.required=True to force deterministic routing.  If that
-    # fails (e.g. 'hermes -c model' where 'model' is consumed as the
+    # fails (e.g. 'avoi -c model' where 'model' is consumed as the
     # session name for --continue), fall back to the default behaviour.
     import io as _io
 
@@ -9534,7 +9534,7 @@ Examples:
 
     # Discover Python plugins and register shell hooks once, before any
     # command that can fire lifecycle hooks.  Both are idempotent; gated
-    # so introspection/management commands (hermes hooks list, cron
+    # so introspection/management commands (avoi hooks list, cron
     # list, gateway status, mcp add, ...) don't pay discovery cost or
     # trigger consent prompts for hooks the user is still inspecting.
     # Groups with mixed admin/CRUD vs. agent-running entries narrow via
@@ -9552,14 +9552,14 @@ Examples:
     ):
         _accept_hooks = bool(getattr(args, "accept_hooks", False))
         try:
-            from hermes_cli.plugins import discover_plugins
+            from avoi_cli.plugins import discover_plugins
             discover_plugins()
         except Exception:
             logger.debug(
                 "plugin discovery failed at CLI startup", exc_info=True,
             )
         try:
-            from hermes_cli.config import load_config
+            from avoi_cli.config import load_config
             from agent.shell_hooks import register_from_config
             register_from_config(load_config(), accept_hooks=_accept_hooks)
         except Exception:
@@ -9571,7 +9571,7 @@ Examples:
     # Handle top-level --oneshot / -z: single-shot mode, stdout = final
     # response only, nothing else. Bypasses cli.py entirely.
     if getattr(args, "oneshot", None):
-        from hermes_cli.oneshot import run_oneshot
+        from avoi_cli.oneshot import run_oneshot
 
         sys.exit(run_oneshot(
             args.oneshot,

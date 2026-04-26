@@ -1,12 +1,12 @@
 """
-Hermes Agent — Web UI server.
+AVOI Agent — Web UI server.
 
 Provides a FastAPI backend serving the Vite/React frontend and REST API
 endpoints for managing configuration, environment variables, and sessions.
 
 Usage:
-    python -m hermes_cli.main web          # Start on http://127.0.0.1:9119
-    python -m hermes_cli.main web --port 8080
+    python -m avoi_cli.main web          # Start on http://127.0.0.1:9119
+    python -m avoi_cli.main web --port 8080
 """
 
 import asyncio
@@ -31,13 +31,13 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from hermes_cli import __version__, __release_date__
-from hermes_cli.config import (
+from avoi_cli import __version__, __release_date__
+from avoi_cli.config import (
     DEFAULT_CONFIG,
     OPTIONAL_ENV_VARS,
     get_config_path,
     get_env_path,
-    get_hermes_home,
+    get_avoi_home,
     load_config,
     load_env,
     save_config,
@@ -60,10 +60,10 @@ except ImportError:
         f"Install with: {sys.executable} -m pip install 'fastapi' 'uvicorn[standard]'"
     )
 
-WEB_DIST = Path(os.environ["HERMES_WEB_DIST"]) if "HERMES_WEB_DIST" in os.environ else Path(__file__).parent / "web_dist"
+WEB_DIST = Path(os.environ["AVOI_WEB_DIST"]) if "AVOI_WEB_DIST" in os.environ else Path(__file__).parent / "web_dist"
 _log = logging.getLogger(__name__)
 
-app = FastAPI(title="Hermes Agent", version=__version__)
+app = FastAPI(title="AVOI Agent", version=__version__)
 
 # ---------------------------------------------------------------------------
 # Session token for protecting sensitive endpoints (reveal).
@@ -73,8 +73,8 @@ app = FastAPI(title="Hermes Agent", version=__version__)
 _SESSION_TOKEN = secrets.token_urlsafe(32)
 _SESSION_HEADER_NAME = "X-Hermes-Session-Token"
 
-# In-browser Chat tab (/chat, /api/pty, …).  Off unless ``hermes dashboard --tui``
-# or HERMES_DASHBOARD_TUI=1.  Set from :func:`start_server`.
+# In-browser Chat tab (/chat, /api/pty, …).  Off unless ``avoi dashboard --tui``
+# or AVOI_DASHBOARD_TUI=1.  Set from :func:`start_server`.
 _DASHBOARD_EMBEDDED_CHAT_ENABLED = False
 
 # Simple rate limiter for the reveal endpoint
@@ -553,7 +553,7 @@ async def get_status():
 
     active_sessions = 0
     try:
-        from hermes_state import SessionDB
+        from avoi_state import SessionDB
         db = SessionDB()
         try:
             sessions = db.list_sessions_rich(limit=50)
@@ -571,7 +571,7 @@ async def get_status():
     return {
         "version": __version__,
         "release_date": __release_date__,
-        "hermes_home": str(get_hermes_home()),
+        "avoi_home": str(get_avoi_home()),
         "config_path": str(get_config_path()),
         "env_path": str(get_env_path()),
         "config_version": current_ver,
@@ -593,16 +593,16 @@ async def get_status():
 # Both commands are spawned as detached subprocesses so the HTTP request
 # returns immediately.  stdin is closed (``DEVNULL``) so any stray ``input()``
 # calls fail fast with EOF rather than hanging forever.  stdout/stderr are
-# streamed to a per-action log file under ``~/.hermes/logs/<action>.log`` so
+# streamed to a per-action log file under ``~/.avoi/logs/<action>.log`` so
 # the dashboard can tail them back to the user.
 # ---------------------------------------------------------------------------
 
-_ACTION_LOG_DIR: Path = get_hermes_home() / "logs"
+_ACTION_LOG_DIR: Path = get_avoi_home() / "logs"
 
 # Short ``name`` (from the URL) → absolute log file path.
 _ACTION_LOG_FILES: Dict[str, str] = {
     "gateway-restart": "gateway-restart.log",
-    "hermes-update": "hermes-update.log",
+    "avoi-update": "avoi-update.log",
 }
 
 # ``name`` → most recently spawned Popen handle.  Used so ``status`` can
@@ -610,10 +610,10 @@ _ACTION_LOG_FILES: Dict[str, str] = {
 _ACTION_PROCS: Dict[str, subprocess.Popen] = {}
 
 
-def _spawn_hermes_action(subcommand: List[str], name: str) -> subprocess.Popen:
-    """Spawn ``hermes <subcommand>`` detached and record the Popen handle.
+def _spawn_avoi_action(subcommand: List[str], name: str) -> subprocess.Popen:
+    """Spawn ``avoi <subcommand>`` detached and record the Popen handle.
 
-    Uses the running interpreter's ``hermes_cli.main`` module so the action
+    Uses the running interpreter's ``avoi_cli.main`` module so the action
     inherits the same venv/PYTHONPATH the web server is using.
     """
     log_file_name = _ACTION_LOG_FILES[name]
@@ -624,14 +624,14 @@ def _spawn_hermes_action(subcommand: List[str], name: str) -> subprocess.Popen:
         f"\n=== {name} started {time.strftime('%Y-%m-%d %H:%M:%S')} ===\n".encode()
     )
 
-    cmd = [sys.executable, "-m", "hermes_cli.main", *subcommand]
+    cmd = [sys.executable, "-m", "avoi_cli.main", *subcommand]
 
     popen_kwargs: Dict[str, Any] = {
         "cwd": str(PROJECT_ROOT),
         "stdin": subprocess.DEVNULL,
         "stdout": log_file,
         "stderr": subprocess.STDOUT,
-        "env": {**os.environ, "HERMES_NONINTERACTIVE": "1"},
+        "env": {**os.environ, "AVOI_NONINTERACTIVE": "1"},
     }
     if sys.platform == "win32":
         popen_kwargs["creationflags"] = (
@@ -662,9 +662,9 @@ def _tail_lines(path: Path, n: int) -> List[str]:
 
 @app.post("/api/gateway/restart")
 async def restart_gateway():
-    """Kick off a ``hermes gateway restart`` in the background."""
+    """Kick off a ``avoi gateway restart`` in the background."""
     try:
-        proc = _spawn_hermes_action(["gateway", "restart"], "gateway-restart")
+        proc = _spawn_avoi_action(["gateway", "restart"], "gateway-restart")
     except Exception as exc:
         _log.exception("Failed to spawn gateway restart")
         raise HTTPException(status_code=500, detail=f"Failed to restart gateway: {exc}")
@@ -675,18 +675,18 @@ async def restart_gateway():
     }
 
 
-@app.post("/api/hermes/update")
-async def update_hermes():
-    """Kick off ``hermes update`` in the background."""
+@app.post("/api/avoi/update")
+async def update_avoi():
+    """Kick off ``avoi update`` in the background."""
     try:
-        proc = _spawn_hermes_action(["update"], "hermes-update")
+        proc = _spawn_avoi_action(["update"], "avoi-update")
     except Exception as exc:
-        _log.exception("Failed to spawn hermes update")
+        _log.exception("Failed to spawn avoi update")
         raise HTTPException(status_code=500, detail=f"Failed to start update: {exc}")
     return {
         "ok": True,
         "pid": proc.pid,
-        "name": "hermes-update",
+        "name": "avoi-update",
     }
 
 
@@ -722,7 +722,7 @@ async def get_action_status(name: str, lines: int = 200):
 @app.get("/api/sessions")
 async def get_sessions(limit: int = 20, offset: int = 0):
     try:
-        from hermes_state import SessionDB
+        from avoi_state import SessionDB
         db = SessionDB()
         try:
             sessions = db.list_sessions_rich(limit=limit, offset=offset)
@@ -747,7 +747,7 @@ async def search_sessions(q: str = "", limit: int = 20):
     if not q or not q.strip():
         return {"results": []}
     try:
-        from hermes_state import SessionDB
+        from avoi_state import SessionDB
         db = SessionDB()
         try:
             # Auto-add prefix wildcards so partial words match
@@ -1054,7 +1054,7 @@ async def reveal_env_var(body: EnvVarReveal, request: Request):
 # connected, plus a disconnect button. The actual login flow (PKCE for
 # Anthropic, device-code for Nous/Codex) still runs in the CLI for now;
 # Phase 2 will add in-browser flows. For unconnected providers we return
-# the canonical ``hermes auth add <provider>`` command so the dashboard
+# the canonical ``avoi auth add <provider>`` command so the dashboard
 # can surface a one-click copy.
 
 
@@ -1081,36 +1081,36 @@ def _anthropic_oauth_status() -> Dict[str, Any]:
     """Combined status across the three Anthropic credential sources we read.
 
     Hermes resolves Anthropic creds in this order at runtime:
-    1. ``~/.hermes/.anthropic_oauth.json`` — Hermes-managed PKCE flow
+    1. ``~/.avoi/.anthropic_oauth.json`` — Hermes-managed PKCE flow
     2. ``~/.claude/.credentials.json`` — Claude Code CLI credentials (auto)
     3. ``ANTHROPIC_TOKEN`` / ``ANTHROPIC_API_KEY`` env vars
     The dashboard reports the highest-priority source that's actually present.
     """
     try:
         from agent.anthropic_adapter import (
-            read_hermes_oauth_credentials,
+            read_avoi_oauth_credentials,
             read_claude_code_credentials,
-            _HERMES_OAUTH_FILE,
+            _AVOI_OAUTH_FILE,
         )
     except ImportError:
         read_claude_code_credentials = None  # type: ignore
-        read_hermes_oauth_credentials = None  # type: ignore
-        _HERMES_OAUTH_FILE = None  # type: ignore
+        read_avoi_oauth_credentials = None  # type: ignore
+        _AVOI_OAUTH_FILE = None  # type: ignore
 
-    hermes_creds = None
-    if read_hermes_oauth_credentials:
+    avoi_creds = None
+    if read_avoi_oauth_credentials:
         try:
-            hermes_creds = read_hermes_oauth_credentials()
+            avoi_creds = read_avoi_oauth_credentials()
         except Exception:
-            hermes_creds = None
-    if hermes_creds and hermes_creds.get("accessToken"):
+            avoi_creds = None
+    if avoi_creds and avoi_creds.get("accessToken"):
         return {
             "logged_in": True,
-            "source": "hermes_pkce",
-            "source_label": f"Hermes PKCE ({_HERMES_OAUTH_FILE})",
-            "token_preview": _truncate_token(hermes_creds.get("accessToken")),
-            "expires_at": hermes_creds.get("expiresAt"),
-            "has_refresh_token": bool(hermes_creds.get("refreshToken")),
+            "source": "avoi_pkce",
+            "source_label": f"Hermes PKCE ({_AVOI_OAUTH_FILE})",
+            "token_preview": _truncate_token(avoi_creds.get("accessToken")),
+            "expires_at": avoi_creds.get("expiresAt"),
+            "has_refresh_token": bool(avoi_creds.get("refreshToken")),
         }
 
     cc_creds = None
@@ -1178,7 +1178,7 @@ _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
         "id": "anthropic",
         "name": "Anthropic (Claude API)",
         "flow": "pkce",
-        "cli_command": "hermes auth add anthropic",
+        "cli_command": "avoi auth add anthropic",
         "docs_url": "https://docs.claude.com/en/api/getting-started",
         "status_fn": _anthropic_oauth_status,
     },
@@ -1194,15 +1194,15 @@ _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
         "id": "nous",
         "name": "Nous Portal",
         "flow": "device_code",
-        "cli_command": "hermes auth add nous",
-        "docs_url": "https://portal.nousresearch.com",
-        "status_fn": None,  # dispatched via auth.get_nous_auth_status
+        "cli_command": "avoi auth add nous",
+        "docs_url": "https://portal.avoi-ai.com",
+        "status_fn": None,  # dispatched via auth.get_avoi_auth_status
     },
     {
         "id": "openai-codex",
         "name": "OpenAI Codex (ChatGPT)",
         "flow": "device_code",
-        "cli_command": "hermes auth add openai-codex",
+        "cli_command": "avoi auth add openai-codex",
         "docs_url": "https://platform.openai.com/docs",
         "status_fn": None,  # dispatched via auth.get_codex_auth_status
     },
@@ -1210,7 +1210,7 @@ _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
         "id": "qwen-oauth",
         "name": "Qwen (via Qwen CLI)",
         "flow": "external",
-        "cli_command": "hermes auth add qwen-oauth",
+        "cli_command": "avoi auth add qwen-oauth",
         "docs_url": "https://github.com/QwenLM/qwen-code",
         "status_fn": None,  # dispatched via auth.get_qwen_auth_status
     },
@@ -1225,12 +1225,12 @@ def _resolve_provider_status(provider_id: str, status_fn) -> Dict[str, Any]:
         except Exception as e:
             return {"logged_in": False, "error": str(e)}
     try:
-        from hermes_cli import auth as hauth
+        from avoi_cli import auth as hauth
         if provider_id == "nous":
-            raw = hauth.get_nous_auth_status()
+            raw = hauth.get_avoi_auth_status()
             return {
                 "logged_in": bool(raw.get("logged_in")),
-                "source": "nous_portal",
+                "source": "avoi_portal",
                 "source_label": raw.get("portal_base_url") or "Nous Portal",
                 "token_preview": _truncate_token(raw.get("access_token")),
                 "expires_at": raw.get("access_expires_at"),
@@ -1274,7 +1274,7 @@ async def list_oauth_providers():
         docs_url        external docs/portal link for the "Learn more" link
         status:
           logged_in        bool — currently has usable creds
-          source           short slug ("hermes_pkce", "claude_code", ...)
+          source           short slug ("avoi_pkce", "claude_code", ...)
           source_label     human-readable origin (file path, env var name)
           token_preview    last N chars of the token, never the full token
           expires_at       ISO timestamp string or null
@@ -1313,14 +1313,14 @@ async def disconnect_oauth_provider(provider_id: str, request: Request):
     # want to undo a disconnect.
     if provider_id in ("anthropic", "claude-code"):
         try:
-            from agent.anthropic_adapter import _HERMES_OAUTH_FILE
-            if _HERMES_OAUTH_FILE.exists():
-                _HERMES_OAUTH_FILE.unlink()
+            from agent.anthropic_adapter import _AVOI_OAUTH_FILE
+            if _AVOI_OAUTH_FILE.exists():
+                _AVOI_OAUTH_FILE.unlink()
         except Exception:
             pass
         # Also clear the credential pool entry if present.
         try:
-            from hermes_cli.auth import clear_provider_auth
+            from avoi_cli.auth import clear_provider_auth
             clear_provider_auth("anthropic")
         except Exception:
             pass
@@ -1328,7 +1328,7 @@ async def disconnect_oauth_provider(provider_id: str, request: Request):
         return {"ok": True, "provider": provider_id}
 
     try:
-        from hermes_cli.auth import clear_provider_auth
+        from avoi_cli.auth import clear_provider_auth
         cleared = clear_provider_auth(provider_id)
         _log.info("oauth/disconnect: %s (cleared=%s)", provider_id, cleared)
         return {"ok": bool(cleared), "provider": provider_id}
@@ -1351,7 +1351,7 @@ async def disconnect_oauth_provider(provider_id: str, request: Request):
 #     2. UI opens auth_url in a new tab. User authorizes, copies code.
 #     3. POST /api/providers/oauth/anthropic/submit { session_id, code }
 #          → server exchanges (code + verifier) → tokens at console.anthropic.com
-#          → persists to ~/.hermes/.anthropic_oauth.json AND credential pool
+#          → persists to ~/.avoi/.anthropic_oauth.json AND credential pool
 #          → returns { ok: true, status: "approved" }
 #
 #   Device code (Nous, OpenAI Codex):
@@ -1378,7 +1378,7 @@ _oauth_sessions: Dict[str, Dict[str, Any]] = {}
 _oauth_sessions_lock = threading.Lock()
 
 # Import OAuth constants from canonical source instead of duplicating.
-# Guarded so hermes web still starts if anthropic_adapter is unavailable;
+# Guarded so avoi web still starts if anthropic_adapter is unavailable;
 # Phase 2 endpoints will return 501 in that case.
 try:
     from agent.anthropic_adapter import (
@@ -1423,16 +1423,16 @@ def _save_anthropic_oauth_creds(access_token: str, refresh_token: str, expires_a
     """Persist Anthropic PKCE creds to both Hermes file AND credential pool.
 
     Mirrors what auth_commands.add_command does so the dashboard flow leaves
-    the system in the same state as ``hermes auth add anthropic``.
+    the system in the same state as ``avoi auth add anthropic``.
     """
-    from agent.anthropic_adapter import _HERMES_OAUTH_FILE
+    from agent.anthropic_adapter import _AVOI_OAUTH_FILE
     payload = {
         "accessToken": access_token,
         "refreshToken": refresh_token,
         "expiresAt": expires_at_ms,
     }
-    _HERMES_OAUTH_FILE.parent.mkdir(parents=True, exist_ok=True)
-    _HERMES_OAUTH_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    _AVOI_OAUTH_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _AVOI_OAUTH_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     # Best-effort credential-pool insert. Failure here doesn't invalidate
     # the file write — pool registration only matters for the rotation
     # strategy, not for runtime credential resolution.
@@ -1525,7 +1525,7 @@ def _submit_anthropic_pkce(session_id: str, code_input: str) -> Dict[str, Any]:
         data=exchange_data,
         headers={
             "Content-Type": "application/json",
-            "User-Agent": "hermes-dashboard/1.0",
+            "User-Agent": "avoi-dashboard/1.0",
         },
         method="POST",
     )
@@ -1568,19 +1568,19 @@ async def _start_device_code_flow(provider_id: str) -> Dict[str, Any]:
     then spawns a background poller. Returns the user-facing display fields
     so the UI can render the verification page link + user code.
     """
-    from hermes_cli import auth as hauth
+    from avoi_cli import auth as hauth
     if provider_id == "nous":
-        from hermes_cli.auth import _request_device_code, PROVIDER_REGISTRY
+        from avoi_cli.auth import _request_device_code, PROVIDER_REGISTRY
         import httpx
         pconfig = PROVIDER_REGISTRY["nous"]
         portal_base_url = (
-            os.getenv("HERMES_PORTAL_BASE_URL")
+            os.getenv("AVOI_PORTAL_BASE_URL")
             or os.getenv("NOUS_PORTAL_BASE_URL")
             or pconfig.portal_base_url
         ).rstrip("/")
         client_id = pconfig.client_id
         scope = pconfig.scope
-        def _do_nous_device_request():
+        def _do_avoi_device_request():
             with httpx.Client(timeout=httpx.Timeout(15.0), headers={"Accept": "application/json"}) as client:
                 return _request_device_code(
                     client=client,
@@ -1588,7 +1588,7 @@ async def _start_device_code_flow(provider_id: str) -> Dict[str, Any]:
                     client_id=client_id,
                     scope=scope,
                 )
-        device_data = await asyncio.get_event_loop().run_in_executor(None, _do_nous_device_request)
+        device_data = await asyncio.get_event_loop().run_in_executor(None, _do_avoi_device_request)
         sid, sess = _new_oauth_session("nous", "device_code")
         sess["device_code"] = str(device_data["device_code"])
         sess["interval"] = int(device_data["interval"])
@@ -1596,7 +1596,7 @@ async def _start_device_code_flow(provider_id: str) -> Dict[str, Any]:
         sess["portal_base_url"] = portal_base_url
         sess["client_id"] = client_id
         threading.Thread(
-            target=_nous_poller, args=(sid,), daemon=True, name=f"oauth-poll-{sid[:6]}"
+            target=_avoi_poller, args=(sid,), daemon=True, name=f"oauth-poll-{sid[:6]}"
         ).start()
         return {
             "session_id": sid,
@@ -1645,9 +1645,9 @@ async def _start_device_code_flow(provider_id: str) -> Dict[str, Any]:
     raise HTTPException(status_code=400, detail=f"Provider {provider_id} does not support device-code flow")
 
 
-def _nous_poller(session_id: str) -> None:
+def _avoi_poller(session_id: str) -> None:
     """Background poller that drives a Nous device-code flow to completion."""
-    from hermes_cli.auth import _poll_for_token, refresh_nous_oauth_from_state
+    from avoi_cli.auth import _poll_for_token, refresh_avoi_oauth_from_state
     from datetime import datetime, timezone
     import httpx
     with _oauth_sessions_lock:
@@ -1669,7 +1669,7 @@ def _nous_poller(session_id: str) -> None:
                 expires_in=expires_in,
                 poll_interval=interval,
             )
-        # Same post-processing as _nous_device_code_login (mint agent key)
+        # Same post-processing as _avoi_device_code_login (mint agent key)
         now = datetime.now(timezone.utc)
         token_ttl = int(token_data.get("expires_in") or 0)
         auth_state = {
@@ -1687,12 +1687,12 @@ def _nous_poller(session_id: str) -> None:
             ),
             "expires_in": token_ttl,
         }
-        full_state = refresh_nous_oauth_from_state(
+        full_state = refresh_avoi_oauth_from_state(
             auth_state, min_key_ttl_seconds=300, timeout_seconds=15.0,
             force_refresh=False, force_mint=True,
         )
-        from hermes_cli.auth import persist_nous_credentials
-        persist_nous_credentials(full_state)
+        from avoi_cli.auth import persist_avoi_credentials
+        persist_avoi_credentials(full_state)
         with _oauth_sessions_lock:
             sess["status"] = "approved"
         _log.info("oauth/device: nous login completed (session=%s)", session_id)
@@ -1720,7 +1720,7 @@ def _codex_full_login_worker(session_id: str) -> None:
     """
     try:
         import httpx
-        from hermes_cli.auth import (
+        from avoi_cli.auth import (
             CODEX_OAUTH_CLIENT_ID,
             CODEX_OAUTH_TOKEN_URL,
             DEFAULT_CODEX_BASE_URL,
@@ -1813,7 +1813,7 @@ def _codex_full_login_worker(session_id: str) -> None:
         import uuid as _uuid
         pool = load_pool("openai-codex")
         base_url = (
-            os.getenv("HERMES_CODEX_BASE_URL", "").strip().rstrip("/")
+            os.getenv("AVOI_CODEX_BASE_URL", "").strip().rstrip("/")
             or DEFAULT_CODEX_BASE_URL
         )
         entry = PooledCredential(
@@ -1918,7 +1918,7 @@ async def cancel_oauth_session(session_id: str, request: Request):
 
 @app.get("/api/sessions/{session_id}")
 async def get_session_detail(session_id: str):
-    from hermes_state import SessionDB
+    from avoi_state import SessionDB
     db = SessionDB()
     try:
         sid = db.resolve_session_id(session_id)
@@ -1932,7 +1932,7 @@ async def get_session_detail(session_id: str):
 
 @app.get("/api/sessions/{session_id}/messages")
 async def get_session_messages(session_id: str):
-    from hermes_state import SessionDB
+    from avoi_state import SessionDB
     db = SessionDB()
     try:
         sid = db.resolve_session_id(session_id)
@@ -1946,7 +1946,7 @@ async def get_session_messages(session_id: str):
 
 @app.delete("/api/sessions/{session_id}")
 async def delete_session_endpoint(session_id: str):
-    from hermes_state import SessionDB
+    from avoi_state import SessionDB
     db = SessionDB()
     try:
         if not db.delete_session(session_id):
@@ -1969,17 +1969,17 @@ async def get_logs(
     component: Optional[str] = None,
     search: Optional[str] = None,
 ):
-    from hermes_cli.logs import _read_tail, LOG_FILES
+    from avoi_cli.logs import _read_tail, LOG_FILES
 
     log_name = LOG_FILES.get(file)
     if not log_name:
         raise HTTPException(status_code=400, detail=f"Unknown log file: {file}")
-    log_path = get_hermes_home() / "logs" / log_name
+    log_path = get_avoi_home() / "logs" / log_name
     if not log_path.exists():
         return {"file": file, "lines": []}
 
     try:
-        from hermes_logging import COMPONENT_PREFIXES
+        from avoi_logging import COMPONENT_PREFIXES
     except ImportError:
         COMPONENT_PREFIXES = {}
 
@@ -2114,7 +2114,7 @@ class SkillToggle(BaseModel):
 @app.get("/api/skills")
 async def get_skills():
     from tools.skills_tool import _find_all_skills
-    from hermes_cli.skills_config import get_disabled_skills
+    from avoi_cli.skills_config import get_disabled_skills
     config = load_config()
     disabled = get_disabled_skills(config)
     skills = _find_all_skills(skip_disabled=True)
@@ -2125,7 +2125,7 @@ async def get_skills():
 
 @app.put("/api/skills/toggle")
 async def toggle_skill(body: SkillToggle):
-    from hermes_cli.skills_config import get_disabled_skills, save_disabled_skills
+    from avoi_cli.skills_config import get_disabled_skills, save_disabled_skills
     config = load_config()
     disabled = get_disabled_skills(config)
     if body.enabled:
@@ -2138,7 +2138,7 @@ async def toggle_skill(body: SkillToggle):
 
 @app.get("/api/tools/toolsets")
 async def get_toolsets():
-    from hermes_cli.tools_config import (
+    from avoi_cli.tools_config import (
         _get_effective_configurable_toolsets,
         _get_platform_tools,
         _toolset_has_keys,
@@ -2204,7 +2204,7 @@ async def update_config_raw(body: RawConfigUpdate):
 
 @app.get("/api/analytics/usage")
 async def get_usage_analytics(days: int = 30):
-    from hermes_state import SessionDB
+    from avoi_state import SessionDB
     from agent.insights import InsightsEngine
 
     db = SessionDB()
@@ -2274,7 +2274,7 @@ async def get_usage_analytics(days: int = 30):
 # ---------------------------------------------------------------------------
 # /api/pty — PTY-over-WebSocket bridge for the dashboard "Chat" tab.
 #
-# The endpoint spawns the same ``hermes --tui`` binary the CLI uses, behind
+# The endpoint spawns the same ``avoi --tui`` binary the CLI uses, behind
 # a POSIX pseudo-terminal, and forwards bytes + resize escapes across a
 # WebSocket.  The browser renders the ANSI through xterm.js (see
 # web/src/pages/ChatPage.tsx).
@@ -2288,7 +2288,7 @@ async def get_usage_analytics(days: int = 30):
 import re
 import asyncio
 
-from hermes_cli.pty_bridge import PtyBridge, PtyUnavailableError
+from avoi_cli.pty_bridge import PtyBridge, PtyUnavailableError
 
 _RESIZE_RE = re.compile(rb"\x1b\[RESIZE:(\d+);(\d+)\]")
 _PTY_READ_CHUNK_TIMEOUT = 0.2
@@ -2311,20 +2311,20 @@ def _resolve_chat_argv(
 ) -> tuple[list[str], Optional[str], Optional[dict]]:
     """Resolve the argv + cwd + env for the chat PTY.
 
-    Default: whatever ``hermes --tui`` would run.  Tests monkeypatch this
+    Default: whatever ``avoi --tui`` would run.  Tests monkeypatch this
     function to inject a tiny fake command (``cat``, ``sh -c 'printf …'``)
     so nothing has to build Node or the TUI bundle.
 
-    Session resume is propagated via the ``HERMES_TUI_RESUME`` env var —
-    matching what ``hermes_cli.main._launch_tui`` does for the CLI path.
+    Session resume is propagated via the ``AVOI_TUI_RESUME`` env var —
+    matching what ``avoi_cli.main._launch_tui`` does for the CLI path.
     Appending ``--resume <id>`` to argv doesn't work because ``ui-tui`` does
     not parse its argv.
 
-    `sidecar_url` (when set) is forwarded as ``HERMES_TUI_SIDECAR_URL`` so
+    `sidecar_url` (when set) is forwarded as ``AVOI_TUI_SIDECAR_URL`` so
     the spawned ``tui_gateway.entry`` can mirror dispatcher emits to the
     dashboard's ``/api/pub`` endpoint (see :func:`pub_ws`).
     """
-    from hermes_cli.main import PROJECT_ROOT, _make_tui_argv
+    from avoi_cli.main import PROJECT_ROOT, _make_tui_argv
 
     argv, cwd = _make_tui_argv(PROJECT_ROOT / "ui-tui", tui_dev=False)
     env: Optional[dict] = None
@@ -2333,10 +2333,10 @@ def _resolve_chat_argv(
         env = os.environ.copy()
 
         if resume:
-            env["HERMES_TUI_RESUME"] = resume
+            env["AVOI_TUI_RESUME"] = resume
 
         if sidecar_url:
-            env["HERMES_TUI_SIDECAR_URL"] = sidecar_url
+            env["AVOI_TUI_SIDECAR_URL"] = sidecar_url
 
     return list(argv), str(cwd) if cwd else None, env
 
@@ -2511,7 +2511,7 @@ async def gateway_ws(ws: WebSocket) -> None:
 # /api/pub + /api/events — chat-tab event broadcast.
 #
 # The PTY-side ``tui_gateway.entry`` opens /api/pub at startup (driven by
-# HERMES_TUI_SIDECAR_URL set in /api/pty's PTY env) and writes every
+# AVOI_TUI_SIDECAR_URL set in /api/pty's PTY env) and writes every
 # dispatcher emit through it.  The dashboard fans those frames out to any
 # subscriber that opened /api/events on the same channel id.  This is what
 # gives the React sidebar its tool-call feed without breaking the PTY
@@ -2617,8 +2617,8 @@ def mount_spa(application: FastAPI):
         html = _index_path.read_text()
         chat_js = "true" if _DASHBOARD_EMBEDDED_CHAT_ENABLED else "false"
         token_script = (
-            f'<script>window.__HERMES_SESSION_TOKEN__="{_SESSION_TOKEN}";'
-            f"window.__HERMES_DASHBOARD_EMBEDDED_CHAT__={chat_js};</script>"
+            f'<script>window.__AVOI_SESSION_TOKEN__="{_SESSION_TOKEN}";'
+            f"window.__AVOI_DASHBOARD_EMBEDDED_CHAT__={chat_js};</script>"
         )
         html = html.replace("</head>", f"{token_script}</head>", 1)
         return HTMLResponse(
@@ -2818,7 +2818,7 @@ def _normalise_theme_definition(data: Dict[str, Any]) -> Optional[Dict[str, Any]
     # tag on theme apply.  Clipped to _THEME_CUSTOM_CSS_MAX to keep the
     # payload bounded.  We intentionally do NOT parse/sanitise the CSS
     # here — the dashboard is localhost-only and themes are user-authored
-    # YAML in ~/.hermes/, same trust level as the config file itself.
+    # YAML in ~/.avoi/, same trust level as the config file itself.
     custom_css_val = data.get("customCSS")
     custom_css: Optional[str] = None
     if isinstance(custom_css_val, str) and custom_css_val.strip():
@@ -2873,13 +2873,13 @@ def _normalise_theme_definition(data: Dict[str, Any]) -> Optional[Dict[str, Any]
 
 
 def _discover_user_themes() -> list:
-    """Scan ~/.hermes/dashboard-themes/*.yaml for user-created themes.
+    """Scan ~/.avoi/dashboard-themes/*.yaml for user-created themes.
 
     Returns a list of fully-normalised theme definitions ready to ship
     to the frontend, so the client can apply them without a secondary
     round-trip or a built-in stub.
     """
-    themes_dir = get_hermes_home() / "dashboard-themes"
+    themes_dir = get_avoi_home() / "dashboard-themes"
     if not themes_dir.is_dir():
         return []
     result = []
@@ -2900,7 +2900,7 @@ async def get_dashboard_themes():
 
     Built-in entries ship name/label/description only (the frontend owns
     their full definitions in `web/src/themes/presets.ts`).  User themes
-    from `~/.hermes/dashboard-themes/*.yaml` ship with their full
+    from `~/.avoi/dashboard-themes/*.yaml` ship with their full
     normalised definition under `definition`, so the client can apply
     them without a stub.
     """
@@ -2947,21 +2947,21 @@ async def set_dashboard_theme(body: ThemeSetBody):
 def _discover_dashboard_plugins() -> list:
     """Scan plugins/*/dashboard/manifest.json for dashboard extensions.
 
-    Checks three plugin sources (same as hermes_cli.plugins):
-    1. User plugins:    ~/.hermes/plugins/<name>/dashboard/manifest.json
+    Checks three plugin sources (same as avoi_cli.plugins):
+    1. User plugins:    ~/.avoi/plugins/<name>/dashboard/manifest.json
     2. Bundled plugins: <repo>/plugins/<name>/dashboard/manifest.json  (memory/, etc.)
-    3. Project plugins: ./.hermes/plugins/  (only if HERMES_ENABLE_PROJECT_PLUGINS)
+    3. Project plugins: ./.avoi/plugins/  (only if AVOI_ENABLE_PROJECT_PLUGINS)
     """
     plugins = []
     seen_names: set = set()
 
     search_dirs = [
-        (get_hermes_home() / "plugins", "user"),
+        (get_avoi_home() / "plugins", "user"),
         (PROJECT_ROOT / "plugins" / "memory", "bundled"),
         (PROJECT_ROOT / "plugins", "bundled"),
     ]
-    if os.environ.get("HERMES_ENABLE_PROJECT_PLUGINS"):
-        search_dirs.append((Path.cwd() / ".hermes" / "plugins", "project"))
+    if os.environ.get("AVOI_ENABLE_PROJECT_PLUGINS"):
+        search_dirs.append((Path.cwd() / ".avoi" / "plugins", "project"))
 
     for plugins_root, source in search_dirs:
         if not plugins_root.is_dir():
@@ -3104,7 +3104,7 @@ def _mount_plugin_api_routes():
             continue
         try:
             spec = importlib.util.spec_from_file_location(
-                f"hermes_dashboard_plugin_{plugin['name']}", api_path,
+                f"avoi_dashboard_plugin_{plugin['name']}", api_path,
             )
             if spec is None or spec.loader is None:
                 continue

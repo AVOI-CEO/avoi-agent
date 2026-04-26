@@ -1,24 +1,24 @@
 ---
-name: hermes-atropos-environments
-description: Build, test, and debug Hermes Agent RL environments for Atropos training. Covers the HermesAgentBaseEnv interface, reward functions, agent loop integration, evaluation with tools, wandb logging, and the three CLI modes (serve/process/evaluate). Use when creating, reviewing, or fixing RL environments in the hermes-agent repo.
+name: avoi-atropos-environments
+description: Build, test, and debug AVOI Agent RL environments for Atropos training. Covers the HermesAgentBaseEnv interface, reward functions, agent loop integration, evaluation with tools, wandb logging, and the three CLI modes (serve/process/evaluate). Use when creating, reviewing, or fixing RL environments in the avoi-agent repo.
 version: 1.1.0
-author: Hermes Agent
+author: AVOI Agent
 license: MIT
 metadata:
-  hermes:
+  avoi:
     tags: [atropos, rl, environments, training, reinforcement-learning, reward-functions]
     related_skills: [axolotl, fine-tuning-with-trl, lm-evaluation-harness]
 ---
 
-# Hermes Agent Atropos Environments
+# AVOI Agent Atropos Environments
 
-Guide for building RL environments in the hermes-agent repo that integrate with the Atropos training framework.
+Guide for building RL environments in the avoi-agent repo that integrate with the Atropos training framework.
 
 ## Architecture Overview
 
 ```
 Atropos BaseEnv (atroposlib/envs/base.py)
-    └── HermesAgentBaseEnv (environments/hermes_base_env.py)
+    └── HermesAgentBaseEnv (environments/avoi_base_env.py)
             ├── Handles agent loop orchestration
             ├── Handles tool resolution per group
             ├── Handles ToolContext for reward verification
@@ -33,10 +33,10 @@ Hermes environments are special because they run a **multi-turn agent loop with 
 
 | File | Purpose |
 |------|---------|
-| `environments/hermes_base_env.py` | Base class with agent loop + tool resolution |
+| `environments/avoi_base_env.py` | Base class with agent loop + tool resolution |
 | `environments/agent_loop.py` | `HermesAgentLoop` + `AgentResult` dataclass |
 | `environments/tool_context.py` | `ToolContext` for reward verification |
-| `environments/tool_call_parsers.py` | Phase 2 tool call parsers (hermes, mistral, etc.) |
+| `environments/tool_call_parsers.py` | Phase 2 tool call parsers (avoi, mistral, etc.) |
 | `environments/your_env.py` | Your environment implementation |
 
 ## Inference Setup — Ask the User First
@@ -146,7 +146,7 @@ return 1.0 if result["exit_code"] == 0 else 0.0
 ### 5. `evaluate()` — Periodic evaluation with full agent loop
 
 **MUST use the full agent loop with tools**, not single-turn chat_completion.
-The whole point of hermes-agent environments is agentic evaluation:
+The whole point of avoi-agent environments is agentic evaluation:
 
 ```python
 async def evaluate(self, *args, **kwargs) -> None:
@@ -242,7 +242,7 @@ Config priority: CLI args > YAML file > config_init() defaults.
 
 1. **AgentResult has .messages, not .final_response** — Extract the final response by iterating reversed(result.messages) looking for the last assistant message with content.
 
-2. **evaluate() must use HermesAgentLoop, not chat_completion** — Single-turn chat_completion has no tools. The whole point of hermes-agent benchmarks is agentic evaluation with tool use.
+2. **evaluate() must use HermesAgentLoop, not chat_completion** — Single-turn chat_completion has no tools. The whole point of avoi-agent benchmarks is agentic evaluation with tool use.
 
 3. **Don't call _llm_judge twice** — If compute_reward already calls it, extract the score from the buffer instead of calling judge separately in evaluate().
 

@@ -41,7 +41,7 @@ class Transport(Protocol):
 
 _current_transport: contextvars.ContextVar[Optional[Transport]] = (
     contextvars.ContextVar(
-        "hermes_gateway_transport",
+        "avoi_gateway_transport",
         default=None,
     )
 )

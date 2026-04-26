@@ -19,7 +19,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from hermes_constants import is_wsl as _is_wsl
+from avoi_constants import is_wsl as _is_wsl
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 """
-Doctor command for hermes CLI.
+Doctor command for avoi CLI.
 
-Diagnoses issues with Hermes Agent setup.
+Diagnoses issues with AVOI Agent setup.
 """
 
 import os
@@ -10,14 +10,14 @@ import subprocess
 import shutil
 from pathlib import Path
 
-from hermes_cli.config import get_project_root, get_hermes_home, get_env_path
-from hermes_constants import display_hermes_home
+from avoi_cli.config import get_project_root, get_avoi_home, get_env_path
+from avoi_constants import display_avoi_home
 
 PROJECT_ROOT = get_project_root()
-HERMES_HOME = get_hermes_home()
-_DHH = display_hermes_home()  # user-facing display path (e.g. ~/.hermes or ~/.hermes/profiles/coder)
+AVOI_HOME = get_avoi_home()
+_DHH = display_avoi_home()  # user-facing display path (e.g. ~/.avoi or ~/.avoi/profiles/coder)
 
-# Load environment variables from ~/.hermes/.env so API key checks work
+# Load environment variables from ~/.avoi/.env so API key checks work
 from dotenv import load_dotenv
 _env_path = get_env_path()
 if _env_path.exists():
@@ -28,9 +28,9 @@ if _env_path.exists():
 # Also try project .env as dev fallback
 load_dotenv(PROJECT_ROOT / ".env", override=False, encoding="utf-8")
 
-from hermes_cli.colors import Colors, color
-from hermes_cli.models import _HERMES_USER_AGENT
-from hermes_constants import OPENROUTER_MODELS_URL
+from avoi_cli.colors import Colors, color
+from avoi_cli.models import _AVOI_USER_AGENT
+from avoi_constants import OPENROUTER_MODELS_URL
 from utils import base_url_host_matches
 
 
@@ -59,7 +59,7 @@ _PROVIDER_ENV_HINTS = (
 )
 
 
-from hermes_constants import is_termux as _is_termux
+from avoi_constants import is_termux as _is_termux
 
 
 def _python_install_cmd() -> str:
@@ -86,7 +86,7 @@ def _termux_browser_setup_steps(node_installed: bool) -> list[str]:
 
 
 def _has_provider_env_config(content: str) -> bool:
-    """Return True when ~/.hermes/.env contains provider auth/base URL settings."""
+    """Return True when ~/.avoi/.env contains provider auth/base URL settings."""
     return any(key in content for key in _PROVIDER_ENV_HINTS)
 
 
@@ -133,7 +133,7 @@ def check_info(text: str):
 def _check_gateway_service_linger(issues: list[str]) -> None:
     """Warn when a systemd user gateway service will stop after logout."""
     try:
-        from hermes_cli.gateway import (
+        from avoi_cli.gateway import (
             get_systemd_linger_status,
             get_systemd_unit_path,
             is_linux,
@@ -168,8 +168,8 @@ def run_doctor(args):
     should_fix = getattr(args, 'fix', False)
 
     # Doctor runs from the interactive CLI, so CLI-gated tool availability
-    # checks (like cronjob management) should see the same context as `hermes`.
-    os.environ.setdefault("HERMES_INTERACTIVE", "1")
+    # checks (like cronjob management) should see the same context as `avoi`.
+    os.environ.setdefault("AVOI_INTERACTIVE", "1")
     
     issues = []
     manual_issues = []  # issues that can't be auto-fixed
@@ -246,8 +246,8 @@ def run_doctor(args):
     print()
     print(color("◆ Configuration Files", Colors.CYAN, Colors.BOLD))
     
-    # Check ~/.hermes/.env (primary location for user config)
-    env_path = HERMES_HOME / '.env'
+    # Check ~/.avoi/.env (primary location for user config)
+    env_path = AVOI_HOME / '.env'
     if env_path.exists():
         check_ok(f"{_DHH}/.env file exists")
         
@@ -257,7 +257,7 @@ def run_doctor(args):
             check_ok("API key or custom endpoint configured")
         else:
             check_warn(f"No API key found in {_DHH}/.env")
-            issues.append("Run 'hermes setup' to configure API keys")
+            issues.append("Run 'avoi setup' to configure API keys")
     else:
         # Also check project root as fallback
         fallback_env = PROJECT_ROOT / '.env'
@@ -269,14 +269,14 @@ def run_doctor(args):
                 env_path.parent.mkdir(parents=True, exist_ok=True)
                 env_path.touch()
                 check_ok(f"Created empty {_DHH}/.env")
-                check_info("Run 'hermes setup' to configure API keys")
+                check_info("Run 'avoi setup' to configure API keys")
                 fixed_count += 1
             else:
-                check_info("Run 'hermes setup' to create one")
-                issues.append("Run 'hermes setup' to create .env")
+                check_info("Run 'avoi setup' to create one")
+                issues.append("Run 'avoi setup' to create .env")
     
-    # Check ~/.hermes/config.yaml (primary) or project cli-config.yaml (fallback)
-    config_path = HERMES_HOME / 'config.yaml'
+    # Check ~/.avoi/config.yaml (primary) or project cli-config.yaml (fallback)
+    config_path = AVOI_HOME / 'config.yaml'
     if config_path.exists():
         check_ok(f"{_DHH}/config.yaml exists")
 
@@ -291,13 +291,13 @@ def run_doctor(args):
 
             known_providers: set = set()
             try:
-                from hermes_cli.auth import PROVIDER_REGISTRY
+                from avoi_cli.auth import PROVIDER_REGISTRY
                 known_providers = set(PROVIDER_REGISTRY.keys()) | {"openrouter", "custom", "auto"}
             except Exception:
                 pass
             try:
-                from hermes_cli.config import get_compatible_custom_providers as _compatible_custom_providers
-                from hermes_cli.providers import resolve_provider_full as _resolve_provider_full
+                from avoi_cli.config import get_compatible_custom_providers as _compatible_custom_providers
+                from avoi_cli.providers import resolve_provider_full as _resolve_provider_full
             except Exception:
                 _compatible_custom_providers = None
                 _resolve_provider_full = None
@@ -338,7 +338,7 @@ def run_doctor(args):
                     issues.append(
                         f"model.provider '{provider_raw}' is unknown. "
                         f"Valid providers: {known_list}. "
-                        f"Fix: run 'hermes config set model.provider <valid_provider>'"
+                        f"Fix: run 'avoi config set model.provider <valid_provider>'"
                     )
 
             # Warn if model is set to a provider-prefixed name on a provider that doesn't use them
@@ -360,7 +360,7 @@ def run_doctor(args):
             # explicitly dispatch, which would produce false positives.
             if canonical_provider and canonical_provider not in ("auto", "custom", "openrouter"):
                 try:
-                    from hermes_cli.auth import PROVIDER_REGISTRY, get_auth_status
+                    from avoi_cli.auth import PROVIDER_REGISTRY, get_auth_status
                     pconfig = PROVIDER_REGISTRY.get(canonical_provider)
                     if pconfig and getattr(pconfig, "auth_type", "") == "api_key":
                         status = get_auth_status(canonical_provider) or {}
@@ -368,12 +368,12 @@ def run_doctor(args):
                         if not configured:
                             check_fail(
                                 f"model.provider '{canonical_provider}' is set but no API key is configured",
-                                "(check ~/.hermes/.env or run 'hermes setup')",
+                                "(check ~/.avoi/.env or run 'avoi setup')",
                             )
                             issues.append(
                                 f"No credentials found for provider '{canonical_provider}'. "
-                                f"Run 'hermes setup' or set the provider's API key in {_DHH}/.env, "
-                                f"or switch providers with 'hermes config set model.provider <name>'"
+                                f"Run 'avoi setup' or set the provider's API key in {_DHH}/.env, "
+                                f"or switch providers with 'avoi config set model.provider <name>'"
                             )
                 except Exception:
                     pass
@@ -398,10 +398,10 @@ def run_doctor(args):
                 check_warn("config.yaml not found", "(using defaults)")
 
     # Check config version and stale keys
-    config_path = HERMES_HOME / 'config.yaml'
+    config_path = AVOI_HOME / 'config.yaml'
     if config_path.exists():
         try:
-            from hermes_cli.config import check_config_version, migrate_config
+            from avoi_cli.config import check_config_version, migrate_config
             current_ver, latest_ver = check_config_version()
             if current_ver < latest_ver:
                 check_warn(
@@ -415,9 +415,9 @@ def run_doctor(args):
                         fixed_count += 1
                     except Exception as mig_err:
                         check_warn(f"Auto-migration failed: {mig_err}")
-                        issues.append("Run 'hermes setup' to migrate config")
+                        issues.append("Run 'avoi setup' to migrate config")
                 else:
-                    issues.append("Run 'hermes doctor --fix' or 'hermes setup' to migrate config")
+                    issues.append("Run 'avoi doctor --fix' or 'avoi setup' to migrate config")
             else:
                 check_ok(f"Config version up to date (v{current_ver})")
         except Exception:
@@ -446,13 +446,13 @@ def run_doctor(args):
                     check_ok("Migrated stale root-level keys into model section")
                     fixed_count += 1
                 else:
-                    issues.append("Stale root-level provider/base_url in config.yaml — run 'hermes doctor --fix'")
+                    issues.append("Stale root-level provider/base_url in config.yaml — run 'avoi doctor --fix'")
         except Exception:
             pass
 
         # Validate config structure (catches malformed custom_providers, etc.)
         try:
-            from hermes_cli.config import validate_config_structure
+            from avoi_cli.config import validate_config_structure
             config_issues = validate_config_structure()
             if config_issues:
                 print()
@@ -476,14 +476,14 @@ def run_doctor(args):
     print(color("◆ Auth Providers", Colors.CYAN, Colors.BOLD))
 
     try:
-        from hermes_cli.auth import (
-            get_nous_auth_status,
+        from avoi_cli.auth import (
+            get_avoi_auth_status,
             get_codex_auth_status,
             get_gemini_oauth_auth_status,
         )
 
-        nous_status = get_nous_auth_status()
-        if nous_status.get("logged_in"):
+        avoi_status = get_avoi_auth_status()
+        if avoi_status.get("logged_in"):
             check_ok("Nous Portal auth", "(logged in)")
         else:
             check_warn("Nous Portal auth", "(not logged in)")
@@ -523,12 +523,12 @@ def run_doctor(args):
     print()
     print(color("◆ Directory Structure", Colors.CYAN, Colors.BOLD))
     
-    hermes_home = HERMES_HOME
-    if hermes_home.exists():
+    avoi_home = AVOI_HOME
+    if avoi_home.exists():
         check_ok(f"{_DHH} directory exists")
     else:
         if should_fix:
-            hermes_home.mkdir(parents=True, exist_ok=True)
+            avoi_home.mkdir(parents=True, exist_ok=True)
             check_ok(f"Created {_DHH} directory")
             fixed_count += 1
         else:
@@ -537,7 +537,7 @@ def run_doctor(args):
     # Check expected subdirectories
     expected_subdirs = ["cron", "sessions", "logs", "skills", "memories"]
     for subdir_name in expected_subdirs:
-        subdir_path = hermes_home / subdir_name
+        subdir_path = avoi_home / subdir_name
         if subdir_path.exists():
             check_ok(f"{_DHH}/{subdir_name}/ exists")
         else:
@@ -549,7 +549,7 @@ def run_doctor(args):
                 check_warn(f"{_DHH}/{subdir_name}/ not found", "(will be created on first use)")
     
     # Check for SOUL.md persona file
-    soul_path = hermes_home / "SOUL.md"
+    soul_path = avoi_home / "SOUL.md"
     if soul_path.exists():
         content = soul_path.read_text(encoding="utf-8").strip()
         # Check if it's just the template comments (no real content)
@@ -563,7 +563,7 @@ def run_doctor(args):
         if should_fix:
             soul_path.parent.mkdir(parents=True, exist_ok=True)
             soul_path.write_text(
-                "# Hermes Agent Persona\n\n"
+                "# AVOI Agent Persona\n\n"
                 "<!-- Edit this file to customize how Hermes communicates. -->\n\n"
                 "You are Hermes, a helpful AI assistant.\n",
                 encoding="utf-8",
@@ -572,7 +572,7 @@ def run_doctor(args):
             fixed_count += 1
     
     # Check memory directory
-    memories_dir = hermes_home / "memories"
+    memories_dir = avoi_home / "memories"
     if memories_dir.exists():
         check_ok(f"{_DHH}/memories/ directory exists")
         memory_file = memories_dir / "MEMORY.md"
@@ -595,7 +595,7 @@ def run_doctor(args):
             fixed_count += 1
     
     # Check SQLite session store
-    state_db_path = hermes_home / "state.db"
+    state_db_path = avoi_home / "state.db"
     if state_db_path.exists():
         try:
             import sqlite3
@@ -610,7 +610,7 @@ def run_doctor(args):
         check_info(f"{_DHH}/state.db not created yet (will be created on first session)")
 
     # Check WAL file size (unbounded growth indicates missed checkpoints)
-    wal_path = hermes_home / "state.db-wal"
+    wal_path = avoi_home / "state.db-wal"
     if wal_path.exists():
         try:
             wal_size = wal_path.stat().st_size
@@ -628,7 +628,7 @@ def run_doctor(args):
                     check_ok(f"WAL checkpoint performed ({wal_size // 1024}K → {new_size // 1024}K)")
                     fixed_count += 1
                 else:
-                    issues.append("Large WAL file — run 'hermes doctor --fix' to checkpoint")
+                    issues.append("Large WAL file — run 'avoi doctor --fix' to checkpoint")
             elif wal_size > 10 * 1024 * 1024:  # 10 MB
                 check_info(f"WAL file is {wal_size // (1024*1024)} MB (normal for active sessions)")
         except Exception:
@@ -637,7 +637,7 @@ def run_doctor(args):
     _check_gateway_service_linger(issues)
 
     # =========================================================================
-    # Check: Command installation (hermes bin symlink)
+    # Check: Command installation (avoi bin symlink)
     # =========================================================================
     if sys.platform != "win32":
         print()
@@ -646,7 +646,7 @@ def run_doctor(args):
         # Determine the venv entry point location
         _venv_bin = None
         for _venv_name in ("venv", ".venv"):
-            _candidate = PROJECT_ROOT / _venv_name / "bin" / "hermes"
+            _candidate = PROJECT_ROOT / _venv_name / "bin" / "avoi"
             if _candidate.exists():
                 _venv_bin = _candidate
                 break
@@ -660,12 +660,12 @@ def run_doctor(args):
         else:
             _cmd_link_dir = Path.home() / ".local" / "bin"
             _cmd_link_display = "~/.local/bin"
-        _cmd_link = _cmd_link_dir / "hermes"
+        _cmd_link = _cmd_link_dir / "avoi"
 
         if _venv_bin is None:
             check_warn(
                 "Venv entry point not found",
-                "(hermes not in venv/bin/ or .venv/bin/ — reinstall with pip install -e '.[all]')"
+                "(avoi not in venv/bin/ or .venv/bin/ — reinstall with pip install -e '.[all]')"
             )
             manual_issues.append(
                 f"Reinstall entry point: cd {PROJECT_ROOT} && source venv/bin/activate && pip install -e '.[all]'"
@@ -678,31 +678,31 @@ def run_doctor(args):
                 _target = _cmd_link.resolve()
                 _expected = _venv_bin.resolve()
                 if _target == _expected:
-                    check_ok(f"{_cmd_link_display}/hermes → correct target")
+                    check_ok(f"{_cmd_link_display}/avoi → correct target")
                 else:
                     check_warn(
-                        f"{_cmd_link_display}/hermes points to wrong target",
+                        f"{_cmd_link_display}/avoi points to wrong target",
                         f"(→ {_target}, expected → {_expected})"
                     )
                     if should_fix:
                         _cmd_link.unlink()
                         _cmd_link.symlink_to(_venv_bin)
-                        check_ok(f"Fixed symlink: {_cmd_link_display}/hermes → {_venv_bin}")
+                        check_ok(f"Fixed symlink: {_cmd_link_display}/avoi → {_venv_bin}")
                         fixed_count += 1
                     else:
-                        issues.append(f"Broken symlink at {_cmd_link_display}/hermes — run 'hermes doctor --fix'")
+                        issues.append(f"Broken symlink at {_cmd_link_display}/avoi — run 'avoi doctor --fix'")
             elif _cmd_link.exists():
                 # It's a regular file, not a symlink — possibly a wrapper script
-                check_ok(f"{_cmd_link_display}/hermes exists (non-symlink)")
+                check_ok(f"{_cmd_link_display}/avoi exists (non-symlink)")
             else:
                 check_fail(
-                    f"{_cmd_link_display}/hermes not found",
-                    "(hermes command may not work outside the venv)"
+                    f"{_cmd_link_display}/avoi not found",
+                    "(avoi command may not work outside the venv)"
                 )
                 if should_fix:
                     _cmd_link_dir.mkdir(parents=True, exist_ok=True)
                     _cmd_link.symlink_to(_venv_bin)
-                    check_ok(f"Created symlink: {_cmd_link_display}/hermes → {_venv_bin}")
+                    check_ok(f"Created symlink: {_cmd_link_display}/avoi → {_venv_bin}")
                     fixed_count += 1
 
                     # Check if the link dir is on PATH
@@ -714,7 +714,7 @@ def run_doctor(args):
                         )
                         manual_issues.append(f"Add {_cmd_link_display} to your PATH")
                 else:
-                    issues.append(f"Missing {_cmd_link_display}/hermes symlink — run 'hermes doctor --fix'")
+                    issues.append(f"Missing {_cmd_link_display}/avoi symlink — run 'avoi doctor --fix'")
 
     # =========================================================================
     # Check: External tools
@@ -885,7 +885,7 @@ def run_doctor(args):
                 print(f"\r  {color('✗', Colors.RED)} OpenRouter API {color('(out of credits — payment required)', Colors.DIM)}")
                 issues.append(
                     "OpenRouter account has insufficient credits. "
-                    "Fix: run 'hermes config set model.provider <provider>' to switch providers, "
+                    "Fix: run 'avoi config set model.provider <provider>' to switch providers, "
                     "or fund your OpenRouter account at https://openrouter.ai/settings/credits"
                 )
             elif response.status_code == 429:
@@ -899,7 +899,7 @@ def run_doctor(args):
     else:
         check_warn("OpenRouter API", "(not configured)")
     
-    from hermes_cli.auth import get_anthropic_key
+    from avoi_cli.auth import get_anthropic_key
     anthropic_key = get_anthropic_key()
     if anthropic_key:
         print("  Checking Anthropic API...", end="", flush=True)
@@ -981,7 +981,7 @@ def run_doctor(args):
                 _url = (_base.rstrip("/") + "/models") if _base else _default_url
                 _headers = {
                     "Authorization": f"Bearer {_key}",
-                    "User-Agent": _HERMES_USER_AGENT,
+                    "User-Agent": _AVOI_USER_AGENT,
                 }
                 if base_url_host_matches(_base, "api.kimi.com"):
                     _headers["User-Agent"] = "claude-code/0.1.0"
@@ -1076,7 +1076,7 @@ def run_doctor(args):
         # Count disabled tools with API key requirements
         api_disabled = [u for u in unavailable if (u.get("missing_vars") or u.get("env_vars"))]
         if api_disabled:
-            issues.append("Run 'hermes setup' to configure missing API keys for full tool access")
+            issues.append("Run 'avoi setup' to configure missing API keys for full tool access")
     except Exception as e:
         check_warn("Could not check tool availability", f"({e})")
     
@@ -1086,7 +1086,7 @@ def run_doctor(args):
     print()
     print(color("◆ Skills Hub", Colors.CYAN, Colors.BOLD))
 
-    hub_dir = HERMES_HOME / "skills" / ".hub"
+    hub_dir = AVOI_HOME / "skills" / ".hub"
     if hub_dir.exists():
         check_ok("Skills Hub directory exists")
         lock_file = hub_dir / "lock.json"
@@ -1103,9 +1103,9 @@ def run_doctor(args):
         if q_count > 0:
             check_warn(f"{q_count} skill(s) in quarantine", "(pending review)")
     else:
-        check_warn("Skills Hub directory not initialized", "(run: hermes skills list)")
+        check_warn("Skills Hub directory not initialized", "(run: avoi skills list)")
 
-    from hermes_cli.config import get_env_value
+    from avoi_cli.config import get_env_value
     github_token = get_env_value("GITHUB_TOKEN") or get_env_value("GH_TOKEN")
     if github_token:
         check_ok("GitHub token configured (authenticated API access)")
@@ -1121,7 +1121,7 @@ def run_doctor(args):
     _active_memory_provider = ""
     try:
         import yaml as _yaml
-        _mem_cfg_path = HERMES_HOME / "config.yaml"
+        _mem_cfg_path = AVOI_HOME / "config.yaml"
         if _mem_cfg_path.exists():
             with open(_mem_cfg_path) as _f:
                 _raw_cfg = _yaml.safe_load(_f) or {}
@@ -1138,12 +1138,12 @@ def run_doctor(args):
             _honcho_cfg_path = resolve_config_path()
 
             if not _honcho_cfg_path.exists():
-                check_warn("Honcho config not found", "run: hermes memory setup")
+                check_warn("Honcho config not found", "run: avoi memory setup")
             elif not hcfg.enabled:
                 check_info(f"Honcho disabled (set enabled: true in {_honcho_cfg_path} to activate)")
             elif not (hcfg.api_key or hcfg.base_url):
-                check_fail("Honcho API key or base URL not set", "run: hermes memory setup")
-                issues.append("No Honcho API key — run 'hermes memory setup'")
+                check_fail("Honcho API key or base URL not set", "run: avoi memory setup")
+                issues.append("No Honcho API key — run 'avoi memory setup'")
             else:
                 from plugins.memory.honcho.client import get_honcho_client, reset_honcho_client
                 reset_honcho_client()
@@ -1170,7 +1170,7 @@ def run_doctor(args):
                 check_ok("Mem0 API key configured")
                 check_info(f"user_id={mem0_cfg.get('user_id', '?')}  agent_id={mem0_cfg.get('agent_id', '?')}")
             else:
-                check_fail("Mem0 API key not set", "(set MEM0_API_KEY in .env or run hermes memory setup)")
+                check_fail("Mem0 API key not set", "(set MEM0_API_KEY in .env or run avoi memory setup)")
                 issues.append("Mem0 is set as memory provider but API key is missing")
         except ImportError:
             check_fail("Mem0 plugin not loadable", "pip install mem0ai")
@@ -1185,9 +1185,9 @@ def run_doctor(args):
             if _provider and _provider.is_available():
                 check_ok(f"{_active_memory_provider} provider active")
             elif _provider:
-                check_warn(f"{_active_memory_provider} configured but not available", "run: hermes memory status")
+                check_warn(f"{_active_memory_provider} configured but not available", "run: avoi memory status")
             else:
-                check_warn(f"{_active_memory_provider} plugin not found", "run: hermes memory setup")
+                check_warn(f"{_active_memory_provider} plugin not found", "run: avoi memory setup")
         except Exception as _e:
             check_warn(f"{_active_memory_provider} check failed", str(_e))
 
@@ -1195,7 +1195,7 @@ def run_doctor(args):
     # Profiles
     # =========================================================================
     try:
-        from hermes_cli.profiles import list_profiles, _get_wrapper_dir, profile_exists
+        from avoi_cli.profiles import list_profiles, _get_wrapper_dir, profile_exists
         import re as _re
 
         named_profiles = [p for p in list_profiles() if not p.is_default]
@@ -1227,8 +1227,8 @@ def run_doctor(args):
                         continue
                     try:
                         content = wrapper.read_text()
-                        if "hermes -p" in content:
-                            _m = _re.search(r"hermes -p (\S+)", content)
+                        if "avoi -p" in content:
+                            _m = _re.search(r"avoi -p (\S+)", content)
                             if _m and not profile_exists(_m.group(1)):
                                 check_warn(f"Orphan alias: {wrapper.name} → profile '{_m.group(1)}' no longer exists")
                     except Exception:
@@ -1263,7 +1263,7 @@ def run_doctor(args):
             print(f"  {i}. {issue}")
         print()
         if not should_fix:
-            print(color("  Tip: run 'hermes doctor --fix' to auto-fix what's possible.", Colors.DIM))
+            print(color("  Tip: run 'avoi doctor --fix' to auto-fix what's possible.", Colors.DIM))
     else:
         print(color("─" * 60, Colors.GREEN))
         print(color("  All checks passed! 🎉", Colors.GREEN, Colors.BOLD))

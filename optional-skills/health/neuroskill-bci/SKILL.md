@@ -7,10 +7,10 @@ description: >
   Requires a BCI wearable (Muse 2/S or OpenBCI) and the NeuroSkill desktop app
   running locally.
 version: 1.0.0
-author: Hermes Agent + Nous Research
+author: AVOI Agent + AVOI AI
 license: MIT
 metadata:
-  hermes:
+  avoi:
     tags: [BCI, neurofeedback, health, focus, EEG, cognitive-state, biometrics, neuroskill]
     category: health
     related_skills: []

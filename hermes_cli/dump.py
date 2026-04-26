@@ -1,5 +1,5 @@
 """
-Dump command for hermes CLI.
+Dump command for avoi CLI.
 
 Outputs a compact, plain-text summary of the user's Hermes setup
 that can be copy-pasted into Discord/GitHub/Telegram for support context.
@@ -13,8 +13,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from hermes_cli.config import get_hermes_home, get_env_path, get_project_root, load_config
-from hermes_constants import display_hermes_home
+from avoi_cli.config import get_avoi_home, get_env_path, get_project_root, load_config
+from avoi_constants import display_avoi_home
 
 
 def _get_git_commit(project_root: Path) -> str:
@@ -44,7 +44,7 @@ def _redact(value: str) -> str:
 def _gateway_status() -> str:
     """Return a short gateway status string."""
     try:
-        from hermes_cli.gateway import get_gateway_runtime_snapshot
+        from avoi_cli.gateway import get_gateway_runtime_snapshot
 
         snapshot = get_gateway_runtime_snapshot()
         if snapshot.running:
@@ -59,9 +59,9 @@ def _gateway_status() -> str:
         return "unknown" if sys.platform.startswith(("linux", "darwin")) else "N/A"
 
 
-def _count_skills(hermes_home: Path) -> int:
+def _count_skills(avoi_home: Path) -> int:
     """Count installed skills."""
-    skills_dir = hermes_home / "skills"
+    skills_dir = avoi_home / "skills"
     if not skills_dir.is_dir():
         return 0
     count = 0
@@ -77,9 +77,9 @@ def _count_mcp_servers(config: dict) -> int:
     return len(servers)
 
 
-def _cron_summary(hermes_home: Path) -> str:
+def _cron_summary(avoi_home: Path) -> str:
     """Return cron jobs summary."""
-    jobs_file = hermes_home / "cron" / "jobs.json"
+    jobs_file = avoi_home / "cron" / "jobs.json"
     if not jobs_file.exists():
         return "0"
     try:
@@ -142,7 +142,7 @@ def _config_overrides(config: dict) -> dict[str, str]:
     
     Returns a flat dict of dotpath -> value for interesting overrides.
     """
-    from hermes_cli.config import DEFAULT_CONFIG
+    from avoi_cli.config import DEFAULT_CONFIG
 
     overrides = {}
 
@@ -204,10 +204,10 @@ def run_dump(args):
     load_dotenv(get_project_root() / ".env", override=False, encoding="utf-8")
 
     project_root = get_project_root()
-    hermes_home = get_hermes_home()
+    avoi_home = get_avoi_home()
 
     try:
-        from hermes_cli import __version__, __release_date__
+        from avoi_cli import __version__, __release_date__
     except ImportError:
         __version__ = "(unknown)"
         __release_date__ = ""
@@ -223,7 +223,7 @@ def run_dump(args):
 
     # Profile
     try:
-        from hermes_cli.profiles import get_active_profile_name
+        from avoi_cli.profiles import get_active_profile_name
         profile = get_active_profile_name() or "(default)"
     except Exception:
         profile = "(default)"
@@ -243,7 +243,7 @@ def run_dump(args):
     os_info = f"{platform.system()} {platform.release()} {platform.machine()}"
 
     lines = []
-    lines.append("--- hermes dump ---")
+    lines.append("--- avoi dump ---")
     ver_str = f"{__version__}"
     if __release_date__:
         ver_str += f" ({__release_date__})"
@@ -253,7 +253,7 @@ def run_dump(args):
     lines.append(f"python:           {sys.version.split()[0]}")
     lines.append(f"openai_sdk:       {openai_ver}")
     lines.append(f"profile:          {profile}")
-    lines.append(f"hermes_home:      {display_hermes_home()}")
+    lines.append(f"avoi_home:      {display_avoi_home()}")
     lines.append(f"model:            {model}")
     lines.append(f"provider:         {provider}")
     lines.append(f"terminal:         {backend}")
@@ -301,7 +301,7 @@ def run_dump(args):
     lines.append("")
     lines.append("features:")
 
-    toolsets = config.get("toolsets", ["hermes-cli"])
+    toolsets = config.get("toolsets", ["avoi-cli"])
     lines.append(f"  toolsets:           {', '.join(toolsets) if toolsets else '(default)'}")
     lines.append(f"  mcp_servers:        {_count_mcp_servers(config)}")
     lines.append(f"  memory_provider:    {_memory_provider(config)}")
@@ -309,8 +309,8 @@ def run_dump(args):
 
     platforms = _configured_platforms()
     lines.append(f"  platforms:          {', '.join(platforms) if platforms else 'none'}")
-    lines.append(f"  cron_jobs:          {_cron_summary(hermes_home)}")
-    lines.append(f"  skills:             {_count_skills(hermes_home)}")
+    lines.append(f"  cron_jobs:          {_cron_summary(avoi_home)}")
+    lines.append(f"  skills:             {_count_skills(avoi_home)}")
 
     # Config overrides (non-default values)
     overrides = _config_overrides(config)

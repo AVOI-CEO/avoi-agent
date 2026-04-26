@@ -46,19 +46,19 @@ import fire
 from datetime import datetime
 from pathlib import Path
 
-from hermes_constants import get_hermes_home
+from avoi_constants import get_avoi_home
 
-# Load .env from ~/.hermes/.env first, then project root as dev fallback.
+# Load .env from ~/.avoi/.env first, then project root as dev fallback.
 # User-managed env files should override stale shell exports on restart.
-from hermes_cli.env_loader import load_hermes_dotenv
-from hermes_cli.timeouts import (
+from avoi_cli.env_loader import load_avoi_dotenv
+from avoi_cli.timeouts import (
     get_provider_request_timeout,
     get_provider_stale_timeout,
 )
 
-_hermes_home = get_hermes_home()
+_avoi_home = get_avoi_home()
 _project_env = Path(__file__).parent / '.env'
-_loaded_env_paths = load_hermes_dotenv(hermes_home=_hermes_home, project_env=_project_env)
+_loaded_env_paths = load_avoi_dotenv(avoi_home=_avoi_home, project_env=_project_env)
 if _loaded_env_paths:
     for _env_path in _loaded_env_paths:
         logger.info("Loaded environment variables from %s", _env_path)
@@ -86,7 +86,7 @@ from agent.error_classifier import classify_api_error, FailoverReason
 from agent.prompt_builder import (
     DEFAULT_AGENT_IDENTITY, PLATFORM_HINTS,
     MEMORY_GUIDANCE, SESSION_SEARCH_GUIDANCE, SKILLS_GUIDANCE,
-    build_nous_subscription_prompt,
+    build_avoi_subscription_prompt,
 )
 from agent.model_metadata import (
     fetch_model_metadata,
@@ -124,7 +124,7 @@ from utils import atomic_json_write, base_url_host_matches, base_url_hostname, e
 class _SafeWriter:
     """Transparent stdio wrapper that catches OSError/ValueError from broken pipes.
 
-    When hermes-agent runs as a systemd service, Docker container, or headless
+    When avoi-agent runs as a systemd service, Docker container, or headless
     daemon, the stdout/stderr pipe can become unavailable (idle timeout, buffer
     exhaustion, socket reset). Any print() call then raises
     ``OSError: [Errno 5] Input/output error``, which can crash agent setup or
@@ -762,10 +762,10 @@ _QWEN_CODE_VERSION = "0.14.1"
 
 def _routermint_headers() -> dict:
     """Return the User-Agent RouterMint needs to avoid Cloudflare 1010 blocks."""
-    from hermes_cli import __version__ as _HERMES_VERSION
+    from avoi_cli import __version__ as _AVOI_VERSION
 
     return {
-        "User-Agent": f"HermesAgent/{_HERMES_VERSION}",
+        "User-Agent": f"HermesAgent/{_AVOI_VERSION}",
     }
 
 
@@ -816,7 +816,7 @@ class AIAgent:
     """
 
     _TOOL_CALL_ARGUMENTS_CORRUPTION_MARKER = (
-        "[hermes-agent: tool call arguments were corrupted in this session and "
+        "[avoi-agent: tool call arguments were corrupted in this session and "
         "have been dropped to keep the conversation alive. See issue #15236.]"
     )
 
@@ -1015,7 +1015,7 @@ class AIAgent:
             pass  # Non-fatal — transport may not exist for all modes yet
 
         try:
-            from hermes_cli.model_normalize import (
+            from avoi_cli.model_normalize import (
                 _AGGREGATOR_PROVIDERS,
                 normalize_model_for_provider,
             )
@@ -1152,7 +1152,7 @@ class AIAgent:
         # sessions with >5-minute pauses between turns (#14971).
         self._cache_ttl = "5m"
         try:
-            from hermes_cli.config import load_config as _load_pc_cfg
+            from avoi_cli.config import load_config as _load_pc_cfg
 
             _pc_cfg = _load_pc_cfg().get("prompt_caching", {}) or {}
             _ttl = _pc_cfg.get("cache_ttl", "5m")
@@ -1184,10 +1184,10 @@ class AIAgent:
         self._rate_limit_state: Optional["RateLimitState"] = None
 
         # Centralized logging — agent.log (INFO+) and errors.log (WARNING+)
-        # both live under ~/.hermes/logs/.  Idempotent, so gateway mode
+        # both live under ~/.avoi/logs/.  Idempotent, so gateway mode
         # (which creates a new AIAgent per message) won't duplicate handlers.
-        from hermes_logging import setup_logging, setup_verbose_logging
-        setup_logging(hermes_home=_hermes_home)
+        from avoi_logging import setup_logging, setup_verbose_logging
+        setup_logging(avoi_home=_avoi_home)
 
         if self.verbose_logging:
             setup_verbose_logging()
@@ -1203,7 +1203,7 @@ class AIAgent:
                     'run_agent',            # agent runner internals
                     'trajectory_compressor',
                     'cron',                 # scheduler (only relevant in daemon mode)
-                    'hermes_cli',           # CLI helpers
+                    'avoi_cli',           # CLI helpers
                 ]:
                     logging.getLogger(quiet_logger).setLevel(logging.ERROR)
         
@@ -1297,7 +1297,7 @@ class AIAgent:
             # Guardrail config — read from config.yaml at init time.
             self._bedrock_guardrail_config = None
             try:
-                from hermes_cli.config import load_config as _load_br_cfg
+                from avoi_cli.config import load_config as _load_br_cfg
                 _gr = _load_br_cfg().get("bedrock", {}).get("guardrail", {})
                 if _gr.get("guardrail_identifier") and _gr.get("guardrail_version"):
                     self._bedrock_guardrail_config = {
@@ -1343,14 +1343,14 @@ class AIAgent:
                 effective_base = base_url
                 if base_url_host_matches(effective_base, "openrouter.ai"):
                     client_kwargs["default_headers"] = {
-                        "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-                        "X-OpenRouter-Title": "Hermes Agent",
+                        "HTTP-Referer": "https://avoi-agent.avoi-ai.com",
+                        "X-OpenRouter-Title": "AVOI Agent",
                         "X-OpenRouter-Categories": "productivity,cli-agent",
                     }
                 elif base_url_host_matches(effective_base, "api.routermint.com"):
                     client_kwargs["default_headers"] = _routermint_headers()
                 elif base_url_host_matches(effective_base, "api.githubcopilot.com"):
-                    from hermes_cli.models import copilot_default_headers
+                    from avoi_cli.models import copilot_default_headers
 
                     client_kwargs["default_headers"] = copilot_default_headers()
                 elif base_url_host_matches(effective_base, "api.kimi.com"):
@@ -1388,7 +1388,7 @@ class AIAgent:
                         # (e.g. alibaba → DASHSCOPE_API_KEY, not ALIBABA_API_KEY).
                         _env_hint = f"{_explicit.upper()}_API_KEY"
                         try:
-                            from hermes_cli.auth import PROVIDER_REGISTRY
+                            from avoi_cli.auth import PROVIDER_REGISTRY
                             _pcfg = PROVIDER_REGISTRY.get(_explicit)
                             if _pcfg and _pcfg.api_key_env_vars:
                                 _env_hint = _pcfg.api_key_env_vars[0]
@@ -1397,12 +1397,12 @@ class AIAgent:
                         raise RuntimeError(
                             f"Provider '{_explicit}' is set in config.yaml but no API key "
                             f"was found. Set the {_env_hint} environment "
-                            f"variable, or switch to a different provider with `hermes model`."
+                            f"variable, or switch to a different provider with `avoi model`."
                         )
                     # No provider configured — reject with a clear message.
                     raise RuntimeError(
-                        "No LLM provider configured. Run `hermes model` to "
-                        "select a provider, or run `hermes setup` for first-time "
+                        "No LLM provider configured. Run `avoi model` to "
+                        "select a provider, or run `avoi setup` for first-time "
                         "configuration."
                     )
             
@@ -1528,9 +1528,9 @@ class AIAgent:
             short_uuid = uuid.uuid4().hex[:6]
             self.session_id = f"{timestamp_str}_{short_uuid}"
         
-        # Session logs go into ~/.hermes/sessions/ alongside gateway sessions
-        hermes_home = get_hermes_home()
-        self.logs_dir = hermes_home / "sessions"
+        # Session logs go into ~/.avoi/sessions/ alongside gateway sessions
+        avoi_home = get_avoi_home()
+        self.logs_dir = avoi_home / "sessions"
         self.logs_dir.mkdir(parents=True, exist_ok=True)
         self.session_log_file = self.logs_dir / f"session_{self.session_id}.json"
         
@@ -1557,7 +1557,7 @@ class AIAgent:
             try:
                 self._session_db.create_session(
                     session_id=self.session_id,
-                    source=self.platform or os.environ.get("HERMES_SESSION_SOURCE", "cli"),
+                    source=self.platform or os.environ.get("AVOI_SESSION_SOURCE", "cli"),
                     model=self.model,
                     model_config={
                         "max_iterations": self.max_iterations,
@@ -1584,7 +1584,7 @@ class AIAgent:
         
         # Load config once for memory, skills, and compression sections
         try:
-            from hermes_cli.config import load_config as _load_agent_config
+            from avoi_cli.config import load_config as _load_agent_config
             _agent_cfg = _load_agent_config()
         except Exception:
             _agent_cfg = {}
@@ -1636,7 +1636,7 @@ class AIAgent:
                         _init_kwargs = {
                             "session_id": self.session_id,
                             "platform": platform or "cli",
-                            "hermes_home": str(get_hermes_home()),
+                            "avoi_home": str(get_avoi_home()),
                             "agent_context": "primary",
                         }
                         # Thread session title for memory provider scoping
@@ -1666,10 +1666,10 @@ class AIAgent:
                             _init_kwargs["gateway_session_key"] = self._gateway_session_key
                         # Profile identity for per-profile provider scoping
                         try:
-                            from hermes_cli.profiles import get_active_profile_name
+                            from avoi_cli.profiles import get_active_profile_name
                             _profile = get_active_profile_name()
                             _init_kwargs["agent_identity"] = _profile
-                            _init_kwargs["agent_workspace"] = "hermes"
+                            _init_kwargs["agent_workspace"] = "avoi"
                         except Exception:
                             pass
                         self._memory_manager.initialize_all(**_init_kwargs)
@@ -1788,7 +1788,7 @@ class AIAgent:
         # Resolve custom_providers list once for reuse below (startup
         # context-length override and plugin context-engine init).
         try:
-            from hermes_cli.config import get_compatible_custom_providers
+            from avoi_cli.config import get_compatible_custom_providers
             _custom_providers = get_compatible_custom_providers(_agent_cfg)
         except Exception:
             _custom_providers = _agent_cfg.get("custom_providers")
@@ -1798,7 +1798,7 @@ class AIAgent:
         # Check custom_providers per-model context_length
         if _config_context_length is None and _custom_providers:
             try:
-                from hermes_cli.config import get_custom_provider_context_length
+                from avoi_cli.config import get_custom_provider_context_length
                 _cp_ctx_resolved = get_custom_provider_context_length(
                     model=self.model,
                     base_url=self.base_url,
@@ -1868,7 +1868,7 @@ class AIAgent:
             # Try general plugin system as fallback
             if _selected_engine is None:
                 try:
-                    from hermes_cli.plugins import get_plugin_context_engine
+                    from avoi_cli.plugins import get_plugin_context_engine
                     _candidate = get_plugin_context_engine()
                     if _candidate and _candidate.name == _engine_name:
                         _selected_engine = _candidate
@@ -1928,7 +1928,7 @@ class AIAgent:
             raise ValueError(
                 f"Model {self.model} has a context window of {_ctx:,} tokens, "
                 f"which is below the minimum {MINIMUM_CONTEXT_LENGTH:,} required "
-                f"by Hermes Agent.  Choose a model with at least "
+                f"by AVOI Agent.  Choose a model with at least "
                 f"{MINIMUM_CONTEXT_LENGTH // 1000}K context, or set "
                 f"model.context_length in config.yaml to override."
             )
@@ -1949,7 +1949,7 @@ class AIAgent:
             try:
                 self.context_compressor.on_session_start(
                     self.session_id,
-                    hermes_home=str(get_hermes_home()),
+                    avoi_home=str(get_avoi_home()),
                     platform=self.platform or "cli",
                     model=self.model,
                     context_length=getattr(self.context_compressor, "context_length", 0),
@@ -2099,7 +2099,7 @@ class AIAgent:
         change persists across turns (unlike fallback which is
         turn-scoped).
         """
-        from hermes_cli.providers import determine_api_mode
+        from avoi_cli.providers import determine_api_mode
 
         # ── Determine api_mode if not provided ──
         if not api_mode:
@@ -2188,7 +2188,7 @@ class AIAgent:
             # custom provider mid-session (closes #15779).
             _sm_custom_providers = None
             try:
-                from hermes_cli.config import load_config, get_compatible_custom_providers
+                from avoi_cli.config import load_config, get_compatible_custom_providers
                 _sm_cfg = load_config()
                 _sm_custom_providers = get_compatible_custom_providers(_sm_cfg)
             except Exception:
@@ -2298,7 +2298,7 @@ class AIAgent:
         all non-forced output is suppressed.
 
         ``suppress_status_output`` is a stricter CLI automation mode used by
-        parseable single-query flows such as ``hermes chat -q``. In that mode,
+        parseable single-query flows such as ``avoi chat -q``. In that mode,
         all status/diagnostic prints routed through ``_vprint`` are suppressed
         so stdout stays machine-readable.
         """
@@ -2432,7 +2432,7 @@ class AIAgent:
                 msg = (
                     "⚠ No auxiliary LLM provider configured — context "
                     "compression will drop middle turns without a summary. "
-                    "Run `hermes setup` or set OPENROUTER_API_KEY."
+                    "Run `avoi setup` or set OPENROUTER_API_KEY."
                 )
                 self._compression_warning = msg
                 self._emit_status(msg)
@@ -2579,19 +2579,19 @@ class AIAgent:
         Priority:
           1. ``providers.<id>.models.<model>.timeout_seconds`` (per-model override)
           2. ``providers.<id>.request_timeout_seconds`` (provider-wide)
-          3. ``HERMES_API_TIMEOUT`` env var (legacy escape hatch)
+          3. ``AVOI_API_TIMEOUT`` env var (legacy escape hatch)
           4. 1800.0s default
 
         Used by OpenAI-wire chat completions (streaming and non-streaming) so
         the per-provider config knob wins over the 1800s default.  Without this
-        helper, the hardcoded ``HERMES_API_TIMEOUT`` fallback would always be
+        helper, the hardcoded ``AVOI_API_TIMEOUT`` fallback would always be
         passed as a per-call ``timeout=`` kwarg, overriding the client-level
         timeout the AIAgent.__init__ path configured.
         """
         cfg = get_provider_request_timeout(self.provider, self.model)
         if cfg is not None:
             return cfg
-        return float(os.getenv("HERMES_API_TIMEOUT", 1800.0))
+        return float(os.getenv("AVOI_API_TIMEOUT", 1800.0))
 
     def _resolved_api_call_stale_timeout_base(self) -> tuple[float, bool]:
         """Resolve the base non-stream stale timeout and whether it is implicit.
@@ -2599,7 +2599,7 @@ class AIAgent:
         Priority:
           1. ``providers.<id>.models.<model>.stale_timeout_seconds``
           2. ``providers.<id>.stale_timeout_seconds``
-          3. ``HERMES_API_CALL_STALE_TIMEOUT`` env var
+          3. ``AVOI_API_CALL_STALE_TIMEOUT`` env var
           4. 300.0s default
 
         Returns ``(timeout_seconds, uses_implicit_default)`` so the caller can
@@ -2611,7 +2611,7 @@ class AIAgent:
         if cfg is not None:
             return cfg, False
 
-        env_timeout = os.getenv("HERMES_API_CALL_STALE_TIMEOUT")
+        env_timeout = os.getenv("AVOI_API_CALL_STALE_TIMEOUT")
         if env_timeout is not None:
             return float(env_timeout), False
 
@@ -2734,7 +2734,7 @@ class AIAgent:
         normalized_provider = (provider or "").strip().lower()
         if normalized_provider == "copilot":
             try:
-                from hermes_cli.models import _should_use_copilot_responses_api
+                from avoi_cli.models import _should_use_copilot_responses_api
                 return _should_use_copilot_responses_api(model)
             except Exception:
                 # Fall back to the generic GPT-5 rule if Copilot-specific
@@ -3300,7 +3300,7 @@ class AIAgent:
             ),
             "session_id": self.session_id or "",
             "parent_session_id": self._parent_session_id or "",
-            "platform": self.platform or os.environ.get("HERMES_SESSION_SOURCE", "cli"),
+            "platform": self.platform or os.environ.get("AVOI_SESSION_SOURCE", "cli"),
             "tool_name": "memory",
         }
         if task_id:
@@ -3852,7 +3852,7 @@ class AIAgent:
 
             self._vprint(f"{self.log_prefix}🧾 Request debug dump written to: {dump_file}")
 
-            if env_var_enabled("HERMES_DUMP_REQUEST_STDOUT"):
+            if env_var_enabled("AVOI_DUMP_REQUEST_STDOUT"):
                 print(json.dumps(dump_payload, ensure_ascii=False, indent=2, default=str))
 
             return dump_file
@@ -4470,9 +4470,9 @@ class AIAgent:
         if tool_guidance:
             prompt_parts.append(" ".join(tool_guidance))
 
-        nous_subscription_prompt = build_nous_subscription_prompt(self.valid_tool_names)
-        if nous_subscription_prompt:
-            prompt_parts.append(nous_subscription_prompt)
+        avoi_subscription_prompt = build_avoi_subscription_prompt(self.valid_tool_names)
+        if avoi_subscription_prompt:
+            prompt_parts.append(avoi_subscription_prompt)
         # Tool-use enforcement: tells the model to actually call tools instead
         # of describing intended actions.  Controlled by config.yaml
         # agent.tool_use_enforcement:
@@ -4553,7 +4553,7 @@ class AIAgent:
 
         if not self.skip_context_files:
             # Use TERMINAL_CWD for context file discovery when set (gateway
-            # mode).  The gateway process runs from the hermes-agent install
+            # mode).  The gateway process runs from the avoi-agent install
             # dir, so os.getcwd() would pick up the repo's AGENTS.md and
             # other dev files — inflating token usage by ~10k for no benefit.
             _context_cwd = os.getenv("TERMINAL_CWD") or None
@@ -4562,8 +4562,8 @@ class AIAgent:
             if context_files_prompt:
                 prompt_parts.append(context_files_prompt)
 
-        from hermes_time import now as _hermes_now
-        now = _hermes_now()
+        from avoi_time import now as _avoi_now
+        now = _avoi_now()
         timestamp_line = f"Conversation started: {now.strftime('%A, %B %d, %Y %I:%M %p')}"
         if self.pass_session_id and self.session_id:
             timestamp_line += f"\nSession ID: {self.session_id}"
@@ -5408,7 +5408,7 @@ class AIAgent:
             return False
 
         try:
-            from hermes_cli.auth import resolve_codex_runtime_credentials
+            from avoi_cli.auth import resolve_codex_runtime_credentials
 
             creds = resolve_codex_runtime_credentials(force_refresh=force)
         except Exception as exc:
@@ -5432,16 +5432,16 @@ class AIAgent:
 
         return True
 
-    def _try_refresh_nous_client_credentials(self, *, force: bool = True) -> bool:
+    def _try_refresh_avoi_client_credentials(self, *, force: bool = True) -> bool:
         if self.api_mode != "chat_completions" or self.provider != "nous":
             return False
 
         try:
-            from hermes_cli.auth import resolve_nous_runtime_credentials
+            from avoi_cli.auth import resolve_avoi_runtime_credentials
 
-            creds = resolve_nous_runtime_credentials(
-                min_key_ttl_seconds=max(60, int(os.getenv("HERMES_NOUS_MIN_KEY_TTL_SECONDS", "1800"))),
-                timeout_seconds=float(os.getenv("HERMES_NOUS_TIMEOUT_SECONDS", "15")),
+            creds = resolve_avoi_runtime_credentials(
+                min_key_ttl_seconds=max(60, int(os.getenv("AVOI_NOUS_MIN_KEY_TTL_SECONDS", "1800"))),
+                timeout_seconds=float(os.getenv("AVOI_NOUS_TIMEOUT_SECONDS", "15")),
                 force_mint=force,
             )
         except Exception as exc:
@@ -5462,7 +5462,7 @@ class AIAgent:
         # Nous requests should not inherit OpenRouter-only attribution headers.
         self._client_kwargs.pop("default_headers", None)
 
-        if not self._replace_primary_openai_client(reason="nous_credential_refresh"):
+        if not self._replace_primary_openai_client(reason="avoi_credential_refresh"):
             return False
 
         return True
@@ -5479,7 +5479,7 @@ class AIAgent:
             return False
 
         try:
-            from hermes_cli.copilot_auth import resolve_copilot_token
+            from avoi_cli.copilot_auth import resolve_copilot_token
 
             new_token, token_source = resolve_copilot_token()
         except Exception as exc:
@@ -5563,7 +5563,7 @@ class AIAgent:
         elif base_url_host_matches(base_url, "api.routermint.com"):
             self._client_kwargs["default_headers"] = _routermint_headers()
         elif base_url_host_matches(base_url, "api.githubcopilot.com"):
-            from hermes_cli.models import copilot_default_headers
+            from avoi_cli.models import copilot_default_headers
 
             self._client_kwargs["default_headers"] = copilot_default_headers()
         elif base_url_host_matches(base_url, "api.kimi.com"):
@@ -6077,23 +6077,23 @@ class AIAgent:
             """Stream a chat completions response."""
             import httpx as _httpx
             # Per-provider / per-model request_timeout_seconds (from config.yaml)
-            # wins over the HERMES_API_TIMEOUT env default if the user set it.
+            # wins over the AVOI_API_TIMEOUT env default if the user set it.
             _provider_timeout_cfg = get_provider_request_timeout(self.provider, self.model)
             _base_timeout = (
                 _provider_timeout_cfg
                 if _provider_timeout_cfg is not None
-                else float(os.getenv("HERMES_API_TIMEOUT", 1800.0))
+                else float(os.getenv("AVOI_API_TIMEOUT", 1800.0))
             )
             # Read timeout: config wins here too.  Otherwise use
-            # HERMES_STREAM_READ_TIMEOUT (default 120s) for cloud providers.
+            # AVOI_STREAM_READ_TIMEOUT (default 120s) for cloud providers.
             if _provider_timeout_cfg is not None:
                 _stream_read_timeout = _provider_timeout_cfg
             else:
-                _stream_read_timeout = float(os.getenv("HERMES_STREAM_READ_TIMEOUT", 120.0))
+                _stream_read_timeout = float(os.getenv("AVOI_STREAM_READ_TIMEOUT", 120.0))
                 # Local providers (Ollama, llama.cpp, vLLM) can take minutes for
                 # prefill on large contexts before producing the first token.
                 # Auto-increase the httpx read timeout unless the user explicitly
-                # overrode HERMES_STREAM_READ_TIMEOUT.
+                # overrode AVOI_STREAM_READ_TIMEOUT.
                 if _stream_read_timeout == 120.0 and self.base_url and is_local_endpoint(self.base_url):
                     _stream_read_timeout = _base_timeout
                     logger.debug(
@@ -6385,7 +6385,7 @@ class AIAgent:
         def _call():
             import httpx as _httpx
 
-            _max_stream_retries = int(os.getenv("HERMES_STREAM_RETRIES", 2))
+            _max_stream_retries = int(os.getenv("AVOI_STREAM_RETRIES", 2))
 
             try:
                 for _stream_attempt in range(_max_stream_retries + 1):
@@ -6639,10 +6639,10 @@ class AIAgent:
                 if request_client is not None:
                     self._close_request_openai_client(request_client, reason="stream_request_complete")
 
-        _stream_stale_timeout_base = float(os.getenv("HERMES_STREAM_STALE_TIMEOUT", 180.0))
+        _stream_stale_timeout_base = float(os.getenv("AVOI_STREAM_STALE_TIMEOUT", 180.0))
         # Local providers (Ollama, oMLX, llama-cpp) can take 300+ seconds
         # for prefill on large contexts.  Disable the stale detector unless
-        # the user explicitly set HERMES_STREAM_STALE_TIMEOUT.
+        # the user explicitly set AVOI_STREAM_STALE_TIMEOUT.
         if _stream_stale_timeout_base == 180.0 and self.base_url and is_local_endpoint(self.base_url):
             _stream_stale_timeout = float("inf")
             logger.debug("Local provider detected (%s) — stale stream timeout disabled", self.base_url)
@@ -6861,7 +6861,7 @@ class AIAgent:
                     fb_provider)
                 return self._try_activate_fallback()  # try next in chain
             try:
-                from hermes_cli.model_normalize import normalize_model_for_provider
+                from avoi_cli.model_normalize import normalize_model_for_provider
 
                 fb_model = normalize_model_for_provider(fb_model, fb_provider)
             except Exception:
@@ -7495,7 +7495,7 @@ class AIAgent:
             base_url_host_matches(self._base_url_lower, "models.github.ai")
             or base_url_host_matches(self._base_url_lower, "api.githubcopilot.com")
         )
-        _is_nous = "nousresearch" in self._base_url_lower
+        _is_nous = "avoi-ai" in self._base_url_lower
         _is_nvidia = "integrate.api.nvidia.com" in self._base_url_lower
         _is_kimi = (
             base_url_host_matches(self.base_url, "api.kimi.com")
@@ -7542,7 +7542,7 @@ class AIAgent:
         _qwen_meta = None
         if _is_qwen:
             _qwen_meta = {
-                "sessionId": self.session_id or "hermes",
+                "sessionId": self.session_id or "avoi",
                 "promptId": str(uuid.uuid4()),
             }
 
@@ -7590,7 +7590,7 @@ class AIAgent:
         Some providers/routes reject `reasoning` with 400s, so gate it to
         known reasoning-capable model families and direct Nous Portal.
         """
-        if base_url_host_matches(self._base_url_lower, "nousresearch.com"):
+        if base_url_host_matches(self._base_url_lower, "avoi-ai.com"):
             return True
         if base_url_host_matches(self._base_url_lower, "ai-gateway.vercel.sh"):
             return True
@@ -7599,7 +7599,7 @@ class AIAgent:
             or base_url_host_matches(self._base_url_lower, "api.githubcopilot.com")
         ):
             try:
-                from hermes_cli.models import github_model_reasoning_efforts
+                from avoi_cli.models import github_model_reasoning_efforts
 
                 return bool(github_model_reasoning_efforts(self.model))
             except Exception:
@@ -7623,7 +7623,7 @@ class AIAgent:
     def _github_models_reasoning_extra_body(self) -> dict | None:
         """Format reasoning payload for GitHub Models/OpenAI-compatible routes."""
         try:
-            from hermes_cli.models import github_model_reasoning_efforts
+            from avoi_cli.models import github_model_reasoning_efforts
         except Exception:
             return None
 
@@ -8101,7 +8101,7 @@ class AIAgent:
                 self.session_log_file = self.logs_dir / f"session_{self.session_id}.json"
                 self._session_db.create_session(
                     session_id=self.session_id,
-                    source=self.platform or os.environ.get("HERMES_SESSION_SOURCE", "cli"),
+                    source=self.platform or os.environ.get("AVOI_SESSION_SOURCE", "cli"),
                     model=self.model,
                     parent_session_id=old_session_id,
                 )
@@ -8205,7 +8205,7 @@ class AIAgent:
         # Check plugin hooks for a block directive before executing anything.
         block_message: Optional[str] = None
         try:
-            from hermes_cli.plugins import get_pre_tool_call_block_message
+            from avoi_cli.plugins import get_pre_tool_call_block_message
             block_message = get_pre_tool_call_block_message(
                 function_name, function_args, task_id=effective_task_id or "",
             )
@@ -8638,7 +8638,7 @@ class AIAgent:
             # Check plugin hooks for a block directive before executing.
             _block_msg: Optional[str] = None
             try:
-                from hermes_cli.plugins import get_pre_tool_call_block_message
+                from avoi_cli.plugins import get_pre_tool_call_block_message
                 _block_msg = get_pre_tool_call_block_message(
                     function_name, function_args, task_id=effective_task_id or "",
                 )
@@ -9042,7 +9042,7 @@ class AIAgent:
             )
             _omit_summary_temperature = _raw_summary_temp is _OMIT_TEMP
             _summary_temperature = None if _omit_summary_temperature else _raw_summary_temp
-            _is_nous = "nousresearch" in self._base_url_lower
+            _is_nous = "avoi-ai" in self._base_url_lower
             if self._supports_reasoning_extra_body():
                 if self.reasoning_config is not None:
                     summary_extra_body["reasoning"] = self.reasoning_config
@@ -9052,7 +9052,7 @@ class AIAgent:
                         "effort": "medium"
                     }
             if _is_nous:
-                summary_extra_body["tags"] = ["product=hermes-agent"]
+                summary_extra_body["tags"] = ["product=avoi-agent"]
 
             if self.api_mode == "codex_responses":
                 codex_kwargs = self._build_api_kwargs(api_messages)
@@ -9191,8 +9191,8 @@ class AIAgent:
         _install_safe_stdio()
 
         # Tag all log records on this thread with the session ID so
-        # ``hermes logs --session <id>`` can filter a single conversation.
-        from hermes_logging import set_session_context
+        # ``avoi logs --session <id>`` can filter a single conversation.
+        from avoi_logging import set_session_context
         set_session_context(self.session_id)
 
         # If the previous turn activated fallback, restore the primary
@@ -9354,7 +9354,7 @@ class AIAgent:
                 # continuation).  Plugins can use this to initialise
                 # session-scoped state (e.g. warm a memory cache).
                 try:
-                    from hermes_cli.plugins import invoke_hook as _invoke_hook
+                    from avoi_cli.plugins import invoke_hook as _invoke_hook
                     _invoke_hook(
                         "on_session_start",
                         session_id=self.session_id,
@@ -9455,7 +9455,7 @@ class AIAgent:
         # All injected context is ephemeral (not persisted to session DB).
         _plugin_user_context = ""
         try:
-            from hermes_cli.plugins import invoke_hook as _invoke_hook
+            from avoi_cli.plugins import invoke_hook as _invoke_hook
             _pre_results = _invoke_hook(
                 "pre_llm_call",
                 session_id=self.session_id,
@@ -9820,7 +9820,7 @@ class AIAgent:
             max_compression_attempts = 3
             codex_auth_retry_attempted=False
             anthropic_auth_retry_attempted=False
-            nous_auth_retry_attempted=False
+            avoi_auth_retry_attempted=False
             copilot_auth_retry_attempted=False
             thinking_sig_retry_attempted = False
             has_retried_429 = False
@@ -9839,21 +9839,21 @@ class AIAgent:
                 # deepens the rate limit hole.
                 if self.provider == "nous":
                     try:
-                        from agent.nous_rate_guard import (
-                            nous_rate_limit_remaining,
-                            format_remaining as _fmt_nous_remaining,
+                        from agent.avoi_rate_guard import (
+                            avoi_rate_limit_remaining,
+                            format_remaining as _fmt_avoi_remaining,
                         )
-                        _nous_remaining = nous_rate_limit_remaining()
-                        if _nous_remaining is not None and _nous_remaining > 0:
-                            _nous_msg = (
+                        _avoi_remaining = avoi_rate_limit_remaining()
+                        if _avoi_remaining is not None and _avoi_remaining > 0:
+                            _avoi_msg = (
                                 f"Nous Portal rate limit active — "
-                                f"resets in {_fmt_nous_remaining(_nous_remaining)}."
+                                f"resets in {_fmt_avoi_remaining(_avoi_remaining)}."
                             )
                             self._vprint(
-                                f"{self.log_prefix}⏳ {_nous_msg} Trying fallback...",
+                                f"{self.log_prefix}⏳ {_avoi_msg} Trying fallback...",
                                 force=True,
                             )
-                            self._emit_status(f"⏳ {_nous_msg}")
+                            self._emit_status(f"⏳ {_avoi_msg}")
                             if self._try_activate_fallback():
                                 retry_count = 0
                                 compression_attempts = 0
@@ -9863,7 +9863,7 @@ class AIAgent:
                             self._persist_session(messages, conversation_history)
                             return {
                                 "final_response": (
-                                    f"⏳ {_nous_msg}\n\n"
+                                    f"⏳ {_avoi_msg}\n\n"
                                     "No fallback provider available. "
                                     "Try again after the reset, or add a "
                                     "fallback provider in config.yaml."
@@ -9872,7 +9872,7 @@ class AIAgent:
                                 "api_calls": api_call_count,
                                 "completed": False,
                                 "failed": True,
-                                "error": _nous_msg,
+                                "error": _avoi_msg,
                             }
                     except ImportError:
                         pass
@@ -9888,7 +9888,7 @@ class AIAgent:
                         api_kwargs = self._get_transport().preflight_kwargs(api_kwargs, allow_stream=False)
 
                     try:
-                        from hermes_cli.plugins import invoke_hook as _invoke_hook
+                        from avoi_cli.plugins import invoke_hook as _invoke_hook
                         _invoke_hook(
                             "pre_api_request",
                             task_id=effective_task_id,
@@ -9908,7 +9908,7 @@ class AIAgent:
                     except Exception:
                         pass
 
-                    if env_var_enabled("HERMES_DUMP_REQUESTS"):
+                    if env_var_enabled("AVOI_DUMP_REQUESTS"):
                         self._dump_api_request_debug(api_kwargs, reason="preflight")
 
                     # Always prefer the streaming path — even without stream
@@ -10523,8 +10523,8 @@ class AIAgent:
                     # resume hitting Nous.
                     if self.provider == "nous":
                         try:
-                            from agent.nous_rate_guard import clear_nous_rate_limit
-                            clear_nous_rate_limit()
+                            from agent.avoi_rate_guard import clear_avoi_rate_limit
+                            clear_avoi_rate_limit()
                         except Exception:
                             pass
                     self._touch_activity(f"API call #{api_call_count} completed")
@@ -10758,16 +10758,16 @@ class AIAgent:
                         self.api_mode == "chat_completions"
                         and self.provider == "nous"
                         and status_code == 401
-                        and not nous_auth_retry_attempted
+                        and not avoi_auth_retry_attempted
                     ):
-                        nous_auth_retry_attempted = True
-                        if self._try_refresh_nous_client_credentials(force=True):
+                        avoi_auth_retry_attempted = True
+                        if self._try_refresh_avoi_client_credentials(force=True):
                             print(f"{self.log_prefix}🔐 Nous agent key refreshed after 401. Retrying request...")
                             continue
                         # Credential refresh didn't help — show diagnostic info.
                         # Most common causes: Portal OAuth expired/revoked,
                         # account out of credits, or agent key blocked.
-                        from hermes_constants import display_hermes_home as _dhh_fn
+                        from avoi_constants import display_avoi_home as _dhh_fn
                         _dhh = _dhh_fn()
                         _body_text = ""
                         try:
@@ -10781,8 +10781,8 @@ class AIAgent:
                             print(f"{self.log_prefix}   Response: {_body_text}")
                         print(f"{self.log_prefix}   Most likely: Portal OAuth expired, account out of credits, or agent key revoked.")
                         print(f"{self.log_prefix}   Troubleshooting:")
-                        print(f"{self.log_prefix}     • Re-authenticate: hermes login --provider nous")
-                        print(f"{self.log_prefix}     • Check credits / billing: https://portal.nousresearch.com")
+                        print(f"{self.log_prefix}     • Re-authenticate: avoi login --provider nous")
+                        print(f"{self.log_prefix}     • Check credits / billing: https://portal.avoi-ai.com")
                         print(f"{self.log_prefix}     • Verify stored credentials: {_dhh}/auth.json")
                         print(f"{self.log_prefix}     • Switch providers temporarily: /model <model> --provider openrouter")
                     if (
@@ -10812,14 +10812,14 @@ class AIAgent:
                         print(f"{self.log_prefix}   Auth method: {auth_method}")
                         print(f"{self.log_prefix}   Token prefix: {key[:12]}..." if key and len(key) > 12 else f"{self.log_prefix}   Token: (empty or short)")
                         print(f"{self.log_prefix}   Troubleshooting:")
-                        from hermes_constants import display_hermes_home as _dhh_fn
+                        from avoi_constants import display_avoi_home as _dhh_fn
                         _dhh = _dhh_fn()
                         print(f"{self.log_prefix}     • Check ANTHROPIC_TOKEN in {_dhh}/.env for Hermes-managed OAuth/setup tokens")
                         print(f"{self.log_prefix}     • Check ANTHROPIC_API_KEY in {_dhh}/.env for API keys or legacy token values")
                         print(f"{self.log_prefix}     • For API keys: verify at https://platform.claude.com/settings/keys")
                         print(f"{self.log_prefix}     • For Claude Code: run 'claude /login' to refresh, then retry")
-                        print(f"{self.log_prefix}     • Legacy cleanup: hermes config set ANTHROPIC_TOKEN \"\"")
-                        print(f"{self.log_prefix}     • Clear stale keys: hermes config set ANTHROPIC_API_KEY \"\"")
+                        print(f"{self.log_prefix}     • Legacy cleanup: avoi config set ANTHROPIC_TOKEN \"\"")
+                        print(f"{self.log_prefix}     • Clear stale keys: avoi config set ANTHROPIC_API_KEY \"\"")
 
                     # ── Thinking block signature recovery ─────────────────
                     # Anthropic signs thinking blocks against the full turn
@@ -11021,13 +11021,13 @@ class AIAgent:
                         and not recovered_with_pool
                     ):
                         try:
-                            from agent.nous_rate_guard import record_nous_rate_limit
+                            from agent.avoi_rate_guard import record_avoi_rate_limit
                             _err_resp = getattr(api_error, "response", None)
                             _err_hdrs = (
                                 getattr(_err_resp, "headers", None)
                                 if _err_resp else None
                             )
-                            record_nous_rate_limit(
+                            record_avoi_rate_limit(
                                 headers=_err_hdrs,
                                 error_context=error_context,
                             )
@@ -11317,10 +11317,10 @@ class AIAgent:
                                 self._vprint(f"{self.log_prefix}   💡 Codex OAuth token was rejected (HTTP 401). Your token may have been", force=True)
                                 self._vprint(f"{self.log_prefix}      refreshed by another client (Codex CLI, VS Code). To fix:", force=True)
                                 self._vprint(f"{self.log_prefix}      1. Run `codex` in your terminal to generate fresh tokens.", force=True)
-                                self._vprint(f"{self.log_prefix}      2. Then run `hermes auth` to re-authenticate.", force=True)
+                                self._vprint(f"{self.log_prefix}      2. Then run `avoi auth` to re-authenticate.", force=True)
                             else:
                                 self._vprint(f"{self.log_prefix}   💡 Your API key was rejected by the provider. Check:", force=True)
-                                self._vprint(f"{self.log_prefix}      • Is the key valid? Run: hermes setup", force=True)
+                                self._vprint(f"{self.log_prefix}      • Is the key valid? Run: avoi setup", force=True)
                                 self._vprint(f"{self.log_prefix}      • Does your account have access to {_model}?", force=True)
                                 if base_url_host_matches(str(_base), "openrouter.ai"):
                                     self._vprint(f"{self.log_prefix}      • Check credits: https://openrouter.ai/settings/credits", force=True)
@@ -11546,7 +11546,7 @@ class AIAgent:
                         assistant_message.content = str(raw)
 
                 try:
-                    from hermes_cli.plugins import invoke_hook as _invoke_hook
+                    from avoi_cli.plugins import invoke_hook as _invoke_hook
                     _assistant_tool_calls = getattr(assistant_message, "tool_calls", None) or []
                     _assistant_text = assistant_message.content or ""
                     _invoke_hook(
@@ -12423,7 +12423,7 @@ class AIAgent:
         # to an external memory system).
         if final_response and not interrupted:
             try:
-                from hermes_cli.plugins import invoke_hook as _invoke_hook
+                from avoi_cli.plugins import invoke_hook as _invoke_hook
                 _invoke_hook(
                     "post_llm_call",
                     session_id=self.session_id,
@@ -12525,7 +12525,7 @@ class AIAgent:
         # Fired at the very end of every run_conversation call.
         # Plugins can use this for cleanup, flushing buffers, etc.
         try:
-            from hermes_cli.plugins import invoke_hook as _invoke_hook
+            from avoi_cli.plugins import invoke_hook as _invoke_hook
             _invoke_hook(
                 "on_session_end",
                 session_id=self.session_id,

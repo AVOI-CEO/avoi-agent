@@ -74,7 +74,7 @@ class SlackAdapter(BasePlatformAdapter):
       - DMs and channel messages (mention-gated in channels)
       - Thread support
       - File/image/audio attachments
-      - Slash commands (/hermes)
+      - Slash commands (/avoi)
       - Typing indicators (not natively supported by Slack bots)
     """
 
@@ -142,8 +142,8 @@ class SlackAdapter(BasePlatformAdapter):
         bot_tokens = [t.strip() for t in raw_token.split(",") if t.strip()]
 
         # Also load tokens from OAuth token file
-        from hermes_constants import get_hermes_home
-        tokens_file = get_hermes_home() / "slack_tokens.json"
+        from avoi_constants import get_avoi_home
+        tokens_file = get_avoi_home() / "slack_tokens.json"
         if tokens_file.exists():
             try:
                 saved = json.loads(tokens_file.read_text(encoding="utf-8"))
@@ -208,17 +208,17 @@ class SlackAdapter(BasePlatformAdapter):
                 await self._handle_assistant_thread_lifecycle_event(event)
 
             # Register slash command handler
-            @self._app.command("/hermes")
-            async def handle_hermes_command(ack, command):
+            @self._app.command("/avoi")
+            async def handle_avoi_command(ack, command):
                 await ack()
                 await self._handle_slash_command(command)
 
             # Register Block Kit action handlers for approval buttons
             for _action_id in (
-                "hermes_approve_once",
-                "hermes_approve_session",
-                "hermes_approve_always",
-                "hermes_deny",
+                "avoi_approve_once",
+                "avoi_approve_session",
+                "avoi_approve_always",
+                "avoi_deny",
             ):
                 self._app.action(_action_id)(self._handle_approval_action)
 
@@ -1312,26 +1312,26 @@ class SlackAdapter(BasePlatformAdapter):
                             "type": "button",
                             "text": {"type": "plain_text", "text": "Allow Once"},
                             "style": "primary",
-                            "action_id": "hermes_approve_once",
+                            "action_id": "avoi_approve_once",
                             "value": session_key,
                         },
                         {
                             "type": "button",
                             "text": {"type": "plain_text", "text": "Allow Session"},
-                            "action_id": "hermes_approve_session",
+                            "action_id": "avoi_approve_session",
                             "value": session_key,
                         },
                         {
                             "type": "button",
                             "text": {"type": "plain_text", "text": "Always Allow"},
-                            "action_id": "hermes_approve_always",
+                            "action_id": "avoi_approve_always",
                             "value": session_key,
                         },
                         {
                             "type": "button",
                             "text": {"type": "plain_text", "text": "Deny"},
                             "style": "danger",
-                            "action_id": "hermes_deny",
+                            "action_id": "avoi_deny",
                             "value": session_key,
                         },
                     ],
@@ -1383,10 +1383,10 @@ class SlackAdapter(BasePlatformAdapter):
 
         # Map action_id to approval choice
         choice_map = {
-            "hermes_approve_once": "once",
-            "hermes_approve_session": "session",
-            "hermes_approve_always": "always",
-            "hermes_deny": "deny",
+            "avoi_approve_once": "once",
+            "avoi_approve_session": "session",
+            "avoi_approve_always": "always",
+            "avoi_deny": "deny",
         }
         choice = choice_map.get(action_id, "deny")
 
@@ -1561,7 +1561,7 @@ class SlackAdapter(BasePlatformAdapter):
             return ""
 
     async def _handle_slash_command(self, command: dict) -> None:
-        """Handle /hermes slash command."""
+        """Handle /avoi slash command."""
         text = command.get("text", "").strip()
         user_id = command.get("user_id", "")
         channel_id = command.get("channel_id", "")
@@ -1573,7 +1573,7 @@ class SlackAdapter(BasePlatformAdapter):
 
         # Map subcommands to gateway commands — derived from central registry.
         # Also keep "compact" as a Slack-specific alias for /compress.
-        from hermes_cli.commands import slack_subcommand_map
+        from avoi_cli.commands import slack_subcommand_map
         subcommand_map = slack_subcommand_map()
         subcommand_map["compact"] = "/compress"
         first_word = text.split()[0] if text else ""

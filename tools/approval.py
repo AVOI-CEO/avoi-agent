@@ -52,15 +52,15 @@ def get_current_session_key(default: str = "default") -> str:
     if session_key:
         return session_key
     from gateway.session_context import get_session_env
-    return get_session_env("HERMES_SESSION_KEY", default)
+    return get_session_env("AVOI_SESSION_KEY", default)
 
 # Sensitive write targets that should trigger approval even when referenced
-# via shell expansions like $HOME or $HERMES_HOME.
+# via shell expansions like $HOME or $AVOI_HOME.
 _SSH_SENSITIVE_PATH = r'(?:~|\$home|\$\{home\})/\.ssh(?:/|$)'
-_HERMES_ENV_PATH = (
-    r'(?:~\/\.hermes/|'
-    r'(?:\$home|\$\{home\})/\.hermes/|'
-    r'(?:\$hermes_home|\$\{hermes_home\})/)'
+_AVOI_ENV_PATH = (
+    r'(?:~\/\.avoi/|'
+    r'(?:\$home|\$\{home\})/\.avoi/|'
+    r'(?:\$avoi_home|\$\{avoi_home\})/)'
     r'\.env\b'
 )
 _PROJECT_ENV_PATH = r'(?:(?:/|\.{1,2}/)?(?:[^\s/"\'`]+/)*\.env(?:\.[^/\s"\'`]+)*)'
@@ -68,7 +68,7 @@ _PROJECT_CONFIG_PATH = r'(?:(?:/|\.{1,2}/)?(?:[^\s/"\'`]+/)*config\.yaml)'
 _SENSITIVE_WRITE_TARGET = (
     r'(?:/etc/|/dev/sd|'
     rf'{_SSH_SENSITIVE_PATH}|'
-    rf'{_HERMES_ENV_PATH})'
+    rf'{_AVOI_ENV_PATH})'
 )
 _PROJECT_SENSITIVE_WRITE_TARGET = rf'(?:{_PROJECT_ENV_PATH}|{_PROJECT_CONFIG_PATH})'
 _COMMAND_TAIL = r'(?:\s*(?:&&|\|\||;).*)?$'
@@ -111,16 +111,16 @@ DANGEROUS_PATTERNS = [
     # Gateway lifecycle protection: prevent the agent from killing its own
     # gateway process.  These commands trigger a gateway restart/stop that
     # terminates all running agents mid-work.
-    (r'\bhermes\s+gateway\s+(stop|restart)\b', "stop/restart hermes gateway (kills running agents)"),
-    (r'\bhermes\s+update\b', "hermes update (restarts gateway, kills running agents)"),
+    (r'\bavoi\s+gateway\s+(stop|restart)\b', "stop/restart avoi gateway (kills running agents)"),
+    (r'\bavoi\s+update\b', "avoi update (restarts gateway, kills running agents)"),
     # Gateway protection: never start gateway outside systemd management
-    (r'gateway\s+run\b.*(&\s*$|&\s*;|\bdisown\b|\bsetsid\b)', "start gateway outside systemd (use 'systemctl --user restart hermes-gateway')"),
-    (r'\bnohup\b.*gateway\s+run\b', "start gateway outside systemd (use 'systemctl --user restart hermes-gateway')"),
+    (r'gateway\s+run\b.*(&\s*$|&\s*;|\bdisown\b|\bsetsid\b)', "start gateway outside systemd (use 'systemctl --user restart avoi-gateway')"),
+    (r'\bnohup\b.*gateway\s+run\b', "start gateway outside systemd (use 'systemctl --user restart avoi-gateway')"),
     # Self-termination protection: prevent agent from killing its own process
-    (r'\b(pkill|killall)\b.*\b(hermes|gateway|cli\.py)\b', "kill hermes/gateway process (self-termination)"),
+    (r'\b(pkill|killall)\b.*\b(avoi|gateway|cli\.py)\b', "kill avoi/gateway process (self-termination)"),
     # Self-termination via kill + command substitution (pgrep/pidof).
-    # The name-based pattern above catches `pkill hermes` but not
-    # `kill -9 $(pgrep -f hermes)` because the substitution is opaque
+    # The name-based pattern above catches `pkill avoi` but not
+    # `kill -9 $(pgrep -f avoi)` because the substitution is opaque
     # to regex at detection time. Catch the structural pattern instead.
     (r'\bkill\b.*\$\(\s*pgrep\b', "kill process via pgrep expansion (self-termination)"),
     (r'\bkill\b.*`\s*pgrep\b', "kill process via backtick pgrep expansion (self-termination)"),
@@ -388,7 +388,7 @@ def load_permanent_allowlist() -> set:
     patterns added via 'always' in a previous session.
     """
     try:
-        from hermes_cli.config import load_config
+        from avoi_cli.config import load_config
         config = load_config()
         patterns = set(config.get("command_allowlist", []) or [])
         if patterns:
@@ -402,7 +402,7 @@ def load_permanent_allowlist() -> set:
 def save_permanent_allowlist(patterns: set):
     """Save permanently allowed command patterns to config."""
     try:
-        from hermes_cli.config import load_config, save_config
+        from avoi_cli.config import load_config, save_config
         config = load_config()
         config["command_allowlist"] = list(patterns)
         save_config(config)
@@ -441,7 +441,7 @@ def prompt_dangerous_approval(command: str, description: str,
             logger.error("Approval callback failed: %s", e, exc_info=True)
             return "deny"
 
-    os.environ["HERMES_SPINNER_PAUSE"] = "1"
+    os.environ["AVOI_SPINNER_PAUSE"] = "1"
     try:
         while True:
             print()
@@ -493,8 +493,8 @@ def prompt_dangerous_approval(command: str, description: str,
         print("\n      ✗ Cancelled")
         return "deny"
     finally:
-        if "HERMES_SPINNER_PAUSE" in os.environ:
-            del os.environ["HERMES_SPINNER_PAUSE"]
+        if "AVOI_SPINNER_PAUSE" in os.environ:
+            del os.environ["AVOI_SPINNER_PAUSE"]
         print()
         sys.stdout.flush()
 
@@ -517,7 +517,7 @@ def _normalize_approval_mode(mode) -> str:
 def _get_approval_config() -> dict:
     """Read the approvals config block. Returns a dict with 'mode', 'timeout', etc."""
     try:
-        from hermes_cli.config import load_config
+        from avoi_cli.config import load_config
         config = load_config()
         return config.get("approvals", {}) or {}
     except Exception as e:
@@ -542,7 +542,7 @@ def _get_approval_timeout() -> int:
 def _get_cron_approval_mode() -> str:
     """Read the cron approval mode from config. Returns 'deny' or 'approve'."""
     try:
-        from hermes_cli.config import load_config
+        from avoi_cli.config import load_config
         config = load_config()
         mode = str(config.get("approvals", {}).get("cron_mode", "deny")).lower().strip()
         if mode in ("approve", "off", "allow", "yes"):
@@ -619,7 +619,7 @@ def check_dangerous_command(command: str, env_type: str,
 
     # --yolo: bypass all approval prompts. Gateway /yolo is session-scoped;
     # CLI --yolo remains process-scoped via the env var for local use.
-    if os.getenv("HERMES_YOLO_MODE") or is_current_session_yolo_enabled():
+    if os.getenv("AVOI_YOLO_MODE") or is_current_session_yolo_enabled():
         return {"approved": True, "message": None}
 
     is_dangerous, pattern_key, description = detect_dangerous_command(command)
@@ -630,12 +630,12 @@ def check_dangerous_command(command: str, env_type: str,
     if is_approved(session_key, pattern_key):
         return {"approved": True, "message": None}
 
-    is_cli = os.getenv("HERMES_INTERACTIVE")
-    is_gateway = os.getenv("HERMES_GATEWAY_SESSION")
+    is_cli = os.getenv("AVOI_INTERACTIVE")
+    is_gateway = os.getenv("AVOI_GATEWAY_SESSION")
 
     if not is_cli and not is_gateway:
         # Cron sessions: respect cron_mode config
-        if os.getenv("HERMES_CRON_SESSION"):
+        if os.getenv("AVOI_CRON_SESSION"):
             if _get_cron_approval_mode() == "deny":
                 return {
                     "approved": False,
@@ -649,7 +649,7 @@ def check_dangerous_command(command: str, env_type: str,
                 }
         return {"approved": True, "message": None}
 
-    if is_gateway or os.getenv("HERMES_EXEC_ASK"):
+    if is_gateway or os.getenv("AVOI_EXEC_ASK"):
         submit_pending(session_key, {
             "command": command,
             "pattern_key": pattern_key,
@@ -735,18 +735,18 @@ def check_all_command_guards(command: str, env_type: str,
     # --yolo or approvals.mode=off: bypass all approval prompts.
     # Gateway /yolo is session-scoped; CLI --yolo remains process-scoped.
     approval_mode = _get_approval_mode()
-    if os.getenv("HERMES_YOLO_MODE") or is_current_session_yolo_enabled() or approval_mode == "off":
+    if os.getenv("AVOI_YOLO_MODE") or is_current_session_yolo_enabled() or approval_mode == "off":
         return {"approved": True, "message": None}
 
-    is_cli = os.getenv("HERMES_INTERACTIVE")
-    is_gateway = os.getenv("HERMES_GATEWAY_SESSION")
-    is_ask = os.getenv("HERMES_EXEC_ASK")
+    is_cli = os.getenv("AVOI_INTERACTIVE")
+    is_gateway = os.getenv("AVOI_GATEWAY_SESSION")
+    is_ask = os.getenv("AVOI_EXEC_ASK")
 
     # Preserve the existing non-interactive behavior: outside CLI/gateway/ask
     # flows, we do not block on approvals and we skip external guard work.
     if not is_cli and not is_gateway and not is_ask:
         # Cron sessions: respect cron_mode config
-        if os.getenv("HERMES_CRON_SESSION"):
+        if os.getenv("AVOI_CRON_SESSION"):
             if _get_cron_approval_mode() == "deny":
                 # Run detection to get a description for the block message
                 is_dangerous, _pk, description = detect_dangerous_command(command)

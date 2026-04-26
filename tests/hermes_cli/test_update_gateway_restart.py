@@ -1,6 +1,6 @@
 """Tests for cmd_update gateway auto-restart — systemd + launchd coverage.
 
-Ensures ``hermes update`` correctly detects running gateways managed by
+Ensures ``avoi update`` correctly detects running gateways managed by
 systemd (Linux) or launchd (macOS) and restarts/informs the user properly,
 rather than leaving zombie processes or telling users to manually restart
 when launchd will auto-respawn.
@@ -12,9 +12,9 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-import hermes_cli.gateway as gateway_cli
-import hermes_cli.main as cli_main
-from hermes_cli.main import cmd_update
+import avoi_cli.gateway as gateway_cli
+import avoi_cli.main as cli_main
+from avoi_cli.main import cmd_update
 
 
 # ---------------------------------------------------------------------------
@@ -24,7 +24,7 @@ from hermes_cli.main import cmd_update
 
 @pytest.fixture(autouse=True)
 def _no_restart_verify_sleep(monkeypatch):
-    """hermes_cli/main.py uses time.sleep(3) after systemctl restart to
+    """avoi_cli/main.py uses time.sleep(3) after systemctl restart to
     verify the service survived. Tests mock subprocess.run — nothing
     actually restarts — so the 3s wait is dead time.
 
@@ -67,18 +67,18 @@ def _make_run_side_effect(
         if "rev-list" in joined:
             return subprocess.CompletedProcess(cmd, 0, stdout=f"{commit_count}\n", stderr="")
 
-        # systemctl list-units hermes-gateway* — discover all gateway services
+        # systemctl list-units avoi-gateway* — discover all gateway services
         if "systemctl" in joined and "list-units" in joined:
             if "--user" in joined and systemd_active:
                 return subprocess.CompletedProcess(
                     cmd, 0,
-                    stdout="hermes-gateway.service loaded active running Hermes Gateway\n",
+                    stdout="avoi-gateway.service loaded active running Hermes Gateway\n",
                     stderr="",
                 )
             elif "--user" not in joined and system_service_active:
                 return subprocess.CompletedProcess(
                     cmd, 0,
-                    stdout="hermes-gateway.service loaded active running Hermes Gateway\n",
+                    stdout="avoi-gateway.service loaded active running Hermes Gateway\n",
                     stderr="",
                 )
             return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
@@ -102,10 +102,10 @@ def _make_run_side_effect(
                 return subprocess.CompletedProcess(cmd, system_restart_rc, stdout="", stderr=stderr)
             return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
 
-        # launchctl list ai.hermes.gateway
+        # launchctl list ai.avoi.gateway
         if "launchctl" in joined and "list" in joined:
             if launchctl_loaded:
-                return subprocess.CompletedProcess(cmd, 0, stdout="PID\tStatus\tLabel\n123\t0\tai.hermes.gateway\n", stderr="")
+                return subprocess.CompletedProcess(cmd, 0, stdout="PID\tStatus\tLabel\n123\t0\tai.avoi.gateway\n", stderr="")
             return subprocess.CompletedProcess(cmd, 113, stdout="", stderr="Could not find service")
 
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
@@ -154,7 +154,7 @@ class TestLaunchdPlistPath:
         assert "<key>EnvironmentVariables</key>" in plist
         assert "<key>PATH</key>" in plist
         assert "<key>VIRTUAL_ENV</key>" in plist
-        assert "<key>HERMES_HOME</key>" in plist
+        assert "<key>AVOI_HOME</key>" in plist
 
     def test_plist_path_includes_venv_bin(self):
         plist = gateway_cli.generate_launchd_plist()
@@ -213,7 +213,7 @@ class TestLaunchdPlistPath:
 
 class TestLaunchdPlistCurrentness:
     def test_launchd_plist_is_current_ignores_path_drift(self, tmp_path, monkeypatch):
-        plist_path = tmp_path / "ai.hermes.gateway.plist"
+        plist_path = tmp_path / "ai.avoi.gateway.plist"
         monkeypatch.setattr(gateway_cli, "get_launchd_plist_path", lambda: plist_path)
 
         monkeypatch.setenv("PATH", "/custom/bin:/usr/bin:/bin")
@@ -234,7 +234,7 @@ class TestLaunchdPlistRefresh:
     refresh_systemd_unit_if_needed)."""
 
     def test_refresh_rewrites_stale_plist(self, tmp_path, monkeypatch):
-        plist_path = tmp_path / "ai.hermes.gateway.plist"
+        plist_path = tmp_path / "ai.avoi.gateway.plist"
         plist_path.write_text("<plist>old content</plist>")
 
         monkeypatch.setattr(gateway_cli, "get_launchd_plist_path", lambda: plist_path)
@@ -256,7 +256,7 @@ class TestLaunchdPlistRefresh:
         assert any("bootstrap" in str(c) for c in calls)
 
     def test_refresh_skips_when_current(self, tmp_path, monkeypatch):
-        plist_path = tmp_path / "ai.hermes.gateway.plist"
+        plist_path = tmp_path / "ai.avoi.gateway.plist"
         monkeypatch.setattr(gateway_cli, "get_launchd_plist_path", lambda: plist_path)
 
         # Write the current expected content
@@ -282,7 +282,7 @@ class TestLaunchdPlistRefresh:
 
     def test_launchd_start_calls_refresh(self, tmp_path, monkeypatch):
         """launchd_start refreshes the plist before starting."""
-        plist_path = tmp_path / "ai.hermes.gateway.plist"
+        plist_path = tmp_path / "ai.avoi.gateway.plist"
         plist_path.write_text("<plist>old</plist>")
         monkeypatch.setattr(gateway_cli, "get_launchd_plist_path", lambda: plist_path)
 
@@ -302,7 +302,7 @@ class TestLaunchdPlistRefresh:
 
     def test_launchd_start_recreates_missing_plist_and_loads_service(self, tmp_path, monkeypatch):
         """launchd_start self-heals when the plist file is missing entirely."""
-        plist_path = tmp_path / "ai.hermes.gateway.plist"
+        plist_path = tmp_path / "ai.avoi.gateway.plist"
         assert not plist_path.exists()
 
         monkeypatch.setattr(gateway_cli, "get_launchd_plist_path", lambda: plist_path)
@@ -337,9 +337,9 @@ class TestCmdUpdateLaunchdRestart:
         self, mock_run, _mock_which, mock_args, capsys, tmp_path, monkeypatch,
     ):
         """When launchd is running the gateway, update should print
-        'auto-restart via launchd' instead of 'Restart it with: hermes gateway run'."""
+        'auto-restart via launchd' instead of 'Restart it with: avoi gateway run'."""
         # Create a fake launchd plist so is_macos + plist.exists() passes
-        plist_path = tmp_path / "ai.hermes.gateway.plist"
+        plist_path = tmp_path / "ai.avoi.gateway.plist"
         plist_path.write_text("<plist/>")
 
         monkeypatch.setattr(
@@ -361,7 +361,7 @@ class TestCmdUpdateLaunchdRestart:
 
         captured = capsys.readouterr().out
         assert "Restarted" in captured
-        assert "Restart manually: hermes gateway run" not in captured
+        assert "Restart manually: avoi gateway run" not in captured
         mock_launchd_restart.assert_called_once_with()
 
     @patch("shutil.which", return_value=None)
@@ -373,7 +373,7 @@ class TestCmdUpdateLaunchdRestart:
         monkeypatch.setattr(
             gateway_cli, "is_macos", lambda: True,
         )
-        plist_path = tmp_path / "ai.hermes.gateway.plist"
+        plist_path = tmp_path / "ai.avoi.gateway.plist"
         # plist does NOT exist — no launchd service
         monkeypatch.setattr(
             gateway_cli, "get_launchd_plist_path", lambda: plist_path,
@@ -390,7 +390,7 @@ class TestCmdUpdateLaunchdRestart:
             cmd_update(mock_args)
 
         captured = capsys.readouterr().out
-        assert "Restart manually: hermes gateway run" in captured
+        assert "Restart manually: avoi gateway run" in captured
 
     @patch("shutil.which", return_value=None)
     @patch("subprocess.run")
@@ -413,7 +413,7 @@ class TestCmdUpdateLaunchdRestart:
             cmd_update(mock_args)
 
         captured = capsys.readouterr().out
-        assert "Restarted hermes-gateway" in captured
+        assert "Restarted avoi-gateway" in captured
         # Verify systemctl restart was called
         restart_calls = [
             c for c in mock_run.call_args_list
@@ -454,7 +454,7 @@ class TestCmdUpdateLaunchdRestart:
                 if "--user" in joined:
                     return subprocess.CompletedProcess(
                         cmd, 0,
-                        stdout="hermes-gateway.service loaded active running\n",
+                        stdout="avoi-gateway.service loaded active running\n",
                         stderr="",
                     )
                 return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
@@ -517,7 +517,7 @@ class TestCmdUpdateLaunchdRestart:
 
         captured = capsys.readouterr().out
         assert "draining" in captured.lower()
-        assert "Restarted hermes-gateway" in captured
+        assert "Restarted avoi-gateway" in captured
 
     @patch("shutil.which", return_value=None)
     @patch("subprocess.run")
@@ -551,7 +551,7 @@ class TestCmdUpdateLaunchdRestart:
         # because the gateway ignored SIGUSR1 or the drain budget was
         # exceeded.  cmd_update() should detect this and escalate.
         monkeypatch.setattr(
-            "hermes_cli.gateway._graceful_restart_via_sigusr1",
+            "avoi_cli.gateway._graceful_restart_via_sigusr1",
             lambda pid, drain_timeout: False,
         )
 
@@ -620,7 +620,7 @@ class TestCmdUpdateSystemService:
             cmd_update(mock_args)
 
         captured = capsys.readouterr().out
-        assert "Restarted hermes-gateway" in captured
+        assert "Restarted avoi-gateway" in captured
         # Verify systemctl restart (no --user) was called
         restart_calls = [
             c for c in mock_run.call_args_list
@@ -674,7 +674,7 @@ class TestCmdUpdateSystemService:
 
         captured = capsys.readouterr().out
         # Both scopes are discovered and restarted
-        assert "Restarted hermes-gateway" in captured
+        assert "Restarted avoi-gateway" in captured
 
 
 # ---------------------------------------------------------------------------
@@ -685,7 +685,7 @@ class TestCmdUpdateSystemService:
 class TestServicePidExclusion:
     """After restarting a service, the stale-process sweep must NOT kill
     the freshly-spawned service PID.  This was the root cause of the bug
-    where ``hermes update`` would restart the gateway and immediately kill it.
+    where ``avoi update`` would restart the gateway and immediately kill it.
     """
 
     @patch("shutil.which", return_value=None)
@@ -694,7 +694,7 @@ class TestServicePidExclusion:
         self, mock_run, _mock_which, mock_args, capsys, monkeypatch, tmp_path,
     ):
         """After launchd restart, the sweep must exclude the service PID."""
-        plist_path = tmp_path / "ai.hermes.gateway.plist"
+        plist_path = tmp_path / "ai.avoi.gateway.plist"
         plist_path.write_text("<plist/>")
 
         monkeypatch.setattr(gateway_cli, "is_macos", lambda: True)
@@ -766,7 +766,7 @@ class TestServicePidExclusion:
             cmd_update(mock_args)
 
         captured = capsys.readouterr().out
-        assert "Restarted hermes-gateway" in captured
+        assert "Restarted avoi-gateway" in captured
         # Service PID must not be killed
         kill_calls = [
             c for c in mock_kill.call_args_list
@@ -782,7 +782,7 @@ class TestServicePidExclusion:
     ):
         """When both a service PID and a manual PID exist, only the manual one
         is killed."""
-        plist_path = tmp_path / "ai.hermes.gateway.plist"
+        plist_path = tmp_path / "ai.avoi.gateway.plist"
         plist_path.write_text("<plist/>")
 
         monkeypatch.setattr(gateway_cli, "is_macos", lambda: True)
@@ -833,7 +833,7 @@ class TestGetServicePids:
             if "list-units" in joined:
                 return subprocess.CompletedProcess(
                     cmd, 0,
-                    stdout="hermes-gateway.service loaded active running Hermes Gateway\n",
+                    stdout="avoi-gateway.service loaded active running Hermes Gateway\n",
                     stderr="",
                 )
             if "show" in joined and "MainPID" in joined:
@@ -848,14 +848,14 @@ class TestGetServicePids:
     def test_returns_launchd_pid(self, monkeypatch):
         monkeypatch.setattr(gateway_cli, "is_linux", lambda: False)
         monkeypatch.setattr(gateway_cli, "is_macos", lambda: True)
-        monkeypatch.setattr(gateway_cli, "get_launchd_label", lambda: "ai.hermes.gateway")
+        monkeypatch.setattr(gateway_cli, "get_launchd_label", lambda: "ai.avoi.gateway")
 
         def fake_run(cmd, **kwargs):
             joined = " ".join(str(c) for c in cmd)
             if "launchctl" in joined and "list" in joined:
                 return subprocess.CompletedProcess(
                     cmd, 0,
-                    stdout="PID\tStatus\tLabel\n67890\t0\tai.hermes.gateway\n",
+                    stdout="PID\tStatus\tLabel\n67890\t0\tai.avoi.gateway\n",
                     stderr="",
                 )
             return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
@@ -883,7 +883,7 @@ class TestGetServicePids:
             if "list-units" in joined:
                 return subprocess.CompletedProcess(
                     cmd, 0,
-                    stdout="hermes-gateway.service loaded inactive dead Hermes Gateway\n",
+                    stdout="avoi-gateway.service loaded inactive dead Hermes Gateway\n",
                     stderr="",
                 )
             if "show" in joined and "MainPID" in joined:
@@ -941,17 +941,17 @@ class TestFindGatewayPidsExclude:
         assert 200 in pids
 
     def test_filters_to_current_profile(self, monkeypatch, tmp_path):
-        profile_dir = tmp_path / ".hermes" / "profiles" / "orcha"
+        profile_dir = tmp_path / ".avoi" / "profiles" / "orcha"
         profile_dir.mkdir(parents=True)
         monkeypatch.setattr(gateway_cli, "is_windows", lambda: False)
-        monkeypatch.setattr(gateway_cli, "get_hermes_home", lambda: profile_dir)
+        monkeypatch.setattr(gateway_cli, "get_avoi_home", lambda: profile_dir)
 
         def fake_run(cmd, **kwargs):
             return subprocess.CompletedProcess(
                 cmd, 0,
                 stdout=(
-                    "100 /Users/dgrieco/.hermes/hermes-agent/venv/bin/python -m hermes_cli.main --profile orcha gateway run --replace\n"
-                    "200 /Users/dgrieco/.hermes/hermes-agent/venv/bin/python -m hermes_cli.main --profile other gateway run --replace\n"
+                    "100 /Users/dgrieco/.avoi/avoi-agent/venv/bin/python -m avoi_cli.main --profile orcha gateway run --replace\n"
+                    "200 /Users/dgrieco/.avoi/avoi-agent/venv/bin/python -m avoi_cli.main --profile other gateway run --replace\n"
                 ),
                 stderr="",
             )
@@ -959,7 +959,7 @@ class TestFindGatewayPidsExclude:
         monkeypatch.setattr(gateway_cli.subprocess, "run", fake_run)
         monkeypatch.setattr("os.getpid", lambda: 999)
         monkeypatch.setattr(gateway_cli, "_get_service_pids", lambda: set())
-        monkeypatch.setattr(gateway_cli, "_profile_arg", lambda hermes_home=None: "--profile orcha")
+        monkeypatch.setattr(gateway_cli, "_profile_arg", lambda avoi_home=None: "--profile orcha")
 
         pids = gateway_cli.find_gateway_pids()
 
@@ -972,7 +972,7 @@ class TestFindGatewayPidsExclude:
 
 
 class TestGatewayModeWritesExitCodeEarly:
-    """When running as ``hermes update --gateway``, the exit code marker must be
+    """When running as ``avoi update --gateway``, the exit code marker must be
     written *before* the gateway restart attempt.  Without this, systemd's
     ``KillMode=mixed`` kills the update process (and its wrapping shell) during
     the cgroup teardown, so the shell epilogue that normally writes the exit
@@ -989,15 +989,15 @@ class TestGatewayModeWritesExitCodeEarly:
         monkeypatch.setattr(gateway_cli, "supports_systemd_services", lambda: False)
         monkeypatch.setattr(gateway_cli, "is_termux", lambda: False)
 
-        # Point HERMES_HOME at a temp dir so the marker file lands there
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        import hermes_cli.config as _cfg
-        monkeypatch.setattr(_cfg, "get_hermes_home", lambda: hermes_home)
+        # Point AVOI_HOME at a temp dir so the marker file lands there
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
+        import avoi_cli.config as _cfg
+        monkeypatch.setattr(_cfg, "get_avoi_home", lambda: avoi_home)
         # Also patch the module-level ref used by cmd_update
-        import hermes_cli.main as _main_mod
-        monkeypatch.setattr(_main_mod, "get_hermes_home", lambda: hermes_home)
+        import avoi_cli.main as _main_mod
+        monkeypatch.setattr(_main_mod, "get_avoi_home", lambda: avoi_home)
 
         mock_run.side_effect = _make_run_side_effect(commit_count="1")
 
@@ -1006,7 +1006,7 @@ class TestGatewayModeWritesExitCodeEarly:
         with patch.object(gateway_cli, "find_gateway_pids", return_value=[]):
             cmd_update(args)
 
-        exit_code_path = hermes_home / ".update_exit_code"
+        exit_code_path = avoi_home / ".update_exit_code"
         assert exit_code_path.exists(), ".update_exit_code not written in gateway mode"
         assert exit_code_path.read_text() == "0"
 
@@ -1020,13 +1020,13 @@ class TestGatewayModeWritesExitCodeEarly:
         monkeypatch.setattr(gateway_cli, "supports_systemd_services", lambda: False)
         monkeypatch.setattr(gateway_cli, "is_termux", lambda: False)
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        import hermes_cli.config as _cfg
-        monkeypatch.setattr(_cfg, "get_hermes_home", lambda: hermes_home)
-        import hermes_cli.main as _main_mod
-        monkeypatch.setattr(_main_mod, "get_hermes_home", lambda: hermes_home)
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
+        import avoi_cli.config as _cfg
+        monkeypatch.setattr(_cfg, "get_avoi_home", lambda: avoi_home)
+        import avoi_cli.main as _main_mod
+        monkeypatch.setattr(_main_mod, "get_avoi_home", lambda: avoi_home)
 
         mock_run.side_effect = _make_run_side_effect(commit_count="1")
 
@@ -1035,7 +1035,7 @@ class TestGatewayModeWritesExitCodeEarly:
         with patch.object(gateway_cli, "find_gateway_pids", return_value=[]):
             cmd_update(args)
 
-        exit_code_path = hermes_home / ".update_exit_code"
+        exit_code_path = avoi_home / ".update_exit_code"
         assert not exit_code_path.exists(), ".update_exit_code should not be written outside gateway mode"
 
     @patch("shutil.which", return_value=None)
@@ -1048,15 +1048,15 @@ class TestGatewayModeWritesExitCodeEarly:
         monkeypatch.setattr(gateway_cli, "supports_systemd_services", lambda: True)
         monkeypatch.setattr(gateway_cli, "is_termux", lambda: False)
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        import hermes_cli.config as _cfg
-        monkeypatch.setattr(_cfg, "get_hermes_home", lambda: hermes_home)
-        import hermes_cli.main as _main_mod
-        monkeypatch.setattr(_main_mod, "get_hermes_home", lambda: hermes_home)
+        avoi_home = tmp_path / ".avoi"
+        avoi_home.mkdir()
+        monkeypatch.setenv("AVOI_HOME", str(avoi_home))
+        import avoi_cli.config as _cfg
+        monkeypatch.setattr(_cfg, "get_avoi_home", lambda: avoi_home)
+        import avoi_cli.main as _main_mod
+        monkeypatch.setattr(_main_mod, "get_avoi_home", lambda: avoi_home)
 
-        exit_code_path = hermes_home / ".update_exit_code"
+        exit_code_path = avoi_home / ".update_exit_code"
 
         # Track whether exit code exists when systemctl restart is called
         exit_code_existed_at_restart = []
@@ -1084,18 +1084,18 @@ class TestGatewayModeWritesExitCodeEarly:
 
 
 class TestCmdUpdateLegacyGatewayWarning:
-    """Tests for the legacy hermes.service warning printed by `hermes update`.
+    """Tests for the legacy avoi.service warning printed by `avoi update`.
 
     Users who installed Hermes before the service rename often have a
-    dormant ``hermes.service`` that starts flap-fighting the current
-    ``hermes-gateway.service`` after PR #5646. Every ``hermes update``
-    should remind them to run ``hermes gateway migrate-legacy`` until
+    dormant ``avoi.service`` that starts flap-fighting the current
+    ``avoi-gateway.service`` after PR #5646. Every ``avoi update``
+    should remind them to run ``avoi gateway migrate-legacy`` until
     they do.
     """
 
     _OUR_UNIT_TEXT = (
         "[Unit]\nDescription=Hermes Gateway\n[Service]\n"
-        "ExecStart=/usr/bin/python -m hermes_cli.main gateway run --replace\n"
+        "ExecStart=/usr/bin/python -m avoi_cli.main gateway run --replace\n"
     )
 
     @patch("shutil.which", return_value=None)
@@ -1108,7 +1108,7 @@ class TestCmdUpdateLegacyGatewayWarning:
         system_dir = tmp_path / "system"
         user_dir.mkdir()
         system_dir.mkdir()
-        legacy_path = user_dir / "hermes.service"
+        legacy_path = user_dir / "avoi.service"
         legacy_path.write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
 
         monkeypatch.setattr(
@@ -1127,8 +1127,8 @@ class TestCmdUpdateLegacyGatewayWarning:
 
         captured = capsys.readouterr().out
         assert "Legacy Hermes gateway unit(s) detected" in captured
-        assert "hermes.service" in captured
-        assert "hermes gateway migrate-legacy" in captured
+        assert "avoi.service" in captured
+        assert "avoi gateway migrate-legacy" in captured
         assert "(user scope)" in captured
 
     @patch("shutil.which", return_value=None)
@@ -1165,20 +1165,20 @@ class TestCmdUpdateLegacyGatewayWarning:
     def test_update_does_not_flag_profile_units(
         self, mock_run, _mock_which, mock_args, capsys, tmp_path, monkeypatch,
     ):
-        """Profile units (hermes-gateway-coder.service) must not trigger the warning.
+        """Profile units (avoi-gateway-coder.service) must not trigger the warning.
 
         This is the core safety invariant: the legacy allowlist is
-        ``hermes.service`` only, no globs.
+        ``avoi.service`` only, no globs.
         """
         user_dir = tmp_path / "user"
         system_dir = tmp_path / "system"
         user_dir.mkdir()
         system_dir.mkdir()
         # Drop a profile unit that an over-eager glob would match
-        (user_dir / "hermes-gateway-coder.service").write_text(
+        (user_dir / "avoi-gateway-coder.service").write_text(
             self._OUR_UNIT_TEXT, encoding="utf-8"
         )
-        (user_dir / "hermes-gateway.service").write_text(
+        (user_dir / "avoi-gateway.service").write_text(
             self._OUR_UNIT_TEXT, encoding="utf-8"
         )
 
@@ -1198,7 +1198,7 @@ class TestCmdUpdateLegacyGatewayWarning:
 
         captured = capsys.readouterr().out
         assert "Legacy Hermes gateway" not in captured
-        assert "hermes-gateway-coder.service" not in captured  # not flagged
+        assert "avoi-gateway-coder.service" not in captured  # not flagged
 
     @patch("shutil.which", return_value=None)
     @patch("subprocess.run")
@@ -1210,7 +1210,7 @@ class TestCmdUpdateLegacyGatewayWarning:
         user_dir = tmp_path / "user"
         user_dir.mkdir()
         # Put a file that WOULD match if the check ran
-        (user_dir / "hermes.service").write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
+        (user_dir / "avoi.service").write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
 
         monkeypatch.setattr(
             gateway_cli,
@@ -1241,7 +1241,7 @@ class TestCmdUpdateLegacyGatewayWarning:
         system_dir = tmp_path / "system"
         user_dir.mkdir()
         system_dir.mkdir()
-        (system_dir / "hermes.service").write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
+        (system_dir / "avoi.service").write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
 
         monkeypatch.setattr(
             gateway_cli,

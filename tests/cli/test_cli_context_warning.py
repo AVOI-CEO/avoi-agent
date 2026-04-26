@@ -9,10 +9,10 @@ import pytest
 
 @pytest.fixture
 def _isolate(tmp_path, monkeypatch):
-    """Isolate HERMES_HOME so tests don't touch real config."""
-    home = tmp_path / ".hermes"
+    """Isolate AVOI_HOME so tests don't touch real config."""
+    home = tmp_path / ".avoi"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AVOI_HOME", str(home))
 
 
 @pytest.fixture
@@ -26,7 +26,7 @@ def cli_obj(_isolate):
         from cli import HermesCLI
         obj = HermesCLI.__new__(HermesCLI)
         obj.model = "test-model"
-        obj.enabled_toolsets = ["hermes-core"]
+        obj.enabled_toolsets = ["avoi-core"]
         obj.compact = False
         obj.console = MagicMock()
         obj.session_id = None

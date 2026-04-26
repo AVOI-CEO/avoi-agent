@@ -1,19 +1,19 @@
 ---
-name: hermes-agent
-description: Complete guide to using and extending Hermes Agent — CLI usage, setup, configuration, spawning additional agents, gateway platforms, skills, voice, tools, profiles, and a concise contributor reference. Load this skill when helping users configure Hermes, troubleshoot issues, spawn agent instances, or make code contributions.
+name: avoi-agent
+description: Complete guide to using and extending AVOI Agent — CLI usage, setup, configuration, spawning additional agents, gateway platforms, skills, voice, tools, profiles, and a concise contributor reference. Load this skill when helping users configure Hermes, troubleshoot issues, spawn agent instances, or make code contributions.
 version: 2.0.0
-author: Hermes Agent + Teknium
+author: AVOI Agent + Teknium
 license: MIT
 metadata:
-  hermes:
-    tags: [hermes, setup, configuration, multi-agent, spawning, cli, gateway, development]
-    homepage: https://github.com/NousResearch/hermes-agent
+  avoi:
+    tags: [avoi, setup, configuration, multi-agent, spawning, cli, gateway, development]
+    homepage: https://github.com/avoi-ai/avoi-agent
     related_skills: [claude-code, codex, opencode]
 ---
 
-# Hermes Agent
+# AVOI Agent
 
-Hermes Agent is an open-source AI agent framework by Nous Research that runs in your terminal, messaging platforms, and IDEs. It belongs to the same category as Claude Code (Anthropic), Codex (OpenAI), and OpenClaw — autonomous coding and task-execution agents that use tool calling to interact with your system. Hermes works with any LLM provider (OpenRouter, Anthropic, OpenAI, DeepSeek, local models, and 15+ others) and runs on Linux, macOS, and WSL.
+AVOI Agent is an open-source AI agent framework by AVOI AI that runs in your terminal, messaging platforms, and IDEs. It belongs to the same category as Claude Code (Anthropic), Codex (OpenAI), and OpenClaw — autonomous coding and task-execution agents that use tool calling to interact with your system. Hermes works with any LLM provider (OpenRouter, Anthropic, OpenAI, DeepSeek, local models, and 15+ others) and runs on Linux, macOS, and WSL.
 
 What makes Hermes different:
 
@@ -26,30 +26,30 @@ What makes Hermes different:
 
 People use Hermes for software development, research, system administration, data analysis, content creation, home automation, and anything else that benefits from an AI agent with persistent context and full system access.
 
-**This skill helps you work with Hermes Agent effectively** — setting it up, configuring features, spawning additional agent instances, troubleshooting issues, finding the right commands and settings, and understanding how the system works when you need to extend or contribute to it.
+**This skill helps you work with AVOI Agent effectively** — setting it up, configuring features, spawning additional agent instances, troubleshooting issues, finding the right commands and settings, and understanding how the system works when you need to extend or contribute to it.
 
-**Docs:** https://hermes-agent.nousresearch.com/docs/
+**Docs:** https://avoi-agent.avoi-ai.com/docs/
 
 ## Quick Start
 
 ```bash
 # Install
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/avoi-ai/avoi-agent/main/scripts/install.sh | bash
 
 # Interactive chat (default)
-hermes
+avoi
 
 # Single query
-hermes chat -q "What is the capital of France?"
+avoi chat -q "What is the capital of France?"
 
 # Setup wizard
-hermes setup
+avoi setup
 
 # Change model/provider
-hermes model
+avoi model
 
 # Check health
-hermes doctor
+avoi doctor
 ```
 
 ---
@@ -59,7 +59,7 @@ hermes doctor
 ### Global Flags
 
 ```
-hermes [flags] [command]
+avoi [flags] [command]
 
   --version, -V             Show version
   --resume, -r SESSION      Resume session by ID or title
@@ -76,7 +76,7 @@ No subcommand defaults to `chat`.
 ### Chat
 
 ```
-hermes chat [flags]
+avoi chat [flags]
   -q, --query TEXT          Single query, non-interactive
   -m, --model MODEL         Model (e.g. anthropic/claude-sonnet-4)
   -t, --toolsets LIST       Comma-separated toolsets
@@ -90,137 +90,137 @@ hermes chat [flags]
 ### Configuration
 
 ```
-hermes setup [section]      Interactive wizard (model|terminal|gateway|tools|agent)
-hermes model                Interactive model/provider picker
-hermes config               View current config
-hermes config edit          Open config.yaml in $EDITOR
-hermes config set KEY VAL   Set a config value
-hermes config path          Print config.yaml path
-hermes config env-path      Print .env path
-hermes config check         Check for missing/outdated config
-hermes config migrate       Update config with new options
-hermes login [--provider P] OAuth login (nous, openai-codex)
-hermes logout               Clear stored auth
-hermes doctor [--fix]       Check dependencies and config
-hermes status [--all]       Show component status
+avoi setup [section]      Interactive wizard (model|terminal|gateway|tools|agent)
+avoi model                Interactive model/provider picker
+avoi config               View current config
+avoi config edit          Open config.yaml in $EDITOR
+avoi config set KEY VAL   Set a config value
+avoi config path          Print config.yaml path
+avoi config env-path      Print .env path
+avoi config check         Check for missing/outdated config
+avoi config migrate       Update config with new options
+avoi login [--provider P] OAuth login (nous, openai-codex)
+avoi logout               Clear stored auth
+avoi doctor [--fix]       Check dependencies and config
+avoi status [--all]       Show component status
 ```
 
 ### Tools & Skills
 
 ```
-hermes tools                Interactive tool enable/disable (curses UI)
-hermes tools list           Show all tools and status
-hermes tools enable NAME    Enable a toolset
-hermes tools disable NAME   Disable a toolset
+avoi tools                Interactive tool enable/disable (curses UI)
+avoi tools list           Show all tools and status
+avoi tools enable NAME    Enable a toolset
+avoi tools disable NAME   Disable a toolset
 
-hermes skills list          List installed skills
-hermes skills search QUERY  Search the skills hub
-hermes skills install ID    Install a skill
-hermes skills inspect ID    Preview without installing
-hermes skills config        Enable/disable skills per platform
-hermes skills check         Check for updates
-hermes skills update        Update outdated skills
-hermes skills uninstall N   Remove a hub skill
-hermes skills publish PATH  Publish to registry
-hermes skills browse        Browse all available skills
-hermes skills tap add REPO  Add a GitHub repo as skill source
+avoi skills list          List installed skills
+avoi skills search QUERY  Search the skills hub
+avoi skills install ID    Install a skill
+avoi skills inspect ID    Preview without installing
+avoi skills config        Enable/disable skills per platform
+avoi skills check         Check for updates
+avoi skills update        Update outdated skills
+avoi skills uninstall N   Remove a hub skill
+avoi skills publish PATH  Publish to registry
+avoi skills browse        Browse all available skills
+avoi skills tap add REPO  Add a GitHub repo as skill source
 ```
 
 ### MCP Servers
 
 ```
-hermes mcp serve            Run Hermes as an MCP server
-hermes mcp add NAME         Add an MCP server (--url or --command)
-hermes mcp remove NAME      Remove an MCP server
-hermes mcp list             List configured servers
-hermes mcp test NAME        Test connection
-hermes mcp configure NAME   Toggle tool selection
+avoi mcp serve            Run Hermes as an MCP server
+avoi mcp add NAME         Add an MCP server (--url or --command)
+avoi mcp remove NAME      Remove an MCP server
+avoi mcp list             List configured servers
+avoi mcp test NAME        Test connection
+avoi mcp configure NAME   Toggle tool selection
 ```
 
 ### Gateway (Messaging Platforms)
 
 ```
-hermes gateway run          Start gateway foreground
-hermes gateway install      Install as background service
-hermes gateway start/stop   Control the service
-hermes gateway restart      Restart the service
-hermes gateway status       Check status
-hermes gateway setup        Configure platforms
+avoi gateway run          Start gateway foreground
+avoi gateway install      Install as background service
+avoi gateway start/stop   Control the service
+avoi gateway restart      Restart the service
+avoi gateway status       Check status
+avoi gateway setup        Configure platforms
 ```
 
 Supported platforms: Telegram, Discord, Slack, WhatsApp, Signal, Email, SMS, Matrix, Mattermost, Home Assistant, DingTalk, Feishu, WeCom, BlueBubbles (iMessage), Weixin (WeChat), API Server, Webhooks. Open WebUI connects via the API Server adapter.
 
-Platform docs: https://hermes-agent.nousresearch.com/docs/user-guide/messaging/
+Platform docs: https://avoi-agent.avoi-ai.com/docs/user-guide/messaging/
 
 ### Sessions
 
 ```
-hermes sessions list        List recent sessions
-hermes sessions browse      Interactive picker
-hermes sessions export OUT  Export to JSONL
-hermes sessions rename ID T Rename a session
-hermes sessions delete ID   Delete a session
-hermes sessions prune       Clean up old sessions (--older-than N days)
-hermes sessions stats       Session store statistics
+avoi sessions list        List recent sessions
+avoi sessions browse      Interactive picker
+avoi sessions export OUT  Export to JSONL
+avoi sessions rename ID T Rename a session
+avoi sessions delete ID   Delete a session
+avoi sessions prune       Clean up old sessions (--older-than N days)
+avoi sessions stats       Session store statistics
 ```
 
 ### Cron Jobs
 
 ```
-hermes cron list            List jobs (--all for disabled)
-hermes cron create SCHED    Create: '30m', 'every 2h', '0 9 * * *'
-hermes cron edit ID         Edit schedule, prompt, delivery
-hermes cron pause/resume ID Control job state
-hermes cron run ID          Trigger on next tick
-hermes cron remove ID       Delete a job
-hermes cron status          Scheduler status
+avoi cron list            List jobs (--all for disabled)
+avoi cron create SCHED    Create: '30m', 'every 2h', '0 9 * * *'
+avoi cron edit ID         Edit schedule, prompt, delivery
+avoi cron pause/resume ID Control job state
+avoi cron run ID          Trigger on next tick
+avoi cron remove ID       Delete a job
+avoi cron status          Scheduler status
 ```
 
 ### Webhooks
 
 ```
-hermes webhook subscribe N  Create route at /webhooks/<name>
-hermes webhook list         List subscriptions
-hermes webhook remove NAME  Remove a subscription
-hermes webhook test NAME    Send a test POST
+avoi webhook subscribe N  Create route at /webhooks/<name>
+avoi webhook list         List subscriptions
+avoi webhook remove NAME  Remove a subscription
+avoi webhook test NAME    Send a test POST
 ```
 
 ### Profiles
 
 ```
-hermes profile list         List all profiles
-hermes profile create NAME  Create (--clone, --clone-all, --clone-from)
-hermes profile use NAME     Set sticky default
-hermes profile delete NAME  Delete a profile
-hermes profile show NAME    Show details
-hermes profile alias NAME   Manage wrapper scripts
-hermes profile rename A B   Rename a profile
-hermes profile export NAME  Export to tar.gz
-hermes profile import FILE  Import from archive
+avoi profile list         List all profiles
+avoi profile create NAME  Create (--clone, --clone-all, --clone-from)
+avoi profile use NAME     Set sticky default
+avoi profile delete NAME  Delete a profile
+avoi profile show NAME    Show details
+avoi profile alias NAME   Manage wrapper scripts
+avoi profile rename A B   Rename a profile
+avoi profile export NAME  Export to tar.gz
+avoi profile import FILE  Import from archive
 ```
 
 ### Credential Pools
 
 ```
-hermes auth add             Interactive credential wizard
-hermes auth list [PROVIDER] List pooled credentials
-hermes auth remove P INDEX  Remove by provider + index
-hermes auth reset PROVIDER  Clear exhaustion status
+avoi auth add             Interactive credential wizard
+avoi auth list [PROVIDER] List pooled credentials
+avoi auth remove P INDEX  Remove by provider + index
+avoi auth reset PROVIDER  Clear exhaustion status
 ```
 
 ### Other
 
 ```
-hermes insights [--days N]  Usage analytics
-hermes update               Update to latest version
-hermes pairing list/approve/revoke  DM authorization
-hermes plugins list/install/remove  Plugin management
-hermes honcho setup/status  Honcho memory integration (requires honcho plugin)
-hermes memory setup/status/off  Memory provider config
-hermes completion bash|zsh  Shell completions
-hermes acp                  ACP server (IDE integration)
-hermes claw migrate         Migrate from OpenClaw
-hermes uninstall            Uninstall Hermes
+avoi insights [--days N]  Usage analytics
+avoi update               Update to latest version
+avoi pairing list/approve/revoke  DM authorization
+avoi plugins list/install/remove  Plugin management
+avoi honcho setup/status  Honcho memory integration (requires honcho plugin)
+avoi memory setup/status/off  Memory provider config
+avoi completion bash|zsh  Shell completions
+avoi acp                  ACP server (IDE integration)
+avoi claw migrate         Migrate from OpenClaw
+avoi uninstall            Uninstall Hermes
 ```
 
 ---
@@ -310,20 +310,20 @@ Type these during an interactive chat session.
 ## Key Paths & Config
 
 ```
-~/.hermes/config.yaml       Main configuration
-~/.hermes/.env              API keys and secrets
-$HERMES_HOME/skills/        Installed skills
-~/.hermes/sessions/         Session transcripts
-~/.hermes/logs/             Gateway and error logs
-~/.hermes/auth.json         OAuth tokens and credential pools
-~/.hermes/hermes-agent/     Source code (if git-installed)
+~/.avoi/config.yaml       Main configuration
+~/.avoi/.env              API keys and secrets
+$AVOI_HOME/skills/        Installed skills
+~/.avoi/sessions/         Session transcripts
+~/.avoi/logs/             Gateway and error logs
+~/.avoi/auth.json         OAuth tokens and credential pools
+~/.avoi/avoi-agent/     Source code (if git-installed)
 ```
 
-Profiles use `~/.hermes/profiles/<name>/` with the same layout.
+Profiles use `~/.avoi/profiles/<name>/` with the same layout.
 
 ### Config Sections
 
-Edit with `hermes config edit` or `hermes config set section.key value`.
+Edit with `avoi config edit` or `avoi config set section.key value`.
 
 | Section | Key options |
 |---------|-------------|
@@ -339,18 +339,18 @@ Edit with `hermes config edit` or `hermes config set section.key value`.
 | `delegation` | `model`, `provider`, `base_url`, `api_key`, `max_iterations` (50), `reasoning_effort` |
 | `checkpoints` | `enabled`, `max_snapshots` (50) |
 
-Full config reference: https://hermes-agent.nousresearch.com/docs/user-guide/configuration
+Full config reference: https://avoi-agent.avoi-ai.com/docs/user-guide/configuration
 
 ### Providers
 
-20+ providers supported. Set via `hermes model` or `hermes setup`.
+20+ providers supported. Set via `avoi model` or `avoi setup`.
 
 | Provider | Auth | Key env var |
 |----------|------|-------------|
 | OpenRouter | API key | `OPENROUTER_API_KEY` |
 | Anthropic | API key | `ANTHROPIC_API_KEY` |
-| Nous Portal | OAuth | `hermes auth` |
-| OpenAI Codex | OAuth | `hermes auth` |
+| Nous Portal | OAuth | `avoi auth` |
+| OpenAI Codex | OAuth | `avoi auth` |
 | GitHub Copilot | Token | `COPILOT_GITHUB_TOKEN` |
 | Google Gemini | API key | `GOOGLE_API_KEY` or `GEMINI_API_KEY` |
 | DeepSeek | API key | `DEEPSEEK_API_KEY` |
@@ -366,15 +366,15 @@ Full config reference: https://hermes-agent.nousresearch.com/docs/user-guide/con
 | AI Gateway (Vercel) | API key | `AI_GATEWAY_API_KEY` |
 | OpenCode Zen | API key | `OPENCODE_ZEN_API_KEY` |
 | OpenCode Go | API key | `OPENCODE_GO_API_KEY` |
-| Qwen OAuth | OAuth | `hermes login --provider qwen-oauth` |
+| Qwen OAuth | OAuth | `avoi login --provider qwen-oauth` |
 | Custom endpoint | Config | `model.base_url` + `model.api_key` in config.yaml |
 | GitHub Copilot ACP | External | `COPILOT_CLI_PATH` or Copilot CLI |
 
-Full provider docs: https://hermes-agent.nousresearch.com/docs/integrations/providers
+Full provider docs: https://avoi-agent.avoi-ai.com/docs/integrations/providers
 
 ### Toolsets
 
-Enable/disable via `hermes tools` (interactive) or `hermes tools enable/disable NAME`.
+Enable/disable via `avoi tools` (interactive) or `avoi tools enable/disable NAME`.
 
 | Toolset | What it provides |
 |---------|-----------------|
@@ -445,7 +445,7 @@ Run additional Hermes processes as fully independent subprocesses — separate s
 
 ### When to Use This vs delegate_task
 
-| | `delegate_task` | Spawning `hermes` process |
+| | `delegate_task` | Spawning `avoi` process |
 |-|-----------------|--------------------------|
 | Isolation | Separate conversation, shared process | Fully independent process |
 | Duration | Minutes (bounded by parent loop) | Hours/days |
@@ -456,10 +456,10 @@ Run additional Hermes processes as fully independent subprocesses — separate s
 ### One-Shot Mode
 
 ```
-terminal(command="hermes chat -q 'Research GRPO papers and write summary to ~/research/grpo.md'", timeout=300)
+terminal(command="avoi chat -q 'Research GRPO papers and write summary to ~/research/grpo.md'", timeout=300)
 
 # Background for long tasks:
-terminal(command="hermes chat -q 'Set up CI/CD for ~/myapp'", background=true)
+terminal(command="avoi chat -q 'Set up CI/CD for ~/myapp'", background=true)
 ```
 
 ### Interactive PTY Mode (via tmux)
@@ -468,7 +468,7 @@ Hermes uses prompt_toolkit, which requires a real terminal. Use tmux for interac
 
 ```
 # Start
-terminal(command="tmux new-session -d -s agent1 -x 120 -y 40 'hermes'", timeout=10)
+terminal(command="tmux new-session -d -s agent1 -x 120 -y 40 'avoi'", timeout=10)
 
 # Wait for startup, then send a message
 terminal(command="sleep 8 && tmux send-keys -t agent1 'Build a FastAPI auth service' Enter", timeout=15)
@@ -487,11 +487,11 @@ terminal(command="tmux send-keys -t agent1 '/exit' Enter && sleep 2 && tmux kill
 
 ```
 # Agent A: backend
-terminal(command="tmux new-session -d -s backend -x 120 -y 40 'hermes -w'", timeout=10)
+terminal(command="tmux new-session -d -s backend -x 120 -y 40 'avoi -w'", timeout=10)
 terminal(command="sleep 8 && tmux send-keys -t backend 'Build REST API for user management' Enter", timeout=15)
 
 # Agent B: frontend
-terminal(command="tmux new-session -d -s frontend -x 120 -y 40 'hermes -w'", timeout=10)
+terminal(command="tmux new-session -d -s frontend -x 120 -y 40 'avoi -w'", timeout=10)
 terminal(command="sleep 8 && tmux send-keys -t frontend 'Build React dashboard for user management' Enter", timeout=15)
 
 # Check progress, relay context between them
@@ -503,10 +503,10 @@ terminal(command="tmux send-keys -t frontend 'Here is the API schema from the ba
 
 ```
 # Resume most recent session
-terminal(command="tmux new-session -d -s resumed 'hermes --continue'", timeout=10)
+terminal(command="tmux new-session -d -s resumed 'avoi --continue'", timeout=10)
 
 # Resume specific session
-terminal(command="tmux new-session -d -s resumed 'hermes --resume 20260225_143052_a1b2c3'", timeout=10)
+terminal(command="tmux new-session -d -s resumed 'avoi --resume 20260225_143052_a1b2c3'", timeout=10)
 ```
 
 ### Tips
@@ -514,7 +514,7 @@ terminal(command="tmux new-session -d -s resumed 'hermes --resume 20260225_14305
 - **Prefer `delegate_task` for quick subtasks** — less overhead than spawning a full process
 - **Use `-w` (worktree mode)** when spawning agents that edit code — prevents git conflicts
 - **Set timeouts** for one-shot mode — complex tasks can take 5-10 minutes
-- **Use `hermes chat -q` for fire-and-forget** — no PTY needed
+- **Use `avoi chat -q` for fire-and-forget** — no PTY needed
 - **Use tmux for interactive sessions** — raw PTY mode has `\r` vs `\n` issues with prompt_toolkit
 - **For scheduled tasks**, use the `cronjob` tool instead of spawning — handles delivery and retry
 
@@ -528,15 +528,15 @@ terminal(command="tmux new-session -d -s resumed 'hermes --resume 20260225_14305
 3. In gateway: `/restart`. In CLI: exit and relaunch.
 
 ### Tool not available
-1. `hermes tools` — check if toolset is enabled for your platform
+1. `avoi tools` — check if toolset is enabled for your platform
 2. Some tools need env vars (check `.env`)
 3. `/reset` after enabling tools
 
 ### Model/provider issues
-1. `hermes doctor` — check config and dependencies
-2. `hermes login` — re-authenticate OAuth providers
+1. `avoi doctor` — check config and dependencies
+2. `avoi login` — re-authenticate OAuth providers
 3. Check `.env` has the right API key
-4. **Copilot 403**: `gh auth login` tokens do NOT work for Copilot API. You must use the Copilot-specific OAuth device code flow via `hermes model` → GitHub Copilot.
+4. **Copilot 403**: `gh auth login` tokens do NOT work for Copilot API. You must use the Copilot-specific OAuth device code flow via `avoi model` → GitHub Copilot.
 
 ### Changes not taking effect
 - **Tools/skills:** `/reset` starts a new session with updated toolset
@@ -544,20 +544,20 @@ terminal(command="tmux new-session -d -s resumed 'hermes --resume 20260225_14305
 - **Code changes:** Restart the CLI or gateway process
 
 ### Skills not showing
-1. `hermes skills list` — verify installed
-2. `hermes skills config` — check platform enablement
-3. Load explicitly: `/skill name` or `hermes -s name`
+1. `avoi skills list` — verify installed
+2. `avoi skills config` — check platform enablement
+3. Load explicitly: `/skill name` or `avoi -s name`
 
 ### Gateway issues
 Check logs first:
 ```bash
-grep -i "failed to send\|error" ~/.hermes/logs/gateway.log | tail -20
+grep -i "failed to send\|error" ~/.avoi/logs/gateway.log | tail -20
 ```
 
 Common gateway problems:
 - **Gateway dies on SSH logout**: Enable linger: `sudo loginctl enable-linger $USER`
 - **Gateway dies on WSL2 close**: WSL2 requires `systemd=true` in `/etc/wsl.conf` for systemd services to work. Without it, gateway falls back to `nohup` (dies when session closes).
-- **Gateway crash loop**: Reset the failed state: `systemctl --user reset-failed hermes-gateway`
+- **Gateway crash loop**: Reset the failed state: `systemctl --user reset-failed avoi-gateway`
 
 ### Platform-specific issues
 - **Discord bot silent**: Must enable **Message Content Intent** in Bot → Privileged Gateway Intents.
@@ -567,8 +567,8 @@ Common gateway problems:
 ### Auxiliary models not working
 If `auxiliary` tasks (vision, compression, session_search) fail silently, the `auto` provider can't find a backend. Either set `OPENROUTER_API_KEY` or `GOOGLE_API_KEY`, or explicitly configure each auxiliary task's provider:
 ```bash
-hermes config set auxiliary.vision.provider <your_provider>
-hermes config set auxiliary.vision.model <model_name>
+avoi config set auxiliary.vision.provider <your_provider>
+avoi config set auxiliary.vision.model <model_name>
 ```
 
 ---
@@ -577,39 +577,39 @@ hermes config set auxiliary.vision.model <model_name>
 
 | Looking for... | Location |
 |----------------|----------|
-| Config options | `hermes config edit` or [Configuration docs](https://hermes-agent.nousresearch.com/docs/user-guide/configuration) |
-| Available tools | `hermes tools list` or [Tools reference](https://hermes-agent.nousresearch.com/docs/reference/tools-reference) |
-| Slash commands | `/help` in session or [Slash commands reference](https://hermes-agent.nousresearch.com/docs/reference/slash-commands) |
-| Skills catalog | `hermes skills browse` or [Skills catalog](https://hermes-agent.nousresearch.com/docs/reference/skills-catalog) |
-| Provider setup | `hermes model` or [Providers guide](https://hermes-agent.nousresearch.com/docs/integrations/providers) |
-| Platform setup | `hermes gateway setup` or [Messaging docs](https://hermes-agent.nousresearch.com/docs/user-guide/messaging/) |
-| MCP servers | `hermes mcp list` or [MCP guide](https://hermes-agent.nousresearch.com/docs/user-guide/features/mcp) |
-| Profiles | `hermes profile list` or [Profiles docs](https://hermes-agent.nousresearch.com/docs/user-guide/profiles) |
-| Cron jobs | `hermes cron list` or [Cron docs](https://hermes-agent.nousresearch.com/docs/user-guide/features/cron) |
-| Memory | `hermes memory status` or [Memory docs](https://hermes-agent.nousresearch.com/docs/user-guide/features/memory) |
-| Env variables | `hermes config env-path` or [Env vars reference](https://hermes-agent.nousresearch.com/docs/reference/environment-variables) |
-| CLI commands | `hermes --help` or [CLI reference](https://hermes-agent.nousresearch.com/docs/reference/cli-commands) |
-| Gateway logs | `~/.hermes/logs/gateway.log` |
-| Session files | `~/.hermes/sessions/` or `hermes sessions browse` |
-| Source code | `~/.hermes/hermes-agent/` |
+| Config options | `avoi config edit` or [Configuration docs](https://avoi-agent.avoi-ai.com/docs/user-guide/configuration) |
+| Available tools | `avoi tools list` or [Tools reference](https://avoi-agent.avoi-ai.com/docs/reference/tools-reference) |
+| Slash commands | `/help` in session or [Slash commands reference](https://avoi-agent.avoi-ai.com/docs/reference/slash-commands) |
+| Skills catalog | `avoi skills browse` or [Skills catalog](https://avoi-agent.avoi-ai.com/docs/reference/skills-catalog) |
+| Provider setup | `avoi model` or [Providers guide](https://avoi-agent.avoi-ai.com/docs/integrations/providers) |
+| Platform setup | `avoi gateway setup` or [Messaging docs](https://avoi-agent.avoi-ai.com/docs/user-guide/messaging/) |
+| MCP servers | `avoi mcp list` or [MCP guide](https://avoi-agent.avoi-ai.com/docs/user-guide/features/mcp) |
+| Profiles | `avoi profile list` or [Profiles docs](https://avoi-agent.avoi-ai.com/docs/user-guide/profiles) |
+| Cron jobs | `avoi cron list` or [Cron docs](https://avoi-agent.avoi-ai.com/docs/user-guide/features/cron) |
+| Memory | `avoi memory status` or [Memory docs](https://avoi-agent.avoi-ai.com/docs/user-guide/features/memory) |
+| Env variables | `avoi config env-path` or [Env vars reference](https://avoi-agent.avoi-ai.com/docs/reference/environment-variables) |
+| CLI commands | `avoi --help` or [CLI reference](https://avoi-agent.avoi-ai.com/docs/reference/cli-commands) |
+| Gateway logs | `~/.avoi/logs/gateway.log` |
+| Session files | `~/.avoi/sessions/` or `avoi sessions browse` |
+| Source code | `~/.avoi/avoi-agent/` |
 
 ---
 
 ## Contributor Quick Reference
 
-For occasional contributors and PR authors. Full developer docs: https://hermes-agent.nousresearch.com/docs/developer-guide/
+For occasional contributors and PR authors. Full developer docs: https://avoi-agent.avoi-ai.com/docs/developer-guide/
 
 ### Project Layout
 
 ```
-hermes-agent/
+avoi-agent/
 ├── run_agent.py          # AIAgent — core conversation loop
 ├── model_tools.py        # Tool discovery and dispatch
 ├── toolsets.py           # Toolset definitions
 ├── cli.py                # Interactive CLI (HermesCLI)
-├── hermes_state.py       # SQLite session store
+├── avoi_state.py       # SQLite session store
 ├── agent/                # Prompt builder, context compression, memory, model routing, credential pooling, skill dispatch
-├── hermes_cli/           # CLI subcommands, config, setup, commands
+├── avoi_cli/           # CLI subcommands, config, setup, commands
 │   ├── commands.py       # Slash command registry (CommandDef)
 │   ├── config.py         # DEFAULT_CONFIG, env var definitions
 │   └── main.py           # CLI entry point and argparse
@@ -622,7 +622,7 @@ hermes-agent/
 └── website/              # Docusaurus docs site
 ```
 
-Config: `~/.hermes/config.yaml` (settings), `~/.hermes/.env` (API keys).
+Config: `~/.avoi/config.yaml` (settings), `~/.avoi/.env` (API keys).
 
 ### Adding a Tool (3 files)
 
@@ -648,15 +648,15 @@ registry.register(
 )
 ```
 
-**2. Add to `toolsets.py`** → `_HERMES_CORE_TOOLS` list.
+**2. Add to `toolsets.py`** → `_AVOI_CORE_TOOLS` list.
 
 Auto-discovery: any `tools/*.py` file with a top-level `registry.register()` call is imported automatically — no manual list needed.
 
-All handlers must return JSON strings. Use `get_hermes_home()` for paths, never hardcode `~/.hermes`.
+All handlers must return JSON strings. Use `get_avoi_home()` for paths, never hardcode `~/.avoi`.
 
 ### Adding a Slash Command
 
-1. Add `CommandDef` to `COMMAND_REGISTRY` in `hermes_cli/commands.py`
+1. Add `CommandDef` to `COMMAND_REGISTRY` in `avoi_cli/commands.py`
 2. Add handler in `cli.py` → `process_command()`
 3. (Optional) Add gateway handler in `gateway/run.py`
 
@@ -681,7 +681,7 @@ python -m pytest tests/ -o 'addopts=' -q   # Full suite
 python -m pytest tests/tools/ -q            # Specific area
 ```
 
-- Tests auto-redirect `HERMES_HOME` to temp dirs — never touch real `~/.hermes/`
+- Tests auto-redirect `AVOI_HOME` to temp dirs — never touch real `~/.avoi/`
 - Run full suite before pushing any change
 - Use `-o 'addopts='` to clear any baked-in pytest flags
 
@@ -699,6 +699,6 @@ Types: `fix:`, `feat:`, `refactor:`, `docs:`, `chore:`
 
 - **Never break prompt caching** — don't change context, tools, or system prompt mid-conversation
 - **Message role alternation** — never two assistant or two user messages in a row
-- Use `get_hermes_home()` from `hermes_constants` for all paths (profile-safe)
+- Use `get_avoi_home()` from `avoi_constants` for all paths (profile-safe)
 - Config values go in `config.yaml`, secrets go in `.env`
 - New tools need a `check_fn` so they only appear when requirements are met

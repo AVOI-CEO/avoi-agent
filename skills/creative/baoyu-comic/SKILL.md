@@ -5,14 +5,14 @@ version: 1.56.1
 author: 宝玉 (JimLiu)
 license: MIT
 metadata:
-  hermes:
+  avoi:
     tags: [comic, knowledge-comic, creative, image-generation]
     homepage: https://github.com/JimLiu/baoyu-skills#baoyu-comic
 ---
 
 # Knowledge Comic Creator
 
-Adapted from [baoyu-comic](https://github.com/JimLiu/baoyu-skills) for Hermes Agent's tool ecosystem.
+Adapted from [baoyu-comic](https://github.com/JimLiu/baoyu-skills) for AVOI Agent's tool ecosystem.
 
 Create original knowledge comics with flexible art style × tone combinations.
 

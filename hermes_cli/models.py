@@ -1,8 +1,8 @@
 """
 Canonical model catalogs and lightweight validation helpers.
 
-Add, remove, or reorder entries here — both `hermes setup` and
-`hermes` provider-selection will pick up the change automatically.
+Add, remove, or reorder entries here — both `avoi setup` and
+`avoi` provider-selection will pick up the change automatically.
 """
 
 from __future__ import annotations
@@ -16,11 +16,11 @@ from difflib import get_close_matches
 from pathlib import Path
 from typing import Any, NamedTuple, Optional
 
-from hermes_cli import __version__ as _HERMES_VERSION
+from avoi_cli import __version__ as _AVOI_VERSION
 
 # Identify ourselves so endpoints fronted by Cloudflare's Browser Integrity
 # Check (error 1010) don't reject the default ``Python-urllib/*`` signature.
-_HERMES_USER_AGENT = f"hermes-cli/{_HERMES_VERSION}"
+_AVOI_USER_AGENT = f"avoi-cli/{_AVOI_VERSION}"
 
 COPILOT_BASE_URL = "https://api.githubcopilot.com"
 COPILOT_MODELS_URL = f"{COPILOT_BASE_URL}/models"
@@ -101,10 +101,10 @@ def _codex_curated_models() -> list[str]:
     """Derive the openai-codex curated list from codex_models.py.
 
     Single source of truth: DEFAULT_CODEX_MODELS + forward-compat synthesis.
-    This keeps the gateway /model picker in sync with the CLI `hermes model`
+    This keeps the gateway /model picker in sync with the CLI `avoi model`
     flow without maintaining a separate static list.
     """
-    from hermes_cli.codex_models import DEFAULT_CODEX_MODELS, _add_forward_compat_models
+    from avoi_cli.codex_models import DEFAULT_CODEX_MODELS, _add_forward_compat_models
     return _add_forward_compat_models(list(DEFAULT_CODEX_MODELS))
 
 
@@ -417,7 +417,7 @@ def _is_model_free(model_id: str, pricing: dict[str, dict[str, str]]) -> bool:
 # Nous Portal account tier detection
 # ---------------------------------------------------------------------------
 
-def fetch_nous_account_tier(access_token: str, portal_base_url: str = "") -> dict[str, Any]:
+def fetch_avoi_account_tier(access_token: str, portal_base_url: str = "") -> dict[str, Any]:
     """Fetch the user's Nous Portal account/subscription info.
 
     Calls ``<portal>/api/oauth/account`` with the OAuth access token.
@@ -437,7 +437,7 @@ def fetch_nous_account_tier(access_token: str, portal_base_url: str = "") -> dic
 
     Returns an empty dict on any failure (network, auth, parse).
     """
-    base = (portal_base_url or "https://portal.nousresearch.com").rstrip("/")
+    base = (portal_base_url or "https://portal.avoi-ai.com").rstrip("/")
     url = f"{base}/api/oauth/account"
     headers = {
         "Authorization": f"Bearer {access_token}",
@@ -451,7 +451,7 @@ def fetch_nous_account_tier(access_token: str, portal_base_url: str = "") -> dic
         return {}
 
 
-def is_nous_free_tier(account_info: dict[str, Any]) -> bool:
+def is_avoi_free_tier(account_info: dict[str, Any]) -> bool:
     """Return True if the account info indicates a free (unpaid) tier.
 
     Checks ``subscription.monthly_charge == 0``.  Returns False when
@@ -469,7 +469,7 @@ def is_nous_free_tier(account_info: dict[str, Any]) -> bool:
         return False
 
 
-def partition_nous_models_by_tier(
+def partition_avoi_models_by_tier(
     model_ids: list[str],
     pricing: dict[str, dict[str, str]],
     free_tier: bool,
@@ -505,7 +505,7 @@ _FREE_TIER_CACHE_TTL: int = 180  # seconds (3 minutes)
 _free_tier_cache: tuple[bool, float] | None = None  # (result, timestamp)
 
 
-def check_nous_free_tier() -> bool:
+def check_avoi_free_tier() -> bool:
     """Check if the current Nous Portal user is on a free (unpaid) tier.
 
     Results are cached for ``_FREE_TIER_CACHE_TTL`` seconds to avoid
@@ -522,10 +522,10 @@ def check_nous_free_tier() -> bool:
             return cached_result
 
     try:
-        from hermes_cli.auth import get_provider_auth_state, resolve_nous_runtime_credentials
+        from avoi_cli.auth import get_provider_auth_state, resolve_avoi_runtime_credentials
 
         # Ensure we have a fresh token (triggers refresh if needed)
-        resolve_nous_runtime_credentials(min_key_ttl_seconds=60)
+        resolve_avoi_runtime_credentials(min_key_ttl_seconds=60)
 
         state = get_provider_auth_state("nous")
         if not state:
@@ -537,8 +537,8 @@ def check_nous_free_tier() -> bool:
             _free_tier_cache = (False, now)
             return False
 
-        account_info = fetch_nous_account_tier(access_token, portal_url)
-        result = is_nous_free_tier(account_info)
+        account_info = fetch_avoi_account_tier(access_token, portal_url)
+        result = is_avoi_free_tier(account_info)
         _free_tier_cache = (result, now)
         return result
     except Exception:
@@ -569,10 +569,10 @@ def check_nous_free_tier() -> bool:
 NOUS_RECOMMENDED_MODELS_PATH = "/api/nous/recommended-models"
 _NOUS_RECOMMENDED_CACHE_TTL: int = 600  # seconds (10 minutes)
 # (result_dict, timestamp) keyed by portal_base_url so staging vs prod don't collide.
-_nous_recommended_cache: dict[str, tuple[dict[str, Any], float]] = {}
+_avoi_recommended_cache: dict[str, tuple[dict[str, Any], float]] = {}
 
 
-def fetch_nous_recommended_models(
+def fetch_avoi_recommended_models(
     portal_base_url: str = "",
     timeout: float = 5.0,
     *,
@@ -589,9 +589,9 @@ def fetch_nous_recommended_models(
     (network, parse, non-2xx). Callers must treat missing/null fields as
     "no recommendation" and fall back to their own default.
     """
-    base = (portal_base_url or "https://portal.nousresearch.com").rstrip("/")
+    base = (portal_base_url or "https://portal.avoi-ai.com").rstrip("/")
     now = time.monotonic()
-    cached = _nous_recommended_cache.get(base)
+    cached = _avoi_recommended_cache.get(base)
     if not force_refresh and cached is not None:
         payload, cached_at = cached
         if now - cached_at < _NOUS_RECOMMENDED_CACHE_TTL:
@@ -610,14 +610,14 @@ def fetch_nous_recommended_models(
     except Exception:
         data = {}
 
-    _nous_recommended_cache[base] = (data, now)
+    _avoi_recommended_cache[base] = (data, now)
     return data
 
 
-def _resolve_nous_portal_url() -> str:
+def _resolve_avoi_portal_url() -> str:
     """Best-effort lookup of the Portal base URL the user is authed against."""
     try:
-        from hermes_cli.auth import (
+        from avoi_cli.auth import (
             DEFAULT_NOUS_PORTAL_URL,
             get_provider_auth_state,
         )
@@ -627,7 +627,7 @@ def _resolve_nous_portal_url() -> str:
             return portal.rstrip("/")
         return str(DEFAULT_NOUS_PORTAL_URL).rstrip("/")
     except Exception:
-        return "https://portal.nousresearch.com"
+        return "https://portal.avoi-ai.com"
 
 
 def _extract_model_name(entry: Any) -> Optional[str]:
@@ -640,7 +640,7 @@ def _extract_model_name(entry: Any) -> Optional[str]:
     return None
 
 
-def get_nous_recommended_aux_model(
+def get_avoi_recommended_aux_model(
     *,
     vision: bool = False,
     free_tier: Optional[bool] = None,
@@ -657,7 +657,7 @@ def get_nous_recommended_aux_model(
                          ``freeRecommendedCompactionModel``
 
     When ``free_tier`` is ``None`` (default) the user's tier is auto-detected
-    via :func:`check_nous_free_tier`. Pass an explicit bool to bypass the
+    via :func:`check_avoi_free_tier`. Pass an explicit bool to bypass the
     detection — useful for tests or when the caller already knows the tier.
 
     For paid-tier users we prefer the paid recommendation but gracefully fall
@@ -668,14 +668,14 @@ def get_nous_recommended_aux_model(
     fails — callers should fall back to their own default (currently
     ``google/gemini-3-flash-preview``).
     """
-    base = portal_base_url or _resolve_nous_portal_url()
-    payload = fetch_nous_recommended_models(base, force_refresh=force_refresh)
+    base = portal_base_url or _resolve_avoi_portal_url()
+    payload = fetch_avoi_recommended_models(base, force_refresh=force_refresh)
     if not payload:
         return None
 
     if free_tier is None:
         try:
-            free_tier = check_nous_free_tier()
+            free_tier = check_avoi_free_tier()
         except Exception:
             # On any detection error, assume paid — paid users see both fields
             # anyway so this is a safe default that maximises model quality.
@@ -700,22 +700,22 @@ def get_nous_recommended_aux_model(
 # ---------------------------------------------------------------------------
 # Canonical provider list — single source of truth for provider identity.
 # Every code path that lists, displays, or iterates providers derives from
-# this list:  hermes model, /model, list_authenticated_providers.
+# this list:  avoi model, /model, list_authenticated_providers.
 #
 # Fields:
 #   slug        — internal provider ID (used in config.yaml, --provider flag)
 #   label       — short display name
-#   tui_desc    — longer description for the `hermes model` interactive picker
+#   tui_desc    — longer description for the `avoi model` interactive picker
 # ---------------------------------------------------------------------------
 
 class ProviderEntry(NamedTuple):
     slug: str
     label: str
-    tui_desc: str   # detailed description for `hermes model` TUI
+    tui_desc: str   # detailed description for `avoi model` TUI
 
 
 CANONICAL_PROVIDERS: list[ProviderEntry] = [
-    ProviderEntry("nous",           "Nous Portal",              "Nous Portal (Nous Research subscription)"),
+    ProviderEntry("nous",           "Nous Portal",              "Nous Portal (AVOI AI subscription)"),
     ProviderEntry("openrouter",     "OpenRouter",               "OpenRouter (100+ models, pay-per-use)"),
     ProviderEntry("ai-gateway",     "Vercel AI Gateway",        "Vercel AI Gateway (200+ models, $5 free credit, no markup)"),
     ProviderEntry("anthropic",      "Anthropic",                "Anthropic (Claude models — API key or Claude Code)"),
@@ -820,11 +820,11 @@ def get_default_model_for_provider(provider: str) -> str:
     """Return the default model for a provider, or empty string if unknown.
 
     Uses the first entry in _PROVIDER_MODELS as the default.  This is the
-    model a user would be offered first in the ``hermes model`` picker.
+    model a user would be offered first in the ``avoi model`` picker.
 
     Used as a fallback when the user has configured a provider but never
-    selected a model (e.g. ``hermes auth add openai-codex`` without
-    ``hermes model``).
+    selected a model (e.g. ``avoi auth add openai-codex`` without
+    ``avoi model``).
     """
     models = _PROVIDER_MODELS.get(provider, [])
     return models[0] if models else ""
@@ -843,7 +843,7 @@ def _openrouter_model_is_free(pricing: Any) -> bool:
 def _openrouter_model_supports_tools(item: Any) -> bool:
     """Return True when the model's ``supported_parameters`` advertise tool calling.
 
-    hermes-agent is tool-calling-first — every provider path assumes the model
+    avoi-agent is tool-calling-first — every provider path assumes the model
     can invoke tools. Models that don't advertise ``tools`` in their
     ``supported_parameters`` (e.g. image-only or completion-only models) cannot
     be driven by the agent loop and would fail at the first tool call.
@@ -907,7 +907,7 @@ def fetch_openrouter_models(
         live_item = live_by_id.get(preferred_id)
         if live_item is None:
             continue
-        # Hide models that don't advertise tool-calling support — hermes-agent
+        # Hide models that don't advertise tool-calling support — avoi-agent
         # requires it and surfacing them leads to immediate runtime failures
         # when the user selects them. Ported from Kilo-Org/kilocode#9068.
         if not _openrouter_model_supports_tools(live_item):
@@ -950,7 +950,7 @@ def fetch_ai_gateway_models(
     if _ai_gateway_catalog_cache is not None and not force_refresh:
         return list(_ai_gateway_catalog_cache)
 
-    from hermes_constants import AI_GATEWAY_BASE_URL
+    from avoi_constants import AI_GATEWAY_BASE_URL
 
     fallback = list(VERCEL_AI_GATEWAY_MODELS)
     preferred_ids = [mid for mid, _ in fallback]
@@ -1131,7 +1131,7 @@ def fetch_models_with_pricing(
     url = cache_key.rstrip("/") + "/v1/models"
     headers: dict[str, str] = {
         "Accept": "application/json",
-        "User-Agent": _HERMES_USER_AGENT,
+        "User-Agent": _AVOI_USER_AGENT,
     }
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
@@ -1168,13 +1168,13 @@ def fetch_ai_gateway_pricing(
     *,
     force_refresh: bool = False,
 ) -> dict[str, dict[str, str]]:
-    """Fetch Vercel AI Gateway /v1/models and return hermes-shaped pricing.
+    """Fetch Vercel AI Gateway /v1/models and return avoi-shaped pricing.
 
-    Vercel uses ``input`` / ``output`` field names; hermes's picker expects
+    Vercel uses ``input`` / ``output`` field names; avoi's picker expects
     ``prompt`` / ``completion``. This translates. Cache read/write field names
     already match.
     """
-    from hermes_constants import AI_GATEWAY_BASE_URL
+    from avoi_constants import AI_GATEWAY_BASE_URL
 
     cache_key = AI_GATEWAY_BASE_URL.rstrip("/")
     if not force_refresh and cache_key in _pricing_cache:
@@ -1218,11 +1218,11 @@ def _resolve_openrouter_api_key() -> str:
     return os.getenv("OPENROUTER_API_KEY", "").strip()
 
 
-def _resolve_nous_pricing_credentials() -> tuple[str, str]:
+def _resolve_avoi_pricing_credentials() -> tuple[str, str]:
     """Return ``(api_key, base_url)`` for Nous Portal pricing, or empty strings."""
     try:
-        from hermes_cli.auth import resolve_nous_runtime_credentials
-        creds = resolve_nous_runtime_credentials()
+        from avoi_cli.auth import resolve_avoi_runtime_credentials
+        creds = resolve_avoi_runtime_credentials()
         if creds:
             return (creds.get("api_key", ""), creds.get("base_url", ""))
     except Exception:
@@ -1242,9 +1242,9 @@ def get_pricing_for_provider(provider: str, *, force_refresh: bool = False) -> d
     if normalized == "ai-gateway":
         return fetch_ai_gateway_pricing(force_refresh=force_refresh)
     if normalized == "nous":
-        api_key, base_url = _resolve_nous_pricing_credentials()
+        api_key, base_url = _resolve_avoi_pricing_credentials()
         if base_url:
-            # Nous base_url typically looks like https://inference-api.nousresearch.com/v1
+            # Nous base_url typically looks like https://inference-api.avoi-ai.com/v1
             # We need the part before /v1 for our fetch function
             stripped = base_url.rstrip("/")
             if stripped.endswith("/v1"):
@@ -1272,7 +1272,7 @@ def list_available_providers() -> list[dict[str, str]]:
     Checks which providers have valid credentials configured.
 
     Derives the provider list from :data:`CANONICAL_PROVIDERS` (single
-    source of truth shared with ``hermes model``, ``/model``, etc.).
+    source of truth shared with ``avoi model``, ``/model``, etc.).
     """
     # Derive display order from canonical list + custom
     provider_order = [p.slug for p in CANONICAL_PROVIDERS] + ["custom"]
@@ -1289,7 +1289,7 @@ def list_available_providers() -> list[dict[str, str]]:
         # Check if this provider has credentials available
         has_creds = False
         try:
-            from hermes_cli.auth import get_auth_status, has_usable_secret
+            from avoi_cli.auth import get_auth_status, has_usable_secret
             if pid == "custom":
                 custom_base_url = _get_custom_base_url() or ""
                 has_creds = bool(custom_base_url.strip())
@@ -1315,7 +1315,7 @@ def parse_model_input(raw: str, current_provider: str) -> tuple[str, str]:
     Supports ``provider:model`` syntax to switch providers at runtime::
 
         openrouter:anthropic/claude-sonnet-4.5  →  ("openrouter", "anthropic/claude-sonnet-4.5")
-        nous:hermes-3                           →  ("nous", "hermes-3")
+        nous:avoi-3                           →  ("nous", "avoi-3")
         anthropic/claude-sonnet-4.5             →  (current_provider, "anthropic/claude-sonnet-4.5")
         gpt-5.4                                 →  (current_provider, "gpt-5.4")
 
@@ -1348,7 +1348,7 @@ def parse_model_input(raw: str, current_provider: str) -> tuple[str, str]:
 def _get_custom_base_url() -> str:
     """Get the custom endpoint base_url from config.yaml."""
     try:
-        from hermes_cli.config import load_config
+        from avoi_cli.config import load_config
         config = load_config()
         model_cfg = config.get("model", {})
         if isinstance(model_cfg, dict):
@@ -1408,7 +1408,7 @@ def _resolve_static_model_alias(
 ) -> Optional[tuple[str, str]]:
     """Resolve short aliases (e.g. sonnet/opus) using static catalogs only."""
     try:
-        from hermes_cli.model_switch import MODEL_ALIASES
+        from avoi_cli.model_switch import MODEL_ALIASES
     except Exception:
         return None
 
@@ -1571,7 +1571,7 @@ def normalize_provider(provider: Optional[str]) -> str:
     """Normalize provider aliases to Hermes' canonical provider ids.
 
     Note: ``"auto"`` passes through unchanged — use
-    ``hermes_cli.auth.resolve_provider()`` to resolve it to a concrete
+    ``avoi_cli.auth.resolve_provider()`` to resolve it to a concrete
     provider based on credentials and environment.
     """
     normalized = (provider or "openrouter").strip().lower()
@@ -1664,7 +1664,7 @@ def resolve_fast_mode_overrides(model_id: Optional[str]) -> dict[str, Any] | Non
 def _resolve_copilot_catalog_api_key() -> str:
     """Best-effort GitHub token for fetching the Copilot model catalog."""
     try:
-        from hermes_cli.auth import resolve_api_key_provider_credentials
+        from avoi_cli.auth import resolve_api_key_provider_credentials
 
         creds = resolve_api_key_provider_credentials("copilot")
         return str(creds.get("api_key") or "").strip()
@@ -1755,7 +1755,7 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
     if normalized == "openrouter":
         return model_ids(force_refresh=force_refresh)
     if normalized == "openai-codex":
-        from hermes_cli.codex_models import get_codex_model_ids
+        from avoi_cli.codex_models import get_codex_model_ids
 
         # Pass the live OAuth access token so the picker matches whatever
         # ChatGPT lists for this account right now (new models appear without
@@ -1763,7 +1763,7 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
         # or the endpoint is unreachable.
         access_token = None
         try:
-            from hermes_cli.auth import resolve_codex_runtime_credentials
+            from avoi_cli.auth import resolve_codex_runtime_credentials
 
             creds = resolve_codex_runtime_credentials(refresh_if_expiring=True)
             access_token = creds.get("api_key")
@@ -1782,17 +1782,17 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
     if normalized == "nous":
         # Try live Nous Portal /models endpoint
         try:
-            from hermes_cli.auth import fetch_nous_models, resolve_nous_runtime_credentials
-            creds = resolve_nous_runtime_credentials()
+            from avoi_cli.auth import fetch_avoi_models, resolve_avoi_runtime_credentials
+            creds = resolve_avoi_runtime_credentials()
             if creds:
-                live = fetch_nous_models(api_key=creds.get("api_key", ""), inference_base_url=creds.get("base_url", ""))
+                live = fetch_avoi_models(api_key=creds.get("api_key", ""), inference_base_url=creds.get("base_url", ""))
                 if live:
                     return live
         except Exception:
             pass
     if normalized == "stepfun":
         try:
-            from hermes_cli.auth import resolve_api_key_provider_credentials
+            from avoi_cli.auth import resolve_api_key_provider_credentials
 
             creds = resolve_api_key_provider_credentials("stepfun")
             api_key = str(creds.get("api_key") or "").strip()
@@ -1905,7 +1905,7 @@ def copilot_default_headers() -> dict[str, str]:
     Copilot CLI send on every request.
     """
     try:
-        from hermes_cli.copilot_auth import copilot_request_headers
+        from avoi_cli.copilot_auth import copilot_request_headers
         return copilot_request_headers(is_agent_turn=True)
     except ImportError:
         return {
@@ -2337,7 +2337,7 @@ def probe_api_models(
         candidates.append((alternate_base, True))
 
     tried: list[str] = []
-    headers: dict[str, str] = {"User-Agent": _HERMES_USER_AGENT}
+    headers: dict[str, str] = {"User-Agent": _AVOI_USER_AGENT}
     if api_key and api_mode == "anthropic_messages":
         headers["x-api-key"] = api_key
         headers["anthropic-version"] = "2023-06-01"
@@ -2379,13 +2379,13 @@ def _fetch_ai_gateway_models(timeout: float = 5.0) -> Optional[list[str]]:
         return None
     base_url = os.getenv("AI_GATEWAY_BASE_URL", "").strip()
     if not base_url:
-        from hermes_constants import AI_GATEWAY_BASE_URL
+        from avoi_constants import AI_GATEWAY_BASE_URL
         base_url = AI_GATEWAY_BASE_URL
 
     url = base_url.rstrip("/") + "/models"
     headers: dict[str, str] = {
         "Authorization": f"Bearer {api_key}",
-        "User-Agent": _HERMES_USER_AGENT,
+        "User-Agent": _AVOI_USER_AGENT,
     }
     req = urllib.request.Request(url, headers=headers)
     try:
@@ -2427,8 +2427,8 @@ _OLLAMA_CLOUD_CACHE_TTL = 3600  # 1 hour
 
 def _ollama_cloud_cache_path() -> Path:
     """Return the path for the Ollama Cloud model cache."""
-    from hermes_constants import get_hermes_home
-    return get_hermes_home() / "ollama_cloud_models_cache.json"
+    from avoi_constants import get_avoi_home
+    return get_avoi_home() / "ollama_cloud_models_cache.json"
 
 
 def _load_ollama_cloud_cache(*, ignore_ttl: bool = False) -> Optional[dict]:

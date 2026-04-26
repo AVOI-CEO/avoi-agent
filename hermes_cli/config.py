@@ -1,15 +1,15 @@
 """
-Configuration management for Hermes Agent.
+Configuration management for AVOI Agent.
 
-Config files are stored in ~/.hermes/ for easy access:
-- ~/.hermes/config.yaml  - All settings (model, toolsets, terminal, etc.)
-- ~/.hermes/.env         - API keys and secrets
+Config files are stored in ~/.avoi/ for easy access:
+- ~/.avoi/config.yaml  - All settings (model, toolsets, terminal, etc.)
+- ~/.avoi/.env         - API keys and secrets
 
 This module provides:
-- hermes config          - Show current configuration
-- hermes config edit     - Open config in editor
-- hermes config set      - Set a specific value
-- hermes config wizard   - Re-run setup wizard
+- avoi config          - Show current configuration
+- avoi config edit     - Open config in editor
+- avoi config set      - Set a specific value
+- avoi config wizard   - Re-run setup wizard
 """
 
 import copy
@@ -61,8 +61,8 @@ _EXTRA_ENV_KEYS = frozenset({
 })
 import yaml
 
-from hermes_cli.colors import Colors, color
-from hermes_cli.default_soul import DEFAULT_SOUL_MD
+from avoi_cli.colors import Colors, color
+from avoi_cli.default_soul import DEFAULT_SOUL_MD
 
 
 # =============================================================================
@@ -80,14 +80,14 @@ _MANAGED_SYSTEM_NAMES = {
 
 def get_managed_system() -> Optional[str]:
     """Return the package manager owning this install, if any."""
-    raw = os.getenv("HERMES_MANAGED", "").strip()
+    raw = os.getenv("AVOI_MANAGED", "").strip()
     if raw:
         normalized = raw.lower()
         if normalized in _MANAGED_TRUE_VALUES:
             return "NixOS"
         return _MANAGED_SYSTEM_NAMES.get(normalized, raw)
 
-    managed_marker = get_hermes_home() / ".managed"
+    managed_marker = get_avoi_home() / ".managed"
     if managed_marker.exists():
         return "NixOS"
     return None
@@ -96,8 +96,8 @@ def get_managed_system() -> Optional[str]:
 def is_managed() -> bool:
     """Check if Hermes is running in package-manager-managed mode.
 
-    Two signals: the HERMES_MANAGED env var (set by the systemd service),
-    or a .managed marker file in HERMES_HOME (set by the NixOS activation
+    Two signals: the AVOI_MANAGED env var (set by the systemd service),
+    or a .managed marker file in AVOI_HOME (set by the NixOS activation
     script, so interactive shells also see it).
     """
     return get_managed_system() is not None
@@ -107,7 +107,7 @@ def get_managed_update_command() -> Optional[str]:
     """Return the preferred upgrade command for a managed install."""
     managed_system = get_managed_system()
     if managed_system == "Homebrew":
-        return "brew upgrade hermes-agent"
+        return "brew upgrade avoi-agent"
     if managed_system == "NixOS":
         return "sudo nixos-rebuild switch"
     return None
@@ -115,20 +115,20 @@ def get_managed_update_command() -> Optional[str]:
 
 def recommended_update_command() -> str:
     """Return the best update command for the current installation."""
-    return get_managed_update_command() or "hermes update"
+    return get_managed_update_command() or "avoi update"
 
 
 def format_managed_message(action: str = "modify this Hermes installation") -> str:
     """Build a user-facing error for managed installs."""
     managed_system = get_managed_system() or "a package manager"
-    raw = os.getenv("HERMES_MANAGED", "").strip().lower()
+    raw = os.getenv("AVOI_MANAGED", "").strip().lower()
 
     if managed_system == "NixOS":
         env_hint = "true" if raw in _MANAGED_TRUE_VALUES else raw or "true"
         return (
             f"Cannot {action}: this Hermes installation is managed by NixOS "
-            f"(HERMES_MANAGED={env_hint}).\n"
-            "Edit services.hermes-agent.settings in your configuration.nix and run:\n"
+            f"(AVOI_MANAGED={env_hint}).\n"
+            "Edit services.avoi-agent.settings in your configuration.nix and run:\n"
             "  sudo nixos-rebuild switch"
         )
 
@@ -136,9 +136,9 @@ def format_managed_message(action: str = "modify this Hermes installation") -> s
         env_hint = raw or "homebrew"
         return (
             f"Cannot {action}: this Hermes installation is managed by Homebrew "
-            f"(HERMES_MANAGED={env_hint}).\n"
+            f"(AVOI_MANAGED={env_hint}).\n"
             "Use:\n"
-            "  brew upgrade hermes-agent"
+            "  brew upgrade avoi-agent"
         )
 
     return (
@@ -156,24 +156,24 @@ def managed_error(action: str = "modify configuration"):
 # =============================================================================
 
 def get_container_exec_info() -> Optional[dict]:
-    """Read container mode metadata from HERMES_HOME/.container-mode.
+    """Read container mode metadata from AVOI_HOME/.container-mode.
 
-    Returns a dict with keys: backend, container_name, exec_user, hermes_bin
+    Returns a dict with keys: backend, container_name, exec_user, avoi_bin
     or None if container mode is not active, we're already inside the
-    container, or HERMES_DEV=1 is set.
+    container, or AVOI_DEV=1 is set.
 
     The .container-mode file is written by the NixOS activation script when
     container.enable = true. It tells the host CLI to exec into the container
     instead of running locally.
     """
-    if os.environ.get("HERMES_DEV") == "1":
+    if os.environ.get("AVOI_DEV") == "1":
         return None
 
-    from hermes_constants import is_container
+    from avoi_constants import is_container
     if is_container():
         return None
 
-    container_mode_file = get_hermes_home() / ".container-mode"
+    container_mode_file = get_avoi_home() / ".container-mode"
 
     try:
         info = {}
@@ -188,15 +188,15 @@ def get_container_exec_info() -> Optional[dict]:
     # All other exceptions (PermissionError, malformed data, etc.) propagate
 
     backend = info.get("backend", "docker")
-    container_name = info.get("container_name", "hermes-agent")
-    exec_user = info.get("exec_user", "hermes")
-    hermes_bin = info.get("hermes_bin", "/data/current-package/bin/hermes")
+    container_name = info.get("container_name", "avoi-agent")
+    exec_user = info.get("exec_user", "avoi")
+    avoi_bin = info.get("avoi_bin", "/data/current-package/bin/avoi")
 
     return {
         "backend": backend,
         "container_name": container_name,
         "exec_user": exec_user,
-        "hermes_bin": hermes_bin,
+        "avoi_bin": avoi_bin,
     }
 
 
@@ -204,16 +204,16 @@ def get_container_exec_info() -> Optional[dict]:
 # Config paths
 # =============================================================================
 
-# Re-export from hermes_constants — canonical definition lives there.
-from hermes_constants import get_hermes_home  # noqa: F811,E402
+# Re-export from avoi_constants — canonical definition lives there.
+from avoi_constants import get_avoi_home  # noqa: F811,E402
 
 def get_config_path() -> Path:
     """Get the main config file path."""
-    return get_hermes_home() / "config.yaml"
+    return get_avoi_home() / "config.yaml"
 
 def get_env_path() -> Path:
     """Get the .env file path (for API keys)."""
-    return get_hermes_home() / ".env"
+    return get_avoi_home() / ".env"
 
 def get_project_root() -> Path:
     """Get the project installation directory."""
@@ -223,19 +223,19 @@ def _secure_dir(path):
     """Set directory to owner-only access (0700 by default). No-op on Windows.
 
     Skipped in managed mode — the NixOS module sets group-readable
-    permissions (0750) so interactive users in the hermes group can
+    permissions (0750) so interactive users in the avoi group can
     share state with the gateway service.
 
-    The mode can be overridden via the HERMES_HOME_MODE environment variable
-    (e.g. HERMES_HOME_MODE=0701) for deployments where a web server (nginx,
-    caddy, etc.) needs to traverse HERMES_HOME to reach a served subdirectory.
+    The mode can be overridden via the AVOI_HOME_MODE environment variable
+    (e.g. AVOI_HOME_MODE=0701) for deployments where a web server (nginx,
+    caddy, etc.) needs to traverse AVOI_HOME to reach a served subdirectory.
     The execute-only bit on a directory permits cd-through without exposing
     directory listings.
     """
     if is_managed():
         return
     try:
-        mode_str = os.environ.get("HERMES_HOME_MODE", "").strip()
+        mode_str = os.environ.get("AVOI_HOME_MODE", "").strip()
         mode = int(mode_str, 8) if mode_str else 0o700
     except ValueError:
         mode = 0o700
@@ -254,7 +254,7 @@ def _is_container() -> bool:
     permissions.
     """
     # Explicit opt-out
-    if os.environ.get("HERMES_CONTAINER") or os.environ.get("HERMES_SKIP_CHMOD"):
+    if os.environ.get("AVOI_CONTAINER") or os.environ.get("AVOI_SKIP_CHMOD"):
         return True
     # Docker / Podman marker file
     if os.path.exists("/.dockerenv"):
@@ -277,7 +277,7 @@ def _secure_file(path):
     group-readable permissions (0640) on config files.
 
     Skipped in containers — Docker/Podman volume mounts often need broader
-    permissions.  Set HERMES_SKIP_CHMOD=1 to force-skip on other systems.
+    permissions.  Set AVOI_SKIP_CHMOD=1 to force-skip on other systems.
     """
     if is_managed() or _is_container():
         return
@@ -289,7 +289,7 @@ def _secure_file(path):
 
 
 def _ensure_default_soul_md(home: Path) -> None:
-    """Seed a default SOUL.md into HERMES_HOME if the user doesn't have one yet."""
+    """Seed a default SOUL.md into AVOI_HOME if the user doesn't have one yet."""
     soul_path = home / "SOUL.md"
     if soul_path.exists():
         return
@@ -297,18 +297,18 @@ def _ensure_default_soul_md(home: Path) -> None:
     _secure_file(soul_path)
 
 
-def ensure_hermes_home():
-    """Ensure ~/.hermes directory structure exists with secure permissions.
+def ensure_avoi_home():
+    """Ensure ~/.avoi directory structure exists with secure permissions.
 
     In managed mode (NixOS), dirs are created by the activation script with
     setgid + group-writable (2770). We skip mkdir and set umask(0o007) so
     any files created (e.g. SOUL.md) are group-writable (0660).
     """
-    home = get_hermes_home()
+    home = get_avoi_home()
     if is_managed():
         old_umask = os.umask(0o007)
         try:
-            _ensure_hermes_home_managed(home)
+            _ensure_avoi_home_managed(home)
         finally:
             os.umask(old_umask)
     else:
@@ -321,11 +321,11 @@ def ensure_hermes_home():
         _ensure_default_soul_md(home)
 
 
-def _ensure_hermes_home_managed(home: Path):
+def _ensure_avoi_home_managed(home: Path):
     """Managed-mode variant: verify dirs exist (activation creates them), seed SOUL.md."""
     if not home.is_dir():
         raise RuntimeError(
-            f"HERMES_HOME {home} does not exist. "
+            f"AVOI_HOME {home} does not exist. "
             "Run 'sudo nixos-rebuild switch' first."
         )
     for subdir in ("cron", "sessions", "logs", "memories"):
@@ -348,7 +348,7 @@ DEFAULT_CONFIG = {
     "providers": {},
     "fallback_providers": [],
     "credential_pool_strategies": {},
-    "toolsets": ["hermes-cli"],
+    "toolsets": ["avoi-cli"],
     "agent": {
         "max_turns": 90,
         # Inactivity timeout for gateway agent execution (seconds).
@@ -446,7 +446,7 @@ DEFAULT_CONFIG = {
         # Each entry is "host_path:container_path" (standard Docker -v syntax).
         # Example:
         # ["/home/user/projects:/workspace/projects",
-        #  "/home/user/.hermes/cache/documents:/output"]
+        #  "/home/user/.avoi/cache/documents:/output"]
         # For gateway MEDIA delivery, write inside Docker to /output/... and emit
         # the host-visible path in MEDIA:, not the container path.
         "docker_volumes": [],
@@ -728,7 +728,7 @@ DEFAULT_CONFIG = {
     # "compressor" = built-in lossy summarization (default).
     # Set to a plugin name to activate an alternative engine (e.g. "lcm"
     # for Lossless Context Management).  The engine must be installed as
-    # a plugin in plugins/context_engine/<name>/ or ~/.hermes/plugins/.
+    # a plugin in plugins/context_engine/<name>/ or ~/.avoi/plugins/.
     "context": {
         "engine": "compressor",
     },
@@ -793,10 +793,10 @@ DEFAULT_CONFIG = {
     
     # Skills — external skill directories for sharing skills across tools/agents.
     # Each path is expanded (~, ${VAR}) and resolved.  Read-only — skill creation
-    # always goes to ~/.hermes/skills/.
+    # always goes to ~/.avoi/skills/.
     "skills": {
         "external_dirs": [],   # e.g. ["~/.agents/skills", "/shared/team-skills"]
-        # Substitute ${HERMES_SKILL_DIR} and ${HERMES_SESSION_ID} in SKILL.md
+        # Substitute ${AVOI_SKILL_DIR} and ${AVOI_SESSION_ID} in SKILL.md
         # content with the absolute skill directory and the active session id
         # before the agent sees it.  Lets skill authors reference bundled
         # scripts without the agent having to join paths.
@@ -824,7 +824,7 @@ DEFAULT_CONFIG = {
     },
 
     # Honcho AI-native memory -- reads ~/.honcho/config.json as single source of truth.
-    # This section is only needed for hermes-specific overrides; everything else
+    # This section is only needed for avoi-specific overrides; everything else
     # (apiKey, workspace, peerName, sessions, enabled) comes from the global config.
     "honcho": {},
 
@@ -853,7 +853,7 @@ DEFAULT_CONFIG = {
     # WhatsApp platform settings (gateway mode)
     "whatsapp": {
         # Reply prefix prepended to every outgoing WhatsApp message.
-        # Default (None) uses the built-in "⚕ *Hermes Agent*" header.
+        # Default (None) uses the built-in "⚕ *AVOI Agent*" header.
         # Set to "" (empty string) to disable the header entirely.
         # Supports \n for newlines, e.g. "🤖 *My Bot*\n──────\n"
     },
@@ -897,12 +897,12 @@ DEFAULT_CONFIG = {
     # subagent_stop, etc.).  Each entry maps an event name to a list of
     # {matcher, command, timeout} dicts.  First registration of a new
     # command prompts the user for consent; subsequent runs reuse the
-    # stored approval from ~/.hermes/shell-hooks-allowlist.json.
+    # stored approval from ~/.avoi/shell-hooks-allowlist.json.
     # See `website/docs/user-guide/features/hooks.md` for schema + examples.
     "hooks": {},
 
     # Auto-accept shell-hook registrations without a TTY prompt.  Also
-    # toggleable per-invocation via --accept-hooks or HERMES_ACCEPT_HOOKS=1.
+    # toggleable per-invocation via --accept-hooks or AVOI_ACCEPT_HOOKS=1.
     # Gateway / cron / non-interactive runs need this (or one of the other
     # channels) to pick up newly-added hooks.
     "hooks_auto_accept": False,
@@ -933,7 +933,7 @@ DEFAULT_CONFIG = {
         # Maximum number of due jobs to run in parallel per tick.
         # null/0 = unbounded (limited only by thread count).
         # 1 = serial (pre-v0.9 behaviour).
-        # Also overridable via HERMES_CRON_MAX_PARALLEL env var.
+        # Also overridable via AVOI_CRON_MAX_PARALLEL env var.
         "max_parallel_jobs": None,
     },
 
@@ -944,14 +944,14 @@ DEFAULT_CONFIG = {
         #     with the active virtualenv/conda env's python, so project deps
         #     (pandas, torch, project packages) and relative paths resolve.
         #   strict            — scripts run in an isolated temp directory with
-        #     hermes-agent's own python (sys.executable). Maximum isolation
+        #     avoi-agent's own python (sys.executable). Maximum isolation
         #     and reproducibility; project deps and relative paths won't work.
         # Env scrubbing (strips *_API_KEY, *_TOKEN, *_SECRET, ...) and the
         # tool whitelist apply identically in both modes.
         "mode": "project",
     },
 
-    # Logging — controls file logging to ~/.hermes/logs/.
+    # Logging — controls file logging to ~/.avoi/logs/.
     # agent.log captures INFO+ (all agent activity); errors.log captures WARNING+.
     "logging": {
         "level": "INFO",       # Minimum level for agent.log: DEBUG, INFO, WARNING
@@ -967,7 +967,7 @@ DEFAULT_CONFIG = {
         "force_ipv4": False,
     },
 
-    # Session storage — controls automatic cleanup of ~/.hermes/state.db.
+    # Session storage — controls automatic cleanup of ~/.avoi/state.db.
     # state.db accumulates every session, message, tool call, and FTS5 index
     # entry forever.  Without auto-pruning, a heavy user (gateway + cron)
     # reports 384MB+ databases with 68K+ messages, which slows down FTS5
@@ -980,7 +980,7 @@ DEFAULT_CONFIG = {
         # silently deleting it could surprise users.  Opt in explicitly.
         "auto_prune": False,
         # How many days of ended-session history to keep.  Matches the
-        # default of ``hermes sessions prune``.
+        # default of ``avoi sessions prune``.
         "retention_days": 90,
         # VACUUM after a prune that actually deleted rows.  SQLite does not
         # reclaim disk space on DELETE — freed pages are just reused on
@@ -1245,7 +1245,7 @@ OPTIONAL_ENV_VARS = {
         "category": "provider",
         "advanced": True,
     },
-    "HERMES_QWEN_BASE_URL": {
+    "AVOI_QWEN_BASE_URL": {
         "description": "Qwen Portal base URL override (default: https://portal.qwen.ai/v1)",
         "prompt": "Qwen Portal base URL (leave empty for default)",
         "url": None,
@@ -1253,7 +1253,7 @@ OPTIONAL_ENV_VARS = {
         "category": "provider",
         "advanced": True,
     },
-    "HERMES_GEMINI_CLIENT_ID": {
+    "AVOI_GEMINI_CLIENT_ID": {
         "description": "Google OAuth client ID for google-gemini-cli (optional; defaults to Google's public gemini-cli client)",
         "prompt": "Google OAuth client ID (optional — leave empty to use the public default)",
         "url": "https://console.cloud.google.com/apis/credentials",
@@ -1261,7 +1261,7 @@ OPTIONAL_ENV_VARS = {
         "category": "provider",
         "advanced": True,
     },
-    "HERMES_GEMINI_CLIENT_SECRET": {
+    "AVOI_GEMINI_CLIENT_SECRET": {
         "description": "Google OAuth client secret for google-gemini-cli (optional)",
         "prompt": "Google OAuth client secret (optional)",
         "url": "https://console.cloud.google.com/apis/credentials",
@@ -1269,7 +1269,7 @@ OPTIONAL_ENV_VARS = {
         "category": "provider",
         "advanced": True,
     },
-    "HERMES_GEMINI_PROJECT_ID": {
+    "AVOI_GEMINI_PROJECT_ID": {
         "description": "GCP project ID for paid Gemini tiers (free tier auto-provisions)",
         "prompt": "GCP project ID for Gemini OAuth (leave empty for free tier)",
         "url": None,
@@ -1379,7 +1379,7 @@ OPTIONAL_ENV_VARS = {
         "category": "provider",
     },
     "AZURE_FOUNDRY_BASE_URL": {
-        "description": "Azure Foundry base URL (set via 'hermes model' for endpoint-specific config)",
+        "description": "Azure Foundry base URL (set via 'avoi model' for endpoint-specific config)",
         "prompt": "Azure Foundry base URL",
         "url": None,
         "password": False,
@@ -1429,7 +1429,7 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "TOOL_GATEWAY_DOMAIN": {
-        "description": "Shared tool-gateway domain suffix for Nous Subscribers only, used to derive vendor hosts, e.g. nousresearch.com -> firecrawl-gateway.nousresearch.com",
+        "description": "Shared tool-gateway domain suffix for Nous Subscribers only, used to derive vendor hosts, e.g. avoi-ai.com -> firecrawl-gateway.avoi-ai.com",
         "prompt": "Tool-gateway domain suffix",
         "url": None,
         "password": False,
@@ -1678,7 +1678,7 @@ OPTIONAL_ENV_VARS = {
         "category": "messaging",
     },
     "MATRIX_USER_ID": {
-        "description": "Matrix user ID (e.g. @hermes:example.org)",
+        "description": "Matrix user ID (e.g. @avoi:example.org)",
         "prompt": "Matrix user ID (@user:server)",
         "url": None,
         "password": False,
@@ -1716,7 +1716,7 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "MATRIX_DEVICE_ID": {
-        "description": "Stable Matrix device ID for E2EE persistence across restarts (e.g. HERMES_BOT)",
+        "description": "Stable Matrix device ID for E2EE persistence across restarts (e.g. AVOI_BOT)",
         "prompt": "Matrix device ID (stable across restarts)",
         "url": None,
         "password": False,
@@ -1840,7 +1840,7 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "API_SERVER_MODEL_NAME": {
-        "description": "Model name advertised on /v1/models. Defaults to the profile name (or 'hermes-agent' for the default profile). Useful for multi-user setups with OpenWebUI.",
+        "description": "Model name advertised on /v1/models. Defaults to the profile name (or 'avoi-agent' for the default profile). Useful for multi-user setups with OpenWebUI.",
         "prompt": "API server model name",
         "url": None,
         "password": False,
@@ -1895,38 +1895,38 @@ OPTIONAL_ENV_VARS = {
         "password": True,
         "category": "setting",
     },
-    "HERMES_MAX_ITERATIONS": {
+    "AVOI_MAX_ITERATIONS": {
         "description": "Maximum tool-calling iterations per conversation (default: 90)",
         "prompt": "Max iterations",
         "url": None,
         "password": False,
         "category": "setting",
     },
-    # HERMES_TOOL_PROGRESS and HERMES_TOOL_PROGRESS_MODE are deprecated —
+    # AVOI_TOOL_PROGRESS and AVOI_TOOL_PROGRESS_MODE are deprecated —
     # now configured via display.tool_progress in config.yaml (off|new|all|verbose).
     # Gateway falls back to these env vars for backward compatibility.
-    "HERMES_TOOL_PROGRESS": {
+    "AVOI_TOOL_PROGRESS": {
         "description": "(deprecated) Use display.tool_progress in config.yaml instead",
         "prompt": "Tool progress (deprecated — use config.yaml)",
         "url": None,
         "password": False,
         "category": "setting",
     },
-    "HERMES_TOOL_PROGRESS_MODE": {
+    "AVOI_TOOL_PROGRESS_MODE": {
         "description": "(deprecated) Use display.tool_progress in config.yaml instead",
         "prompt": "Progress mode (deprecated — use config.yaml)",
         "url": None,
         "password": False,
         "category": "setting",
     },
-    "HERMES_PREFILL_MESSAGES_FILE": {
+    "AVOI_PREFILL_MESSAGES_FILE": {
         "description": "Path to JSON file with ephemeral prefill messages for few-shot priming",
         "prompt": "Prefill messages file path",
         "url": None,
         "password": False,
         "category": "setting",
     },
-    "HERMES_EPHEMERAL_SYSTEM_PROMPT": {
+    "AVOI_EPHEMERAL_SYSTEM_PROMPT": {
         "description": "Ephemeral system prompt injected at API-call time (never persisted to sessions)",
         "prompt": "Ephemeral system prompt",
         "url": None,
@@ -2007,7 +2007,7 @@ def get_missing_config_fields() -> List[Dict[str, Any]]:
 def get_missing_skill_config_vars() -> List[Dict[str, Any]]:
     """Return skill-declared config vars that are missing or empty in config.yaml.
 
-    Scans all enabled skills for ``metadata.hermes.config`` entries, then checks
+    Scans all enabled skills for ``metadata.avoi.config`` entries, then checks
     which ones are absent or empty under ``skills.config.<key>`` in the user's
     config.yaml.  Returns a list of dicts suitable for prompting.
     """
@@ -2237,7 +2237,7 @@ def get_custom_provider_context_length(
     used by:
       * ``AIAgent.__init__`` (startup resolution)
       * ``AIAgent.switch_model`` (mid-session ``/model`` switch)
-      * ``hermes_cli.model_switch.resolve_display_context_length`` (``/model`` confirmation display)
+      * ``avoi_cli.model_switch.resolve_display_context_length`` (``/model`` confirmation display)
       * ``gateway.run._format_session_info`` (``/info`` display)
       * ``agent.model_metadata.get_model_context_length`` (when custom_providers is threaded through)
 
@@ -2342,7 +2342,7 @@ def validate_config_structure(config: Optional[Dict[str, Any]] = None) -> List["
         try:
             config = load_config()
         except Exception:
-            return [ConfigIssue("error", "Could not load config.yaml", "Run 'hermes setup' to create a valid config")]
+            return [ConfigIssue("error", "Could not load config.yaml", "Run 'avoi setup' to create a valid config")]
 
     issues: List[ConfigIssue] = []
 
@@ -2470,7 +2470,7 @@ def print_config_warnings(config: Optional[Dict[str, Any]] = None) -> None:
     for ci in issues:
         marker = "\033[31m✗\033[0m" if ci.severity == "error" else "\033[33m⚠\033[0m"
         lines.append(f"  {marker} {ci.message}")
-    lines.append("  \033[2mRun 'hermes doctor' for fix suggestions.\033[0m")
+    lines.append("  \033[2mRun 'avoi doctor' for fix suggestions.\033[0m")
     sys.stderr.write("\n".join(lines) + "\n\n")
 
 
@@ -2507,7 +2507,7 @@ def warn_deprecated_cwd_env_vars(config: Optional[Dict[str, Any]] = None) -> Non
             f"this is deprecated."
         )
     if lines:
-        hint_path = os.environ.get("HERMES_HOME", "~/.hermes")
+        hint_path = os.environ.get("AVOI_HOME", "~/.avoi")
         lines.insert(0, "\033[33m⚠ Deprecated .env settings detected:\033[0m")
         lines.append(
             f"  \033[2mMove to config.yaml instead:  "
@@ -2550,14 +2550,14 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
         if not isinstance(display, dict):
             display = {}
         if "tool_progress" not in display:
-            old_enabled = get_env_value("HERMES_TOOL_PROGRESS")
-            old_mode = get_env_value("HERMES_TOOL_PROGRESS_MODE")
+            old_enabled = get_env_value("AVOI_TOOL_PROGRESS")
+            old_mode = get_env_value("AVOI_TOOL_PROGRESS_MODE")
             if old_enabled and old_enabled.lower() in ("false", "0", "no"):
                 display["tool_progress"] = "off"
-                results["config_added"].append("display.tool_progress=off (from HERMES_TOOL_PROGRESS=false)")
+                results["config_added"].append("display.tool_progress=off (from AVOI_TOOL_PROGRESS=false)")
             elif old_mode and old_mode.lower() in ("new", "all"):
                 display["tool_progress"] = old_mode.lower()
-                results["config_added"].append(f"display.tool_progress={old_mode.lower()} (from HERMES_TOOL_PROGRESS_MODE)")
+                results["config_added"].append(f"display.tool_progress={old_mode.lower()} (from AVOI_TOOL_PROGRESS_MODE)")
             else:
                 display["tool_progress"] = "all"
                 results["config_added"].append("display.tool_progress=all (default)")
@@ -2570,10 +2570,10 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
     if current_ver < 5:
         config = load_config()
         if "timezone" not in config:
-            old_tz = os.getenv("HERMES_TIMEZONE", "")
+            old_tz = os.getenv("AVOI_TIMEZONE", "")
             if old_tz and old_tz.strip():
                 config["timezone"] = old_tz.strip()
-                results["config_added"].append(f"timezone={old_tz.strip()} (from HERMES_TIMEZONE)")
+                results["config_added"].append(f"timezone={old_tz.strip()} (from AVOI_TIMEZONE)")
             else:
                 config["timezone"] = ""
                 results["config_added"].append("timezone= (empty, uses server-local)")
@@ -2819,10 +2819,10 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                 disabled = []
             disabled_set = set(disabled)
 
-            # Scan ``$HERMES_HOME/plugins/`` for currently installed user plugins.
+            # Scan ``$AVOI_HOME/plugins/`` for currently installed user plugins.
             grandfathered: List[str] = []
             try:
-                user_plugins_dir = get_hermes_home() / "plugins"
+                user_plugins_dir = get_avoi_home() / "plugins"
                 if user_plugins_dir.is_dir():
                     for child in sorted(user_plugins_dir.iterdir()):
                         if not child.is_dir():
@@ -2859,7 +2859,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                 else:
                     print(
                         "  ✓ Plugins now opt-in: no existing plugins to grandfather. "
-                        "Use `hermes plugins enable <name>` to activate."
+                        "Use `avoi plugins enable <name>` to activate."
                     )
 
     if current_ver < latest_ver and not quiet:
@@ -2942,7 +2942,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                         print(f"  ✓ Saved {name}")
                     print()
             else:
-                print("  Set later with: hermes config set <key> <value>")
+                print("  Set later with: avoi config set <key> <value>")
     
     # Check for missing config fields
     missing_config = get_missing_config_fields()
@@ -2970,7 +2970,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
 
     # ── Skill-declared config vars ──────────────────────────────────────
     # Skills can declare config.yaml settings they need via
-    # metadata.hermes.config in their SKILL.md frontmatter.
+    # metadata.avoi.config in their SKILL.md frontmatter.
     # Prompt for any that are missing/empty.
     missing_skill_config = get_missing_skill_config_vars()
     if missing_skill_config and interactive and not quiet:
@@ -3009,7 +3009,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                 print()
             save_config(config)
         else:
-            print("  Set later with: hermes config set <key> <value>")
+            print("  Set later with: avoi config set <key> <value>")
 
     return results
 
@@ -3181,7 +3181,7 @@ def _normalize_max_turns_config(config: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def read_raw_config() -> Dict[str, Any]:
-    """Read ~/.hermes/config.yaml as-is, without merging defaults or migrating.
+    """Read ~/.avoi/config.yaml as-is, without merging defaults or migrating.
 
     Returns the raw YAML dict, or ``{}`` if the file doesn't exist or can't
     be parsed.  Use this for lightweight config reads where you just need a
@@ -3199,8 +3199,8 @@ def read_raw_config() -> Dict[str, Any]:
 
 
 def load_config() -> Dict[str, Any]:
-    """Load configuration from ~/.hermes/config.yaml."""
-    ensure_hermes_home()
+    """Load configuration from ~/.avoi/config.yaml."""
+    ensure_avoi_home()
     config_path = get_config_path()
     
     config = copy.deepcopy(DEFAULT_CONFIG)
@@ -3251,8 +3251,8 @@ _FALLBACK_COMMENT = """
 #
 # Supported providers:
 #   openrouter   (OPENROUTER_API_KEY)  — routes to any model
-#   openai-codex (OAuth — hermes auth) — OpenAI Codex
-#   nous         (OAuth — hermes auth) — Nous Portal
+#   openai-codex (OAuth — avoi auth) — OpenAI Codex
+#   nous         (OAuth — avoi auth) — Nous Portal
 #   zai          (ZAI_API_KEY)         — Z.AI / GLM
 #   kimi-coding  (KIMI_API_KEY)        — Kimi / Moonshot
 #   kimi-coding-cn (KIMI_CN_API_KEY)   — Kimi / Moonshot (China)
@@ -3282,8 +3282,8 @@ _COMMENTED_SECTIONS = """
 #
 # Supported providers:
 #   openrouter   (OPENROUTER_API_KEY)  — routes to any model
-#   openai-codex (OAuth — hermes auth) — OpenAI Codex
-#   nous         (OAuth — hermes auth) — Nous Portal
+#   openai-codex (OAuth — avoi auth) — OpenAI Codex
+#   nous         (OAuth — avoi auth) — Nous Portal
 #   zai          (ZAI_API_KEY)         — Z.AI / GLM
 #   kimi-coding  (KIMI_API_KEY)        — Kimi / Moonshot
 #   kimi-coding-cn (KIMI_CN_API_KEY)   — Kimi / Moonshot (China)
@@ -3299,13 +3299,13 @@ _COMMENTED_SECTIONS = """
 
 
 def save_config(config: Dict[str, Any]):
-    """Save configuration to ~/.hermes/config.yaml."""
+    """Save configuration to ~/.avoi/config.yaml."""
     if is_managed():
         managed_error("save configuration")
         return
     from utils import atomic_yaml_write
 
-    ensure_hermes_home()
+    ensure_avoi_home()
     config_path = get_config_path()
     current_normalized = _normalize_root_model_keys(_normalize_max_turns_config(config))
     normalized = current_normalized
@@ -3337,7 +3337,7 @@ def save_config(config: Dict[str, Any]):
 
 
 def load_env() -> Dict[str, str]:
-    """Load environment variables from ~/.hermes/.env.
+    """Load environment variables from ~/.avoi/.env.
 
     Sanitizes lines before parsing so that corrupted files (e.g.
     concatenated KEY=VALUE pairs on a single line) are handled
@@ -3417,7 +3417,7 @@ def _sanitize_env_lines(lines: list) -> list:
 
 
 def sanitize_env_file() -> int:
-    """Read, sanitize, and rewrite ~/.hermes/.env in place.
+    """Read, sanitize, and rewrite ~/.avoi/.env in place.
 
     Returns the number of lines that were fixed (concatenation splits +
     placeholder removals).  Returns 0 when no changes are needed.
@@ -3502,7 +3502,7 @@ def _check_non_ascii_credential(key: str, value: str) -> str:
 
 
 def save_env_value(key: str, value: str):
-    """Save or update a value in ~/.hermes/.env."""
+    """Save or update a value in ~/.avoi/.env."""
     if is_managed():
         managed_error(f"set {key}")
         return
@@ -3511,7 +3511,7 @@ def save_env_value(key: str, value: str):
     value = value.replace("\n", "").replace("\r", "")
     # API keys / tokens must be ASCII — strip non-ASCII with a warning.
     value = _check_non_ascii_credential(key, value)
-    ensure_hermes_home()
+    ensure_avoi_home()
     env_path = get_env_path()
     
     # On Windows, open() defaults to the system locale (cp1252) which can
@@ -3572,7 +3572,7 @@ def save_env_value(key: str, value: str):
 
 
 def remove_env_value(key: str) -> bool:
-    """Remove a key from ~/.hermes/.env and os.environ.
+    """Remove a key from ~/.avoi/.env and os.environ.
 
     Returns True if the key was found and removed, False otherwise.
     """
@@ -3659,7 +3659,7 @@ def save_env_value_secure(key: str, value: str) -> Dict[str, Any]:
 
 
 def reload_env() -> int:
-    """Re-read ~/.hermes/.env into os.environ. Returns count of vars updated.
+    """Re-read ~/.avoi/.env into os.environ. Returns count of vars updated.
 
     Adds/updates vars that changed and removes vars that were deleted from
     the .env file (but only vars known to Hermes — OPTIONAL_ENV_VARS and
@@ -3681,7 +3681,7 @@ def reload_env() -> int:
 
 
 def get_env_value(key: str) -> Optional[str]:
-    """Get a value from ~/.hermes/.env or environment."""
+    """Get a value from ~/.avoi/.env or environment."""
     # Check environment first
     if key in os.environ:
         return os.environ[key]
@@ -3739,7 +3739,7 @@ def show_config():
     for env_key, name in keys:
         value = get_env_value(env_key)
         print(f"  {name:<14} {redact_key(value)}")
-    from hermes_cli.auth import get_anthropic_key
+    from avoi_cli.auth import get_anthropic_key
     anthropic_value = get_anthropic_key()
     print(f"  {'Anthropic':<14} {redact_key(anthropic_value)}")
     
@@ -3864,9 +3864,9 @@ def show_config():
 
     print()
     print(color("─" * 60, Colors.DIM))
-    print(color("  hermes config edit     # Edit config file", Colors.DIM))
-    print(color("  hermes config set <key> <value>", Colors.DIM))
-    print(color("  hermes setup           # Run setup wizard", Colors.DIM))
+    print(color("  avoi config edit     # Edit config file", Colors.DIM))
+    print(color("  avoi config set <key> <value>", Colors.DIM))
+    print(color("  avoi setup           # Run setup wizard", Colors.DIM))
     print()
 
 
@@ -3960,7 +3960,7 @@ def set_config_value(key: str, value: str):
     current[parts[-1]] = value
     
     # Write only user config back (not the full merged defaults)
-    ensure_hermes_home()
+    ensure_avoi_home()
     from utils import atomic_yaml_write
     atomic_yaml_write(config_path, user_config, sort_keys=False)
     
@@ -4007,12 +4007,12 @@ def config_command(args):
         key = getattr(args, 'key', None)
         value = getattr(args, 'value', None)
         if not key or value is None:
-            print("Usage: hermes config set <key> <value>")
+            print("Usage: avoi config set <key> <value>")
             print()
             print("Examples:")
-            print("  hermes config set model anthropic/claude-sonnet-4")
-            print("  hermes config set terminal.backend docker")
-            print("  hermes config set OPENROUTER_API_KEY sk-or-...")
+            print("  avoi config set model anthropic/claude-sonnet-4")
+            print("  avoi config set terminal.backend docker")
+            print("  avoi config set OPENROUTER_API_KEY sk-or-...")
             sys.exit(1)
         set_config_value(key, value)
     
@@ -4112,7 +4112,7 @@ def config_command(args):
         if missing_config:
             print()
             print(color(f"  {len(missing_config)} new config option(s) available", Colors.YELLOW))
-            print("    Run 'hermes config migrate' to add them")
+            print("    Run 'avoi config migrate' to add them")
         
         print()
     
@@ -4120,11 +4120,11 @@ def config_command(args):
         print(f"Unknown config command: {subcmd}")
         print()
         print("Available commands:")
-        print("  hermes config           Show current configuration")
-        print("  hermes config edit      Open config in editor")
-        print("  hermes config set <key> <value>   Set a config value")
-        print("  hermes config check     Check for missing/outdated config")
-        print("  hermes config migrate   Update config with new options")
-        print("  hermes config path      Show config file path")
-        print("  hermes config env-path  Show .env file path")
+        print("  avoi config           Show current configuration")
+        print("  avoi config edit      Open config in editor")
+        print("  avoi config set <key> <value>   Set a config value")
+        print("  avoi config check     Check for missing/outdated config")
+        print("  avoi config migrate   Update config with new options")
+        print("  avoi config path      Show config file path")
+        print("  avoi config env-path  Show .env file path")
         sys.exit(1)

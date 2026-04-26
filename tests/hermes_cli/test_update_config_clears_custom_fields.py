@@ -1,4 +1,4 @@
-"""Tests for hermes_cli.auth._update_config_for_provider clearing stale fields.
+"""Tests for avoi_cli.auth._update_config_for_provider clearing stale fields.
 
 When the user switches from a custom provider (e.g. MiniMax with
 ``api_mode: anthropic_messages``, ``api_key: mxp-...``) to a built-in
@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import yaml
 
-from hermes_cli.auth import _update_config_for_provider
-from hermes_cli.config import get_config_path
+from avoi_cli.auth import _update_config_for_provider
+from avoi_cli.config import get_config_path
 
 
 def _read_model_cfg() -> dict:
@@ -69,9 +69,9 @@ class TestUpdateConfigForProviderClearsStaleCustomFields:
             "OpenRouter requests to the Anthropic SDK — must be cleared"
         )
 
-    def test_switching_to_nous_clears_stale_api_mode(self):
+    def test_switching_to_avoi_clears_stale_api_mode(self):
         _seed_custom_provider_config()
-        _update_config_for_provider("nous", "https://inference-api.nousresearch.com/v1")
+        _update_config_for_provider("nous", "https://inference-api.avoi-ai.com/v1")
         model_cfg = _read_model_cfg()
         assert model_cfg.get("provider") == "nous"
         assert "api_mode" not in model_cfg

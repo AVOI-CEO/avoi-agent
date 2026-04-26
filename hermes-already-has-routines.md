@@ -1,4 +1,4 @@
-# Hermes Agent Has Had "Routines" Since March
+# AVOI Agent Has Had "Routines" Since March
 
 Anthropic just announced [Claude Code Routines](https://claude.com/blog/introducing-routines-in-claude-code) — scheduled tasks, GitHub event triggers, and API-triggered agent runs. Bundled prompt + repo + connectors, running on their infrastructure.
 
@@ -15,7 +15,7 @@ Claude Code Routines offers three ways to trigger an automation:
 
 Hermes equivalent — works today:
 ```bash
-hermes cron create "0 2 * * *" \
+avoi cron create "0 2 * * *" \
   "Pull the top bug from the issue tracker, attempt a fix, and open a draft PR." \
   --name "Nightly bug fix" \
   --deliver telegram
@@ -26,7 +26,7 @@ hermes cron create "0 2 * * *" \
 
 Hermes equivalent — works today:
 ```bash
-hermes webhook subscribe auth-watch \
+avoi webhook subscribe auth-watch \
   --events "pull_request" \
   --prompt "PR #{pull_request.number}: {pull_request.title} by {pull_request.user.login}. Check if it touches the auth-provider module. If yes, summarize the changes." \
   --deliver slack
@@ -37,7 +37,7 @@ hermes webhook subscribe auth-watch \
 
 Hermes equivalent — works today:
 ```bash
-hermes webhook subscribe alert-triage \
+avoi webhook subscribe alert-triage \
   --prompt "Alert: {alert.name} — Severity: {alert.severity}. Find the owning service, investigate, and post a triage summary with proposed first steps." \
   --deliver slack
 ```
@@ -48,7 +48,7 @@ Every use case in their blog post — backlog triage, docs drift, deploy verific
 
 ## What's Different
 
-| | Claude Code Routines | Hermes Agent |
+| | Claude Code Routines | AVOI Agent |
 |---|---|---|
 | **Scheduled tasks** | ✅ Schedule-based | ✅ Any cron expression + human-readable intervals |
 | **GitHub triggers** | ✅ PR, issue, push events | ✅ Any GitHub event via webhook subscriptions |
@@ -73,9 +73,9 @@ Every use case in their blog post — backlog triage, docs drift, deploy verific
 Run a Python script *before* the agent. The script's stdout becomes context. The script handles mechanical work (fetching, diffing, computing); the agent handles reasoning.
 
 ```bash
-hermes cron create "every 1h" \
+avoi cron create "every 1h" \
   "If CHANGE DETECTED, summarize what changed. If NO_CHANGE, respond with [SILENT]." \
-  --script ~/.hermes/scripts/watch-site.py \
+  --script ~/.avoi/scripts/watch-site.py \
   --name "Pricing monitor" \
   --deliver telegram
 ```
@@ -87,7 +87,7 @@ The `[SILENT]` pattern means you only get notified when something actually happe
 Chain specialized skills together. Each skill teaches the agent a specific capability, and the prompt ties them together.
 
 ```bash
-hermes cron create "0 8 * * *" \
+avoi cron create "0 8 * * *" \
   "Search arXiv for papers on language model reasoning. Save the top 3 as Obsidian notes." \
   --skills "arxiv,obsidian" \
   --name "Paper digest"
@@ -124,16 +124,16 @@ A nightly backlog triage on Sonnet costs roughly $0.02-0.05. A monitoring check 
 
 ## Get Started
 
-Hermes Agent is open source and free. The automation infrastructure — cron scheduler, webhook platform, skill system, multi-platform delivery — is built in.
+AVOI Agent is open source and free. The automation infrastructure — cron scheduler, webhook platform, skill system, multi-platform delivery — is built in.
 
 ```bash
-pip install hermes-agent
-hermes setup
+pip install avoi-agent
+avoi setup
 ```
 
 Set up a scheduled task in 30 seconds:
 ```bash
-hermes cron create "0 9 * * 1" \
+avoi cron create "0 9 * * 1" \
   "Generate a weekly AI news digest. Search the web for major announcements, trending repos, and notable papers. Keep it under 500 words with links." \
   --name "Weekly digest" \
   --deliver telegram
@@ -141,20 +141,20 @@ hermes cron create "0 9 * * 1" \
 
 Set up a GitHub webhook in 60 seconds:
 ```bash
-hermes gateway setup    # enable webhooks
-hermes webhook subscribe pr-review \
+avoi gateway setup    # enable webhooks
+avoi webhook subscribe pr-review \
   --events "pull_request" \
   --prompt "Review PR #{pull_request.number}: {pull_request.title}" \
   --skills "github-code-review" \
   --deliver github_comment
 ```
 
-Full automation templates gallery: [hermes-agent.nousresearch.com/docs/guides/automation-templates](https://hermes-agent.nousresearch.com/docs/guides/automation-templates)
+Full automation templates gallery: [avoi-agent.avoi-ai.com/docs/guides/automation-templates](https://avoi-agent.avoi-ai.com/docs/guides/automation-templates)
 
-Documentation: [hermes-agent.nousresearch.com](https://hermes-agent.nousresearch.com)
+Documentation: [avoi-agent.avoi-ai.com](https://avoi-agent.avoi-ai.com)
 
-GitHub: [github.com/NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)
+GitHub: [github.com/avoi-ai/avoi-agent](https://github.com/avoi-ai/avoi-agent)
 
 ---
 
-*Hermes Agent is built by [Nous Research](https://nousresearch.com). Open source, model-agnostic, runs on your infrastructure.*
+*AVOI Agent is built by [AVOI AI](https://avoi-ai.com). Open source, model-agnostic, runs on your infrastructure.*

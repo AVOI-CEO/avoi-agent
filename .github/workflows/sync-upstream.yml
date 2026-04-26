@@ -16,7 +16,7 @@ jobs:
 
       - name: Fetch upstream
         run: |
-          git remote add upstream https://github.com/NousResearch/hermes-agent.git || true
+          git remote add upstream https://github.com/avoi-ai/avoi-agent.git || true
           git fetch upstream main
 
       - name: Check for new commits

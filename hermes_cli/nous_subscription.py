@@ -6,13 +6,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, Optional, Set
 
-from hermes_cli.auth import get_nous_auth_status
-from hermes_cli.config import get_env_value, load_config
+from avoi_cli.auth import get_avoi_auth_status
+from avoi_cli.config import get_env_value, load_config
 from tools.managed_tool_gateway import is_managed_tool_gateway_ready
 from tools.tool_backend_helpers import (
     fal_key_is_configured,
     has_direct_modal_credentials,
-    managed_nous_tools_enabled,
+    managed_avoi_tools_enabled,
     normalize_browser_cloud_provider,
     normalize_modal_mode,
     resolve_modal_backend_state,
@@ -21,7 +21,7 @@ from tools.tool_backend_helpers import (
 
 
 _DEFAULT_PLATFORM_TOOLSETS = {
-    "cli": "hermes-cli",
+    "cli": "avoi-cli",
 }
 
 
@@ -42,7 +42,7 @@ class NousFeatureState:
 @dataclass(frozen=True)
 class NousSubscriptionFeatures:
     subscribed: bool
-    nous_auth_present: bool
+    avoi_auth_present: bool
     provider_is_nous: bool
     features: Dict[str, NousFeatureState]
 
@@ -217,7 +217,7 @@ def _resolve_browser_feature_state(
     return "local", available, active, False
 
 
-def get_nous_subscription_features(
+def get_avoi_subscription_features(
     config: Optional[Dict[str, object]] = None,
 ) -> NousSubscriptionFeatures:
     if config is None:
@@ -227,13 +227,13 @@ def get_nous_subscription_features(
     provider_is_nous = str(model_cfg.get("provider") or "").strip().lower() == "nous"
 
     try:
-        nous_status = get_nous_auth_status()
+        avoi_status = get_avoi_auth_status()
     except Exception:
-        nous_status = {}
+        avoi_status = {}
 
-    managed_tools_flag = managed_nous_tools_enabled()
-    nous_auth_present = bool(nous_status.get("logged_in"))
-    subscribed = provider_is_nous or nous_auth_present
+    managed_tools_flag = managed_avoi_tools_enabled()
+    avoi_auth_present = bool(avoi_status.get("logged_in"))
+    subscribed = provider_is_nous or avoi_auth_present
 
     web_tool_enabled = _toolset_enabled(config, "web")
     image_tool_enabled = _toolset_enabled(config, "image_gen")
@@ -260,7 +260,7 @@ def get_nous_subscription_features(
     )
 
     # use_gateway flags — when True, the user explicitly opted into the
-    # Tool Gateway via `hermes model`, so direct credentials should NOT
+    # Tool Gateway via `avoi model`, so direct credentials should NOT
     # prevent gateway routing.
     web_use_gateway = bool(web_cfg.get("use_gateway"))
     tts_use_gateway = bool(tts_cfg.get("use_gateway"))
@@ -295,11 +295,11 @@ def get_nous_subscription_features(
         direct_browser_use = False
         direct_browserbase = False
 
-    managed_web_available = managed_tools_flag and nous_auth_present and is_managed_tool_gateway_ready("firecrawl")
-    managed_image_available = managed_tools_flag and nous_auth_present and is_managed_tool_gateway_ready("fal-queue")
-    managed_tts_available = managed_tools_flag and nous_auth_present and is_managed_tool_gateway_ready("openai-audio")
-    managed_browser_available = managed_tools_flag and nous_auth_present and is_managed_tool_gateway_ready("browser-use")
-    managed_modal_available = managed_tools_flag and nous_auth_present and is_managed_tool_gateway_ready("modal")
+    managed_web_available = managed_tools_flag and avoi_auth_present and is_managed_tool_gateway_ready("firecrawl")
+    managed_image_available = managed_tools_flag and avoi_auth_present and is_managed_tool_gateway_ready("fal-queue")
+    managed_tts_available = managed_tools_flag and avoi_auth_present and is_managed_tool_gateway_ready("openai-audio")
+    managed_browser_available = managed_tools_flag and avoi_auth_present and is_managed_tool_gateway_ready("browser-use")
+    managed_modal_available = managed_tools_flag and avoi_auth_present and is_managed_tool_gateway_ready("modal")
     modal_state = resolve_modal_backend_state(
         modal_mode,
         has_direct=direct_modal,
@@ -459,7 +459,7 @@ def get_nous_subscription_features(
 
     return NousSubscriptionFeatures(
         subscribed=subscribed,
-        nous_auth_present=nous_auth_present,
+        avoi_auth_present=avoi_auth_present,
         provider_is_nous=provider_is_nous,
         features=features,
     )
@@ -468,15 +468,15 @@ def get_nous_subscription_features(
 
 
 
-def apply_nous_managed_defaults(
+def apply_avoi_managed_defaults(
     config: Dict[str, object],
     *,
     enabled_toolsets: Optional[Iterable[str]] = None,
 ) -> set[str]:
-    if not managed_nous_tools_enabled():
+    if not managed_avoi_tools_enabled():
         return set()
 
-    features = get_nous_subscription_features(config)
+    features = get_avoi_subscription_features(config)
     if not features.provider_is_nous:
         return set()
 
@@ -583,13 +583,13 @@ def get_gateway_eligible_tools(
     All lists are empty when the user is not a paid Nous subscriber or
     is not using Nous as their provider.
     """
-    if not managed_nous_tools_enabled():
+    if not managed_avoi_tools_enabled():
         return [], [], []
 
     if config is None:
         config = load_config() or {}
 
-    # Quick provider check without the heavy get_nous_subscription_features call
+    # Quick provider check without the heavy get_avoi_subscription_features call
     model_cfg = config.get("model")
     if not isinstance(model_cfg, dict) or str(model_cfg.get("provider") or "").strip().lower() != "nous":
         return [], [], []
@@ -688,7 +688,7 @@ def prompt_enable_tool_gateway(config: Dict[str, object]) -> set[str]:
         return set()
 
     try:
-        from hermes_cli.setup import prompt_choice
+        from avoi_cli.setup import prompt_choice
     except Exception:
         return set()
 
@@ -766,7 +766,7 @@ def prompt_enable_tool_gateway(config: Dict[str, object]) -> set[str]:
 
     changed = apply_gateway_defaults(config, to_apply)
     if changed:
-        from hermes_cli.config import save_config
+        from avoi_cli.config import save_config
         save_config(config)
         # Only report the tools that actually switched (not already-managed ones)
         newly_switched = changed - set(already_managed)

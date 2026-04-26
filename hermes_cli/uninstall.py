@@ -1,9 +1,9 @@
 """
-Hermes Agent Uninstaller.
+AVOI Agent Uninstaller.
 
 Provides options for:
 - Full uninstall: Remove everything including configs and data
-- Keep data: Remove code but keep ~/.hermes/ (configs, sessions, logs)
+- Keep data: Remove code but keep ~/.avoi/ (configs, sessions, logs)
 """
 
 import os
@@ -11,9 +11,9 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from hermes_constants import get_hermes_home
+from avoi_constants import get_avoi_home
 
-from hermes_cli.colors import Colors, color
+from avoi_cli.colors import Colors, color
 
 def log_info(msg: str):
     print(f"{color('→', Colors.CYAN)} {msg}")
@@ -59,22 +59,22 @@ def remove_path_from_shell_configs():
             content = config_path.read_text()
             original_content = content
             
-            # Remove lines containing hermes-agent or hermes PATH entries
+            # Remove lines containing avoi-agent or avoi PATH entries
             new_lines = []
             skip_next = False
             
             for line in content.split('\n'):
-                # Skip the "# Hermes Agent" comment and following line
-                if '# Hermes Agent' in line or '# hermes-agent' in line:
+                # Skip the "# AVOI Agent" comment and following line
+                if '# AVOI Agent' in line or '# avoi-agent' in line:
                     skip_next = True
                     continue
-                if skip_next and ('hermes' in line.lower() and 'PATH' in line):
+                if skip_next and ('avoi' in line.lower() and 'PATH' in line):
                     skip_next = False
                     continue
                 skip_next = False
                 
-                # Remove any PATH line containing hermes
-                if 'hermes' in line.lower() and ('PATH=' in line or 'path=' in line.lower()):
+                # Remove any PATH line containing avoi
+                if 'avoi' in line.lower() and ('PATH=' in line or 'path=' in line.lower()):
                     continue
                     
                 new_lines.append(line)
@@ -96,19 +96,19 @@ def remove_path_from_shell_configs():
 
 
 def remove_wrapper_script():
-    """Remove the hermes wrapper script if it exists."""
+    """Remove the avoi wrapper script if it exists."""
     wrapper_paths = [
-        Path.home() / ".local" / "bin" / "hermes",
-        Path("/usr/local/bin/hermes"),
+        Path.home() / ".local" / "bin" / "avoi",
+        Path("/usr/local/bin/avoi"),
     ]
     
     removed = []
     for wrapper in wrapper_paths:
         if wrapper.exists():
             try:
-                # Check if it's our wrapper (contains hermes_cli reference)
+                # Check if it's our wrapper (contains avoi_cli reference)
                 content = wrapper.read_text()
-                if 'hermes_cli' in content or 'hermes-agent' in content:
+                if 'avoi_cli' in content or 'avoi-agent' in content:
                     wrapper.unlink()
                     removed.append(wrapper)
             except Exception as e:
@@ -124,7 +124,7 @@ def uninstall_gateway_service():
     Delegates to the gateway module which handles:
     - Linux: user + system systemd services (with proper DBUS env setup)
     - macOS: launchd plists
-    - All platforms: standalone ``hermes gateway run`` processes
+    - All platforms: standalone ``avoi gateway run`` processes
     - Termux/Android: skips systemd (no systemd on Android), still kills standalone processes
     """
     import platform
@@ -132,7 +132,7 @@ def uninstall_gateway_service():
 
     # 1. Kill any standalone gateway processes (all platforms, including Termux)
     try:
-        from hermes_cli.gateway import kill_gateway_processes, find_gateway_pids
+        from avoi_cli.gateway import kill_gateway_processes, find_gateway_pids
         pids = find_gateway_pids()
         if pids:
             killed = kill_gateway_processes()
@@ -153,7 +153,7 @@ def uninstall_gateway_service():
     # 2. Linux: uninstall systemd services (both user and system scopes)
     if system == "Linux":
         try:
-            from hermes_cli.gateway import (
+            from avoi_cli.gateway import (
                 get_systemd_unit_path,
                 get_service_name,
                 _systemctl_cmd,
@@ -190,7 +190,7 @@ def uninstall_gateway_service():
     # 3. macOS: uninstall launchd plist
     elif system == "Darwin":
         try:
-            from hermes_cli.gateway import get_launchd_plist_path
+            from avoi_cli.gateway import get_launchd_plist_path
             plist_path = get_launchd_plist_path()
             if plist_path.exists():
                 subprocess.run(["launchctl", "unload", str(plist_path)],
@@ -204,11 +204,11 @@ def uninstall_gateway_service():
     return stopped_something
 
 
-def _is_default_hermes_home(hermes_home: Path) -> bool:
-    """Return True when ``hermes_home`` points at the default (non-profile) root."""
+def _is_default_avoi_home(avoi_home: Path) -> bool:
+    """Return True when ``avoi_home`` points at the default (non-profile) root."""
     try:
-        from hermes_constants import get_default_hermes_root
-        return hermes_home.resolve() == get_default_hermes_root().resolve()
+        from avoi_constants import get_default_avoi_root
+        return avoi_home.resolve() == get_default_avoi_root().resolve()
     except Exception:
         return False
 
@@ -218,7 +218,7 @@ def _discover_named_profiles():
     if profile support is unavailable or nothing is installed beyond the
     default root."""
     try:
-        from hermes_cli.profiles import list_profiles
+        from avoi_cli.profiles import list_profiles
     except Exception:
         return []
     try:
@@ -230,11 +230,11 @@ def _discover_named_profiles():
 
 def _uninstall_profile(profile) -> None:
     """Fully uninstall a single named profile: stop its gateway service,
-    remove its alias wrapper, and wipe its HERMES_HOME directory.
+    remove its alias wrapper, and wipe its AVOI_HOME directory.
 
-    We shell out to ``hermes -p <name> gateway stop|uninstall`` because
+    We shell out to ``avoi -p <name> gateway stop|uninstall`` because
     service names, unit paths, and plist paths are all derived from the
-    current HERMES_HOME and can't be easily switched in-process.
+    current AVOI_HOME and can't be easily switched in-process.
     """
     import sys as _sys
     name = profile.name
@@ -243,13 +243,13 @@ def _uninstall_profile(profile) -> None:
     log_info(f"Uninstalling profile '{name}'...")
 
     # 1. Stop and remove this profile's gateway service.
-    #    Use `python -m hermes_cli.main` so we don't depend on a `hermes`
+    #    Use `python -m avoi_cli.main` so we don't depend on a `avoi`
     #    wrapper that may be half-removed mid-uninstall.
-    hermes_invocation = [_sys.executable, "-m", "hermes_cli.main", "--profile", name]
+    avoi_invocation = [_sys.executable, "-m", "avoi_cli.main", "--profile", name]
     for subcmd in ("stop", "uninstall"):
         try:
             subprocess.run(
-                hermes_invocation + ["gateway", subcmd],
+                avoi_invocation + ["gateway", subcmd],
                 capture_output=True,
                 text=True,
                 timeout=60,
@@ -269,7 +269,7 @@ def _uninstall_profile(profile) -> None:
         except Exception as e:
             log_warn(f"  Could not remove alias {alias_path}: {e}")
 
-    # 3. Wipe the profile's HERMES_HOME directory.
+    # 3. Wipe the profile's AVOI_HOME directory.
     try:
         if profile_home.exists():
             shutil.rmtree(profile_home)
@@ -283,30 +283,30 @@ def run_uninstall(args):
     Run the uninstall process.
     
     Options:
-    - Full uninstall: removes code + ~/.hermes/ (configs, data, logs)
-    - Keep data: removes code but keeps ~/.hermes/ for future reinstall
+    - Full uninstall: removes code + ~/.avoi/ (configs, data, logs)
+    - Keep data: removes code but keeps ~/.avoi/ for future reinstall
     """
     project_root = get_project_root()
-    hermes_home = get_hermes_home()
+    avoi_home = get_avoi_home()
 
     # Detect named profiles when uninstalling from the default root —
-    # offer to clean them up too instead of leaving zombie HERMES_HOMEs
+    # offer to clean them up too instead of leaving zombie AVOI_HOMEs
     # and systemd units behind.
-    is_default_profile = _is_default_hermes_home(hermes_home)
+    is_default_profile = _is_default_avoi_home(avoi_home)
     named_profiles = _discover_named_profiles() if is_default_profile else []
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.MAGENTA, Colors.BOLD))
-    print(color("│            ⚕ Hermes Agent Uninstaller                  │", Colors.MAGENTA, Colors.BOLD))
+    print(color("│            ⚕ AVOI Agent Uninstaller                  │", Colors.MAGENTA, Colors.BOLD))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.MAGENTA, Colors.BOLD))
     print()
     
     # Show what will be affected
     print(color("Current Installation:", Colors.CYAN, Colors.BOLD))
     print(f"  Code:    {project_root}")
-    print(f"  Config:  {hermes_home / 'config.yaml'}")
-    print(f"  Secrets: {hermes_home / '.env'}")
-    print(f"  Data:    {hermes_home / 'cron/'}, {hermes_home / 'sessions/'}, {hermes_home / 'logs/'}")
+    print(f"  Config:  {avoi_home / 'config.yaml'}")
+    print(f"  Secrets: {avoi_home / '.env'}")
+    print(f"  Data:    {avoi_home / 'cron/'}, {avoi_home / 'sessions/'}, {avoi_home / 'logs/'}")
     print()
 
     if named_profiles:
@@ -344,7 +344,7 @@ def run_uninstall(args):
 
     # When doing a full uninstall from the default profile, also offer to
     # remove any named profiles — stopping their gateway services, unlinking
-    # their alias wrappers, and wiping their HERMES_HOME dirs. Otherwise
+    # their alias wrappers, and wiping their AVOI_HOME dirs. Otherwise
     # those leave zombie services and data behind.
     remove_profiles = False
     if full_uninstall and named_profiles:
@@ -410,7 +410,7 @@ def run_uninstall(args):
         log_info("No PATH entries found to remove")
     
     # 3. Remove wrapper script
-    log_info("Removing hermes command...")
+    log_info("Removing avoi command...")
     removed_wrappers = remove_wrapper_script()
     if removed_wrappers:
         for wrapper in removed_wrappers:
@@ -425,8 +425,8 @@ def run_uninstall(args):
     # We need to be careful here
     try:
         if project_root.exists():
-            # If the install is inside ~/.hermes/, just remove the hermes-agent subdir
-            if hermes_home in project_root.parents or project_root.parent == hermes_home:
+            # If the install is inside ~/.avoi/, just remove the avoi-agent subdir
+            if avoi_home in project_root.parents or project_root.parent == avoi_home:
                 shutil.rmtree(project_root)
                 log_success(f"Removed {project_root}")
             else:
@@ -437,10 +437,10 @@ def run_uninstall(args):
         log_warn(f"Could not fully remove {project_root}: {e}")
         log_info("You may need to manually remove it")
     
-    # 5. Optionally remove ~/.hermes/ data directory (and named profiles)
+    # 5. Optionally remove ~/.avoi/ data directory (and named profiles)
     if full_uninstall:
         # 5a. Stop and remove each named profile's gateway service and
-        #     alias wrapper. The profile HERMES_HOME dirs live under
+        #     alias wrapper. The profile AVOI_HOME dirs live under
         #     ``<default>/profiles/<name>/`` and will be swept away by the
         #     rmtree below, but services + alias scripts live OUTSIDE the
         #     default root and have to be cleaned up explicitly.
@@ -450,14 +450,14 @@ def run_uninstall(args):
 
         log_info("Removing configuration and data...")
         try:
-            if hermes_home.exists():
-                shutil.rmtree(hermes_home)
-                log_success(f"Removed {hermes_home}")
+            if avoi_home.exists():
+                shutil.rmtree(avoi_home)
+                log_success(f"Removed {avoi_home}")
         except Exception as e:
-            log_warn(f"Could not fully remove {hermes_home}: {e}")
+            log_warn(f"Could not fully remove {avoi_home}: {e}")
             log_info("You may need to manually remove it")
     else:
-        log_info(f"Keeping configuration and data in {hermes_home}")
+        log_info(f"Keeping configuration and data in {avoi_home}")
     
     # Done
     print()
@@ -468,14 +468,14 @@ def run_uninstall(args):
     
     if not full_uninstall:
         print(color("Your configuration and data have been preserved:", Colors.CYAN))
-        print(f"  {hermes_home}/")
+        print(f"  {avoi_home}/")
         print()
         print("To reinstall later with your existing settings:")
-        print(color("  curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash", Colors.DIM))
+        print(color("  curl -fsSL https://raw.githubusercontent.com/avoi-ai/avoi-agent/main/scripts/install.sh | bash", Colors.DIM))
         print()
     
     print(color("Reload your shell to complete the process:", Colors.YELLOW))
     print("  source ~/.bashrc  # or ~/.zshrc")
     print()
-    print("Thank you for using Hermes Agent! ⚕")
+    print("Thank you for using AVOI Agent! ⚕")
     print()

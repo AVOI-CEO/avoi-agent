@@ -169,7 +169,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
                cli_only=True),
     CommandDef("image", "Attach a local image file for your next prompt", "Info",
                cli_only=True, args_hint="<path>"),
-    CommandDef("update", "Update Hermes Agent to the latest version", "Info",
+    CommandDef("update", "Update AVOI Agent to the latest version", "Info",
                gateway_only=True),
     CommandDef("debug", "Upload debug report (system info + logs) and get shareable links", "Info"),
 
@@ -342,7 +342,7 @@ def _resolve_config_gates() -> set[str]:
     if not gated:
         return set()
     try:
-        from hermes_cli.config import read_raw_config
+        from avoi_cli.config import read_raw_config
         cfg = read_raw_config()
     except Exception:
         return set()
@@ -399,9 +399,9 @@ def _iter_plugin_command_entries() -> list[tuple[str, str, str]]:
     """Yield (name, description, args_hint) tuples for all plugin slash commands.
 
     Plugin commands are registered via
-    :func:`hermes_cli.plugins.PluginContext.register_command`. They behave
+    :func:`avoi_cli.plugins.PluginContext.register_command`. They behave
     like ``CommandDef`` entries for gateway surfacing: they appear in the
-    Telegram command menu, in Slack's ``/hermes`` subcommand mapping, and
+    Telegram command menu, in Slack's ``/avoi`` subcommand mapping, and
     (via :func:`gateway.platforms.discord._register_slash_commands`) in
     Discord's native slash command picker.
 
@@ -410,7 +410,7 @@ def _iter_plugin_command_entries() -> list[tuple[str, str, str]]:
     behavior).
     """
     try:
-        from hermes_cli.plugins import get_plugin_commands
+        from avoi_cli.plugins import get_plugin_commands
     except Exception:
         return []
     try:
@@ -560,7 +560,7 @@ def _collect_gateway_skill_entries(
     # --- Tier 1: Plugin slash commands (never trimmed) ---------------------
     plugin_pairs: list[tuple[str, str]] = []
     try:
-        from hermes_cli.plugins import get_plugin_commands
+        from avoi_cli.plugins import get_plugin_commands
         plugin_cmds = get_plugin_commands()
         for cmd_name in sorted(plugin_cmds):
             name = sanitize_name(cmd_name) if sanitize_name else cmd_name
@@ -644,7 +644,7 @@ def telegram_menu_commands(max_commands: int = 100) -> tuple[list[tuple[str, str
 
     Skills are the only tier that gets trimmed when the cap is hit.
     User-installed hub skills are excluded — accessible via /skills.
-    Skills disabled for the ``"telegram"`` platform (via ``hermes skills
+    Skills disabled for the ``"telegram"`` platform (via ``avoi skills
     config``) are excluded from the menu entirely.
 
     Returns:
@@ -809,12 +809,12 @@ def discord_skill_commands_by_category(
 
 
 def slack_subcommand_map() -> dict[str, str]:
-    """Return subcommand -> /command mapping for Slack /hermes handler.
+    """Return subcommand -> /command mapping for Slack /avoi handler.
 
-    Maps both canonical names and aliases so /hermes bg do stuff works
-    the same as /hermes background do stuff.
+    Maps both canonical names and aliases so /avoi bg do stuff works
+    the same as /avoi background do stuff.
 
-    Plugin-registered slash commands are included so ``/hermes <plugin-cmd>``
+    Plugin-registered slash commands are included so ``/avoi <plugin-cmd>``
     routes through the plugin handler.
     """
     overrides = _resolve_config_gates()
@@ -1185,7 +1185,7 @@ class SlashCommandCompleter(Completer):
     def _skin_completions(sub_text: str, sub_lower: str):
         """Yield completions for /skin from available skins."""
         try:
-            from hermes_cli.skin_engine import list_skins
+            from avoi_cli.skin_engine import list_skins
             for s in list_skins():
                 name = s["name"]
                 if name.startswith(sub_lower) and name != sub_lower:
@@ -1202,7 +1202,7 @@ class SlashCommandCompleter(Completer):
     def _personality_completions(sub_text: str, sub_lower: str):
         """Yield completions for /personality from configured personalities."""
         try:
-            from hermes_cli.config import load_config
+            from avoi_cli.config import load_config
             personalities = load_config().get("agent", {}).get("personalities", {})
             if "none".startswith(sub_lower) and "none" != sub_lower:
                 yield Completion(
@@ -1231,7 +1231,7 @@ class SlashCommandCompleter(Completer):
         seen = set()
         # Config-based direct aliases (preferred — include provider info)
         try:
-            from hermes_cli.model_switch import (
+            from avoi_cli.model_switch import (
                 _ensure_direct_aliases, DIRECT_ALIASES, MODEL_ALIASES,
             )
             _ensure_direct_aliases()
@@ -1331,7 +1331,7 @@ class SlashCommandCompleter(Completer):
 
         # Plugin-registered slash commands
         try:
-            from hermes_cli.plugins import get_plugin_commands
+            from avoi_cli.plugins import get_plugin_commands
             for cmd_name, cmd_info in get_plugin_commands().items():
                 if cmd_name.startswith(word):
                     desc = str(cmd_info.get("description", "Plugin command"))

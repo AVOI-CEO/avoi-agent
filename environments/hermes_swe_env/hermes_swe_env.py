@@ -11,9 +11,9 @@ the model's tool calls is preserved for verification.
 
 Usage:
     # Phase 1: OpenAI server type
-    vllm serve YourModel --tool-parser hermes
+    vllm serve YourModel --tool-parser avoi
     run-api
-    python environments/hermes_swe_env.py serve \\
+    python environments/avoi_swe_env.py serve \\
         --openai.base_url http://localhost:8000/v1 \\
         --openai.model_name YourModel \\
         --openai.server_type openai \\
@@ -21,11 +21,11 @@ Usage:
         --env.terminal_backend modal
 
     # Phase 2: VLLM server type (full RL training)
-    python environments/hermes_swe_env.py serve \\
+    python environments/avoi_swe_env.py serve \\
         --openai.base_url http://localhost:8000/v1 \\
         --openai.model_name YourModel \\
         --openai.server_type vllm \\
-        --env.tool_call_parser hermes \\
+        --env.tool_call_parser avoi \\
         --env.terminal_backend modal
 """
 
@@ -47,7 +47,7 @@ from atroposlib.envs.server_handling.server_manager import APIServerConfig
 from atroposlib.type_definitions import Item
 
 from environments.agent_loop import AgentResult
-from environments.hermes_base_env import HermesAgentBaseEnv, HermesAgentEnvConfig
+from environments.avoi_base_env import HermesAgentBaseEnv, HermesAgentEnvConfig
 from environments.tool_context import ToolContext
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ class HermesSweEnv(HermesAgentBaseEnv):
     and customize format_prompt() and compute_reward() as needed.
     """
 
-    name = "hermes-swe"
+    name = "avoi-swe"
     env_config_cls = HermesSweEnvConfig
 
     @classmethod
@@ -102,18 +102,18 @@ class HermesSweEnv(HermesAgentBaseEnv):
             prompt_field="prompt",
             # Atropos settings
             group_size=4,
-            tokenizer_name="NousResearch/DeepHermes-3-Llama-3-3B-Preview",
-            tool_call_parser="hermes",
+            tokenizer_name="avoi-ai/DeepHermes-3-Llama-3-3B-Preview",
+            tool_call_parser="avoi",
             steps_per_eval=50,
             total_steps=500,
             use_wandb=True,
-            wandb_name="hermes-swe",
+            wandb_name="avoi-swe",
         )
 
         server_configs = [
             APIServerConfig(
                 base_url="http://localhost:8000/v1",
-                model_name="NousResearch/DeepHermes-3-Llama-3-3B-Preview",
+                model_name="avoi-ai/DeepHermes-3-Llama-3-3B-Preview",
                 server_type="openai",  # Phase 1; switch to "vllm" for Phase 2
                 api_key="",
             )

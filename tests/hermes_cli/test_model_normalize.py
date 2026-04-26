@@ -1,11 +1,11 @@
-"""Tests for hermes_cli.model_normalize — provider-aware model name normalization.
+"""Tests for avoi_cli.model_normalize — provider-aware model name normalization.
 
 Covers issue #5211: opencode-go model names with dots (e.g. minimax-m2.7)
 must NOT be mangled to hyphens (minimax-m2-7).
 """
 import pytest
 
-from hermes_cli.model_normalize import (
+from avoi_cli.model_normalize import (
     normalize_model_for_provider,
     _DOT_TO_HYPHEN_PROVIDERS,
     _AGGREGATOR_PROVIDERS,
@@ -156,7 +156,7 @@ class TestAggregatorProviders:
         result = normalize_model_for_provider("claude-sonnet-4.6", "openrouter")
         assert result == "anthropic/claude-sonnet-4.6"
 
-    def test_nous_prepends_vendor(self):
+    def test_avoi_prepends_vendor(self):
         result = normalize_model_for_provider("gpt-5.4", "nous")
         assert result == "openai/gpt-5.4"
 

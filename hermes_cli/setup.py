@@ -1,5 +1,5 @@
 """
-Interactive setup wizard for Hermes Agent.
+Interactive setup wizard for AVOI Agent.
 
 Modular wizard with independently-runnable sections:
   1. Model & Provider — choose your AI provider and model
@@ -8,7 +8,7 @@ Modular wizard with independently-runnable sections:
   4. Messaging Platforms — connect Telegram, Discord, etc.
   5. Tools — configure TTS, web search, image generation, etc.
 
-Config files are stored in ~/.hermes/ for easy access.
+Config files are stored in ~/.avoi/ for easy access.
 """
 
 import importlib.util
@@ -20,16 +20,16 @@ import copy
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from hermes_cli.nous_subscription import get_nous_subscription_features
-from tools.tool_backend_helpers import managed_nous_tools_enabled
+from avoi_cli.avoi_subscription import get_avoi_subscription_features
+from tools.tool_backend_helpers import managed_avoi_tools_enabled
 from utils import base_url_hostname
-from hermes_constants import get_optional_skills_dir
+from avoi_constants import get_optional_skills_dir
 
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
-_DOCS_BASE = "https://hermes-agent.nousresearch.com/docs"
+_DOCS_BASE = "https://avoi-agent.avoi-ai.com/docs"
 
 
 def _model_config_dict(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -59,7 +59,7 @@ def _supports_same_provider_pool_setup(provider: str) -> bool:
         return False
     if provider == "openrouter":
         return True
-    from hermes_cli.auth import PROVIDER_REGISTRY
+    from avoi_cli.auth import PROVIDER_REGISTRY
 
     pconfig = PROVIDER_REGISTRY.get(provider)
     if not pconfig:
@@ -130,20 +130,20 @@ def _set_reasoning_effort(config: Dict[str, Any], effort: str) -> None:
 
 
 # Import config helpers
-from hermes_cli.config import (
+from avoi_cli.config import (
     DEFAULT_CONFIG,
-    get_hermes_home,
+    get_avoi_home,
     get_config_path,
     get_env_path,
     load_config,
     save_config,
     save_env_value,
     get_env_value,
-    ensure_hermes_home,
+    ensure_avoi_home,
 )
-# display_hermes_home imported lazily at call sites (stale-module safety during hermes update)
+# display_avoi_home imported lazily at call sites (stale-module safety during avoi update)
 
-from hermes_cli.colors import Colors, color
+from avoi_cli.colors import Colors, color
 
 
 def print_header(title: str):
@@ -152,7 +152,7 @@ def print_header(title: str):
     print(color(f"◆ {title}", Colors.CYAN, Colors.BOLD))
 
 
-from hermes_cli.cli_output import (  # noqa: E402
+from avoi_cli.cli_output import (  # noqa: E402
     print_error,
     print_info,
     print_success,
@@ -181,12 +181,12 @@ def print_noninteractive_setup_guidance(reason: str | None = None) -> None:
     print_info("The interactive wizard cannot be used here.")
     print()
     print_info("Configure Hermes using environment variables or config commands:")
-    print_info("  hermes config set model.provider custom")
-    print_info("  hermes config set model.base_url http://localhost:8080/v1")
-    print_info("  hermes config set model.default your-model-name")
+    print_info("  avoi config set model.provider custom")
+    print_info("  avoi config set model.base_url http://localhost:8080/v1")
+    print_info("  avoi config set model.default your-model-name")
     print()
     print_info("Or set OPENROUTER_API_KEY / OPENAI_API_KEY in your environment.")
-    print_info("Run 'hermes setup' in an interactive terminal to use the full wizard.")
+    print_info("Run 'avoi setup' in an interactive terminal to use the full wizard.")
     print()
 
 
@@ -213,7 +213,7 @@ def prompt(question: str, default: str = None, password: bool = False) -> str:
 
 def _curses_prompt_choice(question: str, choices: list, default: int = 0, description: str | None = None) -> int:
     """Single-select menu using curses. Delegates to curses_radiolist."""
-    from hermes_cli.curses_ui import curses_radiolist
+    from avoi_cli.curses_ui import curses_radiolist
     return curses_radiolist(question, choices, selected=default, cancel_returns=-1, description=description)
 
 
@@ -303,7 +303,7 @@ def prompt_checklist(title: str, items: list, pre_selected: list = None) -> list
     if pre_selected is None:
         pre_selected = []
 
-    from hermes_cli.curses_ui import curses_checklist
+    from avoi_cli.curses_ui import curses_checklist
 
     chosen = curses_checklist(
         title,
@@ -339,17 +339,17 @@ def _prompt_api_key(var: dict):
         save_env_value(var["name"], value)
         print_success("  ✓ Saved")
     else:
-        print_warning("  Skipped (configure later with 'hermes setup')")
+        print_warning("  Skipped (configure later with 'avoi setup')")
 
 
-def _print_setup_summary(config: dict, hermes_home):
+def _print_setup_summary(config: dict, avoi_home):
     """Print the setup completion summary."""
     # Tool availability summary
     print()
     print_header("Tool Availability Summary")
 
     tool_status = []
-    subscription_features = get_nous_subscription_features(config)
+    subscription_features = get_avoi_subscription_features(config)
 
     # Vision — use the same runtime resolver as the actual vision tools
     try:
@@ -362,7 +362,7 @@ def _print_setup_summary(config: dict, hermes_home):
     if _vision_backends:
         tool_status.append(("Vision (image analysis)", True, None))
     else:
-        tool_status.append(("Vision (image analysis)", False, "run 'hermes setup' to configure"))
+        tool_status.append(("Vision (image analysis)", False, "run 'avoi setup' to configure"))
 
     # Mixture of Agents — requires OpenRouter specifically (calls multiple models)
     if get_env_value("OPENROUTER_API_KEY"):
@@ -421,7 +421,7 @@ def _print_setup_summary(config: dict, hermes_home):
         _img_backend = None
         try:
             from agent.image_gen_registry import list_providers
-            from hermes_cli.plugins import _ensure_plugins_discovered
+            from avoi_cli.plugins import _ensure_plugins_discovered
 
             _ensure_plugins_discovered()
             for _p in list_providers():
@@ -464,7 +464,7 @@ def _print_setup_summary(config: dict, hermes_home):
         if neutts_ok:
             tool_status.append(("Text-to-Speech (NeuTTS local)", True, None))
         else:
-            tool_status.append(("Text-to-Speech (NeuTTS — not installed)", False, "run 'hermes setup tts'"))
+            tool_status.append(("Text-to-Speech (NeuTTS — not installed)", False, "run 'avoi setup tts'"))
     elif tts_provider == "kittentts":
         try:
             import importlib.util
@@ -474,7 +474,7 @@ def _print_setup_summary(config: dict, hermes_home):
         if kittentts_ok:
             tool_status.append(("Text-to-Speech (KittenTTS local)", True, None))
         else:
-            tool_status.append(("Text-to-Speech (KittenTTS — not installed)", False, "run 'hermes setup tts'"))
+            tool_status.append(("Text-to-Speech (KittenTTS — not installed)", False, "run 'avoi setup tts'"))
     else:
         tool_status.append(("Text-to-Speech (Edge TTS)", True, None))
 
@@ -484,8 +484,8 @@ def _print_setup_summary(config: dict, hermes_home):
         if subscription_features.modal.direct_override:
             tool_status.append(("Modal Execution (direct Modal)", True, None))
         else:
-            tool_status.append(("Modal Execution", False, "run 'hermes setup terminal'"))
-    elif managed_nous_tools_enabled() and subscription_features.nous_auth_present:
+            tool_status.append(("Modal Execution", False, "run 'avoi setup terminal'"))
+    elif managed_avoi_tools_enabled() and subscription_features.avoi_auth_present:
         tool_status.append(("Modal Execution (optional via Nous subscription)", True, None))
 
     # Tinker + WandB (RL training)
@@ -500,9 +500,9 @@ def _print_setup_summary(config: dict, hermes_home):
     if get_env_value("HASS_TOKEN"):
         tool_status.append(("Smart Home (Home Assistant)", True, None))
 
-    # Spotify (OAuth via hermes auth spotify — check auth.json, not env vars)
+    # Spotify (OAuth via avoi auth spotify — check auth.json, not env vars)
     try:
-        from hermes_cli.auth import get_provider_auth_state
+        from avoi_cli.auth import get_provider_auth_state
         _spotify_state = get_provider_auth_state("spotify") or {}
         if _spotify_state.get("access_token") or _spotify_state.get("refresh_token"):
             tool_status.append(("Spotify (PKCE OAuth)", True, None))
@@ -544,9 +544,9 @@ def _print_setup_summary(config: dict, hermes_home):
     disabled_tools = [(name, var) for name, avail, var in tool_status if not avail]
     if disabled_tools:
         print_warning(
-            "Some tools are disabled. Run 'hermes setup tools' to configure them,"
+            "Some tools are disabled. Run 'avoi setup tools' to configure them,"
         )
-        from hermes_constants import display_hermes_home as _dhh
+        from avoi_constants import display_avoi_home as _dhh
         print_warning(f"or edit {_dhh()}/.env directly to add the missing API keys.")
         print()
 
@@ -570,13 +570,13 @@ def _print_setup_summary(config: dict, hermes_home):
     print()
 
     # Show file locations prominently
-    from hermes_constants import display_hermes_home as _dhh
+    from avoi_constants import display_avoi_home as _dhh
     print(color(f"📁 All your files are in {_dhh()}/:", Colors.CYAN, Colors.BOLD))
     print()
     print(f"   {color('Settings:', Colors.YELLOW)}  {get_config_path()}")
     print(f"   {color('API Keys:', Colors.YELLOW)}  {get_env_path()}")
     print(
-        f"   {color('Data:', Colors.YELLOW)}      {hermes_home}/cron/, sessions/, logs/"
+        f"   {color('Data:', Colors.YELLOW)}      {avoi_home}/cron/, sessions/, logs/"
     )
     print()
 
@@ -584,17 +584,17 @@ def _print_setup_summary(config: dict, hermes_home):
     print()
     print(color("📝 To edit your configuration:", Colors.CYAN, Colors.BOLD))
     print()
-    print(f"   {color('hermes setup', Colors.GREEN)}          Re-run the full wizard")
-    print(f"   {color('hermes setup model', Colors.GREEN)}    Change model/provider")
-    print(f"   {color('hermes setup terminal', Colors.GREEN)} Change terminal backend")
-    print(f"   {color('hermes setup gateway', Colors.GREEN)}  Configure messaging")
-    print(f"   {color('hermes setup tools', Colors.GREEN)}    Configure tool providers")
+    print(f"   {color('avoi setup', Colors.GREEN)}          Re-run the full wizard")
+    print(f"   {color('avoi setup model', Colors.GREEN)}    Change model/provider")
+    print(f"   {color('avoi setup terminal', Colors.GREEN)} Change terminal backend")
+    print(f"   {color('avoi setup gateway', Colors.GREEN)}  Configure messaging")
+    print(f"   {color('avoi setup tools', Colors.GREEN)}    Configure tool providers")
     print()
-    print(f"   {color('hermes config', Colors.GREEN)}         View current settings")
+    print(f"   {color('avoi config', Colors.GREEN)}         View current settings")
     print(
-        f"   {color('hermes config edit', Colors.GREEN)}    Open config in your editor"
+        f"   {color('avoi config edit', Colors.GREEN)}    Open config in your editor"
     )
-    print(f"   {color('hermes config set <key> <value>', Colors.GREEN)}")
+    print(f"   {color('avoi config set <key> <value>', Colors.GREEN)}")
     print("                          Set a specific value")
     print()
     print("   Or edit the files directly:")
@@ -606,9 +606,9 @@ def _print_setup_summary(config: dict, hermes_home):
     print()
     print(color("🚀 Ready to go!", Colors.CYAN, Colors.BOLD))
     print()
-    print(f"   {color('hermes', Colors.GREEN)}              Start chatting")
-    print(f"   {color('hermes gateway', Colors.GREEN)}      Start messaging gateway")
-    print(f"   {color('hermes doctor', Colors.GREEN)}       Check for issues")
+    print(f"   {color('avoi', Colors.GREEN)}              Start chatting")
+    print(f"   {color('avoi gateway', Colors.GREEN)}      Start messaging gateway")
+    print(f"   {color('avoi doctor', Colors.GREEN)}       Check for issues")
     print()
 
 
@@ -655,7 +655,7 @@ def _prompt_container_resources(config: dict):
 
 
 # Tool categories and provider config are now in tools_config.py (shared
-# between `hermes tools` and `hermes setup tools`).
+# between `avoi tools` and `avoi setup tools`).
 
 
 # =============================================================================
@@ -667,24 +667,24 @@ def _prompt_container_resources(config: dict):
 def setup_model_provider(config: dict, *, quick: bool = False):
     """Configure the inference provider and default model.
 
-    Delegates to ``cmd_model()`` (the same flow used by ``hermes model``)
+    Delegates to ``cmd_model()`` (the same flow used by ``avoi model``)
     for provider selection, credential prompting, and model picking.
     This ensures a single code path for all provider setup — any new
-    provider added to ``hermes model`` is automatically available here.
+    provider added to ``avoi model`` is automatically available here.
 
     When *quick* is True, skips credential rotation, vision, and TTS
     configuration — used by the streamlined first-time quick setup.
     """
-    from hermes_cli.config import load_config, save_config
+    from avoi_cli.config import load_config, save_config
 
     print_header("Inference Provider")
     print_info("Choose how to connect to your main chat model.")
     print_info(f"   Guide: {_DOCS_BASE}/integrations/providers")
     print()
 
-    # Delegate to the shared hermes model flow — handles provider picker,
+    # Delegate to the shared avoi model flow — handles provider picker,
     # credential prompting, model selection, and config persistence.
-    from hermes_cli.main import select_provider_and_model
+    from avoi_cli.main import select_provider_and_model
     try:
         select_provider_and_model()
     except (SystemExit, KeyboardInterrupt):
@@ -693,7 +693,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     except Exception as exc:
         logger.debug("select_provider_and_model error during setup: %s", exc)
         print_warning(f"Provider setup encountered an error: {exc}")
-        print_info("You can try again later with: hermes model")
+        print_info("You can try again later with: avoi model")
 
     # Re-sync the wizard's config dict from what cmd_model saved to disk.
     # This is critical: cmd_model writes to disk via its own load/save cycle,
@@ -712,14 +712,14 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     if isinstance(_m, dict):
         selected_provider = _m.get("provider")
 
-    nous_subscription_selected = selected_provider == "nous"
+    avoi_subscription_selected = selected_provider == "nous"
 
     # ── Same-provider fallback & rotation setup (full setup only) ──
     if not quick and _supports_same_provider_pool_setup(selected_provider):
         try:
             from types import SimpleNamespace
             from agent.credential_pool import load_pool
-            from hermes_cli.auth_commands import auth_add_command
+            from avoi_cli.auth_commands import auth_add_command
 
             pool = load_pool(selected_provider)
             entries = pool.entries()
@@ -875,7 +875,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
             else:
                 print_info("Skipped — vision won't be available")
         else:
-            print_info("Skipped — add later with 'hermes setup' or configure AUXILIARY_VISION_* settings")
+            print_info("Skipped — add later with 'avoi setup' or configure AUXILIARY_VISION_* settings")
 
 
     # Tool Gateway prompt is already shown by _model_flow_nous() above.
@@ -974,7 +974,7 @@ def _setup_tts_provider(config: dict):
     """Interactive TTS provider selection with install flow for NeuTTS."""
     tts_config = config.get("tts", {})
     current_provider = tts_config.get("provider", "edge")
-    subscription_features = get_nous_subscription_features(config)
+    subscription_features = get_avoi_subscription_features(config)
 
     provider_labels = {
         "edge": "Edge TTS",
@@ -996,7 +996,7 @@ def _setup_tts_provider(config: dict):
 
     choices = []
     providers = []
-    if managed_nous_tools_enabled() and subscription_features.nous_auth_present:
+    if managed_avoi_tools_enabled() and subscription_features.avoi_auth_present:
         choices.append("Nous Subscription (managed OpenAI TTS, billed to your subscription)")
         providers.append("nous-openai")
     choices.extend(
@@ -1027,7 +1027,7 @@ def _setup_tts_provider(config: dict):
         print_info("OpenAI TTS will use the managed Nous gateway and bill to your subscription.")
         if get_env_value("VOICE_TOOLS_OPENAI_KEY") or get_env_value("OPENAI_API_KEY"):
             print_warning(
-                "Direct OpenAI credentials are still configured and may take precedence until removed from ~/.hermes/.env."
+                "Direct OpenAI credentials are still configured and may take precedence until removed from ~/.avoi/.env."
             )
 
     if selected == "neutts":
@@ -1086,10 +1086,10 @@ def _setup_tts_provider(config: dict):
                 save_env_value("XAI_API_KEY", api_key)
                 print_success("xAI TTS API key saved")
             else:
-                from hermes_constants import display_hermes_home as _dhh
+                from avoi_constants import display_avoi_home as _dhh
                 print_warning(
                     "No xAI API key provided for TTS. Configure XAI_API_KEY via "
-                    f"hermes setup model or {_dhh()}/.env to use xAI TTS. "
+                    f"avoi setup model or {_dhh()}/.env to use xAI TTS. "
                     "Falling back to Edge TTS."
                 )
                 selected = "edge"
@@ -1163,7 +1163,7 @@ def _setup_tts_provider(config: dict):
 
 
 def setup_tts(config: dict):
-    """Standalone TTS setup (for 'hermes setup tts')."""
+    """Standalone TTS setup (for 'avoi setup tts')."""
     _setup_tts_provider(config)
 
 
@@ -1299,9 +1299,9 @@ def setup_terminal_backend(config: dict):
         from tools.tool_backend_helpers import normalize_modal_mode
 
         managed_modal_available = bool(
-            managed_nous_tools_enabled()
+            managed_avoi_tools_enabled()
             and
-            get_nous_subscription_features(config).nous_auth_present
+            get_avoi_subscription_features(config).avoi_auth_present
             and is_managed_tool_gateway_ready("modal")
         )
         modal_mode = normalize_modal_mode(config.get("terminal", {}).get("modal_mode"))
@@ -1516,7 +1516,7 @@ def setup_terminal_backend(config: dict):
 def _apply_default_agent_settings(config: dict):
     """Apply recommended defaults for all agent settings without prompting."""
     config.setdefault("agent", {})["max_turns"] = 90
-    save_env_value("HERMES_MAX_ITERATIONS", "90")
+    save_env_value("AVOI_MAX_ITERATIONS", "90")
 
     config.setdefault("display", {})["tool_progress"] = "all"
 
@@ -1535,7 +1535,7 @@ def _apply_default_agent_settings(config: dict):
     print_info("  Tool progress: all")
     print_info("  Compression threshold: 0.50")
     print_info("  Session reset: inactivity (1440 min) + daily (4:00)")
-    print_info("  Run `hermes setup agent` later to customize.")
+    print_info("  Run `avoi setup agent` later to customize.")
 
 
 def setup_agent_settings(config: dict):
@@ -1546,7 +1546,7 @@ def setup_agent_settings(config: dict):
     print()
 
     # ── Max Iterations ──
-    current_max = get_env_value("HERMES_MAX_ITERATIONS") or str(
+    current_max = get_env_value("AVOI_MAX_ITERATIONS") or str(
         config.get("agent", {}).get("max_turns", 90)
     )
     print_info("Maximum tool-calling iterations per conversation.")
@@ -1559,7 +1559,7 @@ def setup_agent_settings(config: dict):
     try:
         max_iter = int(max_iter_str)
         if max_iter > 0:
-            save_env_value("HERMES_MAX_ITERATIONS", str(max_iter))
+            save_env_value("AVOI_MAX_ITERATIONS", str(max_iter))
             config.setdefault("agent", {})["max_turns"] = max_iter
             config.pop("max_turns", None)
             print_success(f"Max iterations set to {max_iter}")
@@ -1876,7 +1876,7 @@ def _setup_slack():
     print_info("   6. Reinstall the app after any scope or event changes")
     print_info("   7. After installing, invite the bot to channels: /invite @YourBot")
     print()
-    print_info("   Full guide: https://hermes-agent.nousresearch.com/docs/user-guide/messaging/slack/")
+    print_info("   Full guide: https://avoi-agent.avoi-ai.com/docs/user-guide/messaging/slack/")
     print()
     bot_token = prompt("Slack Bot Token (xoxb-...)", password=True)
     if not bot_token:
@@ -2040,60 +2040,60 @@ def _setup_whatsapp():
         return
 
     print_info("WhatsApp connects via a built-in bridge (Baileys).")
-    print_info("Requires Node.js. Run 'hermes whatsapp' for guided setup.")
+    print_info("Requires Node.js. Run 'avoi whatsapp' for guided setup.")
     print()
     if prompt_yes_no("Enable WhatsApp now?", True):
         save_env_value("WHATSAPP_ENABLED", "true")
         print_success("WhatsApp enabled")
-        print_info("Run 'hermes whatsapp' to choose your mode (separate bot number")
+        print_info("Run 'avoi whatsapp' to choose your mode (separate bot number")
         print_info("or personal self-chat) and pair via QR code.")
 
 
 def _setup_weixin():
     """Configure Weixin (personal WeChat) via iLink Bot API QR login."""
-    from hermes_cli.gateway import _setup_weixin as _gateway_setup_weixin
+    from avoi_cli.gateway import _setup_weixin as _gateway_setup_weixin
     _gateway_setup_weixin()
 
 
 def _setup_signal():
     """Configure Signal via gateway setup."""
-    from hermes_cli.gateway import _setup_signal as _gateway_setup_signal
+    from avoi_cli.gateway import _setup_signal as _gateway_setup_signal
     _gateway_setup_signal()
 
 
 def _setup_email():
     """Configure Email via gateway setup."""
-    from hermes_cli.gateway import _setup_email as _gateway_setup_email
+    from avoi_cli.gateway import _setup_email as _gateway_setup_email
     _gateway_setup_email()
 
 
 def _setup_sms():
     """Configure SMS (Twilio) via gateway setup."""
-    from hermes_cli.gateway import _setup_sms as _gateway_setup_sms
+    from avoi_cli.gateway import _setup_sms as _gateway_setup_sms
     _gateway_setup_sms()
 
 
 def _setup_dingtalk():
     """Configure DingTalk via gateway setup."""
-    from hermes_cli.gateway import _setup_dingtalk as _gateway_setup_dingtalk
+    from avoi_cli.gateway import _setup_dingtalk as _gateway_setup_dingtalk
     _gateway_setup_dingtalk()
 
 
 def _setup_feishu():
     """Configure Feishu / Lark via gateway setup."""
-    from hermes_cli.gateway import _setup_feishu as _gateway_setup_feishu
+    from avoi_cli.gateway import _setup_feishu as _gateway_setup_feishu
     _gateway_setup_feishu()
 
 
 def _setup_wecom():
     """Configure WeCom (Enterprise WeChat) via gateway setup."""
-    from hermes_cli.gateway import _setup_wecom as _gateway_setup_wecom
+    from avoi_cli.gateway import _setup_wecom as _gateway_setup_wecom
     _gateway_setup_wecom()
 
 
 def _setup_wecom_callback():
     """Configure WeCom Callback (self-built app) via gateway setup."""
-    from hermes_cli.gateway import _setup_wecom_callback as _gw_setup
+    from avoi_cli.gateway import _setup_wecom_callback as _gw_setup
     _gw_setup()
 
 
@@ -2166,7 +2166,7 @@ def _setup_bluebubbles():
 
 def _setup_qqbot():
     """Configure QQ Bot (Official API v2) via gateway setup."""
-    from hermes_cli.gateway import _setup_qqbot as _gateway_setup_qqbot
+    from avoi_cli.gateway import _setup_qqbot as _gateway_setup_qqbot
     _gateway_setup_qqbot()
 
 
@@ -2184,7 +2184,7 @@ def _setup_webhooks():
     print_warning("   internet. For security, run the gateway in a sandboxed environment")
     print_warning("   (Docker, VM, etc.) to limit blast radius from prompt injection.")
     print()
-    print_info("   Full guide: https://hermes-agent.nousresearch.com/docs/user-guide/messaging/webhooks/")
+    print_info("   Full guide: https://avoi-agent.avoi-ai.com/docs/user-guide/messaging/webhooks/")
     print()
 
     port = prompt("Webhook port (default 8644)")
@@ -2205,15 +2205,15 @@ def _setup_webhooks():
     save_env_value("WEBHOOK_ENABLED", "true")
     print()
     print_success("Webhooks enabled! Next steps:")
-    from hermes_constants import display_hermes_home as _dhh
+    from avoi_constants import display_avoi_home as _dhh
     print_info(f"   1. Define webhook routes in {_dhh()}/config.yaml")
     print_info("   2. Point your service (GitHub, GitLab, etc.) at:")
     print_info("      http://your-server:8644/webhooks/<route-name>")
     print()
     print_info("   Route configuration guide:")
-    print_info("   https://hermes-agent.nousresearch.com/docs/user-guide/messaging/webhooks/#configuring-routes")
+    print_info("   https://avoi-agent.avoi-ai.com/docs/user-guide/messaging/webhooks/#configuring-routes")
     print()
-    print_info("   Open config in your editor:  hermes config edit")
+    print_info("   Open config in your editor:  avoi config edit")
 
 
 # Platform registry for the gateway checklist
@@ -2261,7 +2261,7 @@ def setup_gateway(config: dict):
     selected = prompt_checklist("Select platforms to configure:", items, pre_selected)
 
     if not selected:
-        print_info("No platforms selected. Run 'hermes setup gateway' later to configure.")
+        print_info("No platforms selected. Run 'avoi setup gateway' later to configure.")
         return
 
     for idx in selected:
@@ -2320,7 +2320,7 @@ def setup_gateway(config: dict):
             print_info("   Set one later with /set-home in your chat, or:")
             for plat in missing_home:
                 print_info(
-                    f"     hermes config set {plat.upper()}_HOME_CHANNEL <channel_id>"
+                    f"     avoi config set {plat.upper()}_HOME_CHANNEL <channel_id>"
                 )
 
         # Offer to install the gateway as a system service
@@ -2329,12 +2329,12 @@ def setup_gateway(config: dict):
         _is_linux = _platform.system() == "Linux"
         _is_macos = _platform.system() == "Darwin"
 
-        from hermes_cli.gateway import (
+        from avoi_cli.gateway import (
             _is_service_installed,
             _is_service_running,
             supports_systemd_services,
             has_conflicting_systemd_units,
-            has_legacy_hermes_units,
+            has_legacy_avoi_units,
             install_linux_gateway_from_setup,
             print_systemd_scope_conflict_warning,
             print_legacy_unit_warning,
@@ -2356,7 +2356,7 @@ def setup_gateway(config: dict):
             print_systemd_scope_conflict_warning()
             print()
 
-        if supports_systemd and has_legacy_hermes_units():
+        if supports_systemd and has_legacy_avoi_units():
             print_legacy_unit_warning()
             print()
 
@@ -2415,24 +2415,24 @@ def setup_gateway(config: dict):
                             print_error(f"  Start failed: {e}")
                 except Exception as e:
                     print_error(f"  Install failed: {e}")
-                    print_info("  You can try manually: hermes gateway install")
+                    print_info("  You can try manually: avoi gateway install")
             else:
-                print_info("  You can install later: hermes gateway install")
+                print_info("  You can install later: avoi gateway install")
                 if supports_systemd:
-                    print_info("  Or as a boot-time service: sudo hermes gateway install --system")
-                print_info("  Or run in foreground:  hermes gateway")
+                    print_info("  Or as a boot-time service: sudo avoi gateway install --system")
+                print_info("  Or run in foreground:  avoi gateway")
         else:
-            from hermes_constants import is_container
+            from avoi_constants import is_container
             if is_container():
                 print_info("Start the gateway to bring your bots online:")
-                print_info("   hermes gateway run          # Run as container main process")
+                print_info("   avoi gateway run          # Run as container main process")
                 print_info("")
                 print_info("For automatic restarts, use a Docker restart policy:")
                 print_info("   docker run --restart unless-stopped ...")
                 print_info("   docker restart <container>  # Manual restart")
             else:
                 print_info("Start the gateway to bring your bots online:")
-                print_info("   hermes gateway              # Run in foreground")
+                print_info("   avoi gateway              # Run in foreground")
 
         print_info("━" * 50)
 
@@ -2445,14 +2445,14 @@ def setup_gateway(config: dict):
 def setup_tools(config: dict, first_install: bool = False):
     """Configure tools — delegates to the unified tools_command() in tools_config.py.
 
-    Both `hermes setup tools` and `hermes tools` use the same flow:
+    Both `avoi setup tools` and `avoi tools` use the same flow:
     platform selection → toolset toggles → provider/API key configuration.
 
     Args:
         first_install: When True, uses the simplified first-install flow
             (no platform menu, prompts for all unconfigured API keys).
     """
-    from hermes_cli.tools_config import tools_command
+    from avoi_cli.tools_config import tools_command
 
     tools_command(first_install=first_install, config=config)
 
@@ -2466,7 +2466,7 @@ def _model_section_has_credentials(config: dict) -> bool:
     """Return True when any known inference provider has usable credentials.
 
     Sources of truth:
-      * ``PROVIDER_REGISTRY`` in ``hermes_cli.auth`` — lists every supported
+      * ``PROVIDER_REGISTRY`` in ``avoi_cli.auth`` — lists every supported
         provider along with its ``api_key_env_vars``.
       * ``active_provider`` in the auth store — covers OAuth device-code /
         external-OAuth providers (Nous, Codex, Qwen, Gemini CLI, ...).
@@ -2474,14 +2474,14 @@ def _model_section_has_credentials(config: dict) -> bool:
         ``OPENAI_API_KEY`` / ``OPENROUTER_API_KEY`` values through OpenRouter.
     """
     try:
-        from hermes_cli.auth import get_active_provider
+        from avoi_cli.auth import get_active_provider
         if get_active_provider():
             return True
     except Exception:
         pass
 
     try:
-        from hermes_cli.auth import PROVIDER_REGISTRY
+        from avoi_cli.auth import PROVIDER_REGISTRY
     except Exception:
         PROVIDER_REGISTRY = {}  # type: ignore[assignment]
 
@@ -2534,7 +2534,7 @@ def _get_section_config_summary(config: dict, section_key: str) -> Optional[str]
     """Return a short summary if a setup section is already configured, else None.
 
     Used after OpenClaw migration to detect which sections can be skipped.
-    ``get_env_value`` is the module-level import from hermes_cli.config
+    ``get_env_value`` is the module-level import from avoi_cli.config
     so that test patches on ``setup_mod.get_env_value`` take effect.
     """
     if section_key == "model":
@@ -2605,12 +2605,12 @@ _OPENCLAW_SCRIPT = (
     / "migration"
     / "openclaw-migration"
     / "scripts"
-    / "openclaw_to_hermes.py"
+    / "openclaw_to_avoi.py"
 )
 
 
 def _load_openclaw_migration_module():
-    """Load the openclaw_to_hermes migration script as a module.
+    """Load the openclaw_to_avoi migration script as a module.
 
     Returns the loaded module, or None if the script can't be loaded.
     """
@@ -2618,7 +2618,7 @@ def _load_openclaw_migration_module():
         return None
 
     spec = importlib.util.spec_from_file_location(
-        "openclaw_to_hermes", _OPENCLAW_SCRIPT
+        "openclaw_to_avoi", _OPENCLAW_SCRIPT
     )
     if spec is None or spec.loader is None:
         return None
@@ -2717,7 +2717,7 @@ def _print_migration_preview(report: dict):
         print()
 
 
-def _offer_openclaw_migration(hermes_home: Path) -> bool:
+def _offer_openclaw_migration(avoi_home: Path) -> bool:
     """Detect ~/.openclaw and offer to migrate during first-time setup.
 
     Runs a dry-run first to show the user exactly what would be imported,
@@ -2740,7 +2740,7 @@ def _offer_openclaw_migration(hermes_home: Path) -> bool:
 
     if not prompt_yes_no("Would you like to see what can be imported?", default=True):
         print_info(
-            "Skipping migration. You can run it later with: hermes claw migrate --dry-run"
+            "Skipping migration. You can run it later with: avoi claw migrate --dry-run"
         )
         return False
 
@@ -2765,7 +2765,7 @@ def _offer_openclaw_migration(hermes_home: Path) -> bool:
         selected = mod.resolve_selected_options(None, None, preset="full")
         dry_migrator = mod.Migrator(
             source_root=openclaw_dir.resolve(),
-            target_root=hermes_home.resolve(),
+            target_root=avoi_home.resolve(),
             execute=False,  # dry-run — no files modified
             workspace_target=None,
             overwrite=True,  # show everything including conflicts
@@ -2798,7 +2798,7 @@ def _offer_openclaw_migration(hermes_home: Path) -> bool:
     # ── Phase 2: Confirm and execute ──
     if not prompt_yes_no("Proceed with migration?", default=False):
         print_info(
-            "Migration cancelled. You can run it later with: hermes claw migrate"
+            "Migration cancelled. You can run it later with: avoi claw migrate"
         )
         print_info(
             "Use --dry-run to preview again, or --preset minimal for a lighter import."
@@ -2810,7 +2810,7 @@ def _offer_openclaw_migration(hermes_home: Path) -> bool:
     try:
         migrator = mod.Migrator(
             source_root=openclaw_dir.resolve(),
-            target_root=hermes_home.resolve(),
+            target_root=avoi_home.resolve(),
             execute=True,
             workspace_target=None,
             overwrite=False,  # preserve existing Hermes config
@@ -2836,7 +2836,7 @@ def _offer_openclaw_migration(hermes_home: Path) -> bool:
     if migrated:
         print_success(f"Imported {migrated} item(s) from OpenClaw.")
     if conflicts:
-        print_info(f"Skipped {conflicts} item(s) that already exist in Hermes (use hermes claw migrate --overwrite to force).")
+        print_info(f"Skipped {conflicts} item(s) that already exist in Hermes (use avoi claw migrate --overwrite to force).")
     if skipped:
         print_info(f"Skipped {skipped} item(s) (not found or unchanged).")
     if errors:
@@ -2879,19 +2879,19 @@ def run_setup_wizard(args):
     """Run the interactive setup wizard.
 
     Supports full, quick, and section-specific setup:
-      hermes setup           — full or quick (auto-detected)
-      hermes setup model     — just model/provider
-      hermes setup tts       — just text-to-speech
-      hermes setup terminal  — just terminal backend
-      hermes setup gateway   — just messaging platforms
-      hermes setup tools     — just tool configuration
-      hermes setup agent     — just agent settings
+      avoi setup           — full or quick (auto-detected)
+      avoi setup model     — just model/provider
+      avoi setup tts       — just text-to-speech
+      avoi setup terminal  — just terminal backend
+      avoi setup gateway   — just messaging platforms
+      avoi setup tools     — just tool configuration
+      avoi setup agent     — just agent settings
     """
-    from hermes_cli.config import is_managed, managed_error
+    from avoi_cli.config import is_managed, managed_error
     if is_managed():
         managed_error("run setup wizard")
         return
-    ensure_hermes_home()
+    ensure_avoi_home()
 
     reset_requested = bool(getattr(args, "reset", False))
     if reset_requested:
@@ -2899,7 +2899,7 @@ def run_setup_wizard(args):
         print_success("Configuration reset to defaults.")
 
     config = load_config()
-    hermes_home = get_hermes_home()
+    avoi_home = get_avoi_home()
 
     # Detect non-interactive environments (headless SSH, Docker, CI/CD)
     non_interactive = getattr(args, 'non_interactive', False)
@@ -2942,7 +2942,7 @@ def run_setup_wizard(args):
         return
 
     # Check if this is an existing installation with a provider configured
-    from hermes_cli.auth import get_active_provider
+    from avoi_cli.auth import get_active_provider
 
     active_provider = get_active_provider()
     is_existing = (
@@ -2960,7 +2960,7 @@ def run_setup_wizard(args):
     )
     print(
         color(
-            "│             ⚕ Hermes Agent Setup Wizard                │", Colors.MAGENTA
+            "│             ⚕ AVOI Agent Setup Wizard                │", Colors.MAGENTA
         )
     )
     print(
@@ -2971,7 +2971,7 @@ def run_setup_wizard(args):
     )
     print(
         color(
-            "│  Let's configure your Hermes Agent installation.       │", Colors.MAGENTA
+            "│  Let's configure your AVOI Agent installation.       │", Colors.MAGENTA
         )
     )
     print(
@@ -3009,13 +3009,13 @@ def run_setup_wizard(args):
 
         if choice == 0:
             # Quick setup
-            _run_quick_setup(config, hermes_home)
+            _run_quick_setup(config, avoi_home)
             return
         elif choice == 1:
             # Full setup — fall through to run all sections
             pass
         elif choice == 7:
-            print_info("Exiting. Run 'hermes setup' again when ready.")
+            print_info("Exiting. Run 'avoi setup' again when ready.")
             return
         elif 2 <= choice <= 6:
             # Individual section — map by key, not by position.
@@ -3027,14 +3027,14 @@ def run_setup_wizard(args):
                 _, label, func = section
                 func(config)
                 save_config(config)
-                _print_setup_summary(config, hermes_home)
+                _print_setup_summary(config, avoi_home)
             return
     else:
         # ── First-Time Setup ──
         print()
 
         # Offer OpenClaw migration before configuration begins
-        migration_ran = _offer_openclaw_migration(hermes_home)
+        migration_ran = _offer_openclaw_migration(avoi_home)
         if migration_ran:
             config = load_config()
 
@@ -3044,17 +3044,17 @@ def run_setup_wizard(args):
         ], 0)
 
         if setup_mode == 0:
-            _run_first_time_quick_setup(config, hermes_home, is_existing)
+            _run_first_time_quick_setup(config, avoi_home, is_existing)
             return
 
     # ── Full Setup — run all sections ──
     print_header("Configuration Location")
     print_info(f"Config file:  {get_config_path()}")
     print_info(f"Secrets file: {get_env_path()}")
-    print_info(f"Data folder:  {hermes_home}")
+    print_info(f"Data folder:  {avoi_home}")
     print_info(f"Install dir:  {PROJECT_ROOT}")
     print()
-    print_info("You can edit these files directly or use 'hermes config edit'")
+    print_info("You can edit these files directly or use 'avoi config edit'")
 
     if migration_ran:
         print()
@@ -3084,20 +3084,20 @@ def run_setup_wizard(args):
 
     # Save and show summary
     save_config(config)
-    _print_setup_summary(config, hermes_home)
+    _print_setup_summary(config, avoi_home)
 
     _offer_launch_chat()
 
 
-def _resolve_hermes_chat_argv() -> Optional[list[str]]:
-    """Resolve argv for launching ``hermes chat`` in a fresh process."""
-    hermes_bin = shutil.which("hermes")
-    if hermes_bin:
-        return [hermes_bin, "chat"]
+def _resolve_avoi_chat_argv() -> Optional[list[str]]:
+    """Resolve argv for launching ``avoi chat`` in a fresh process."""
+    avoi_bin = shutil.which("avoi")
+    if avoi_bin:
+        return [avoi_bin, "chat"]
 
     try:
-        if importlib.util.find_spec("hermes_cli") is not None:
-            return [sys.executable, "-m", "hermes_cli.main", "chat"]
+        if importlib.util.find_spec("avoi_cli") is not None:
+            return [sys.executable, "-m", "avoi_cli.main", "chat"]
     except Exception:
         pass
 
@@ -3107,23 +3107,23 @@ def _resolve_hermes_chat_argv() -> Optional[list[str]]:
 def _offer_launch_chat():
     """Prompt the user to jump straight into chat after setup."""
     print()
-    if not prompt_yes_no("Launch hermes chat now?", True):
+    if not prompt_yes_no("Launch avoi chat now?", True):
         return
 
-    chat_argv = _resolve_hermes_chat_argv()
+    chat_argv = _resolve_avoi_chat_argv()
     if not chat_argv:
-        print_info("Could not relaunch Hermes automatically. Run 'hermes chat' manually.")
+        print_info("Could not relaunch Hermes automatically. Run 'avoi chat' manually.")
         return
 
     os.execvp(chat_argv[0], chat_argv)
 
 
-def _run_first_time_quick_setup(config: dict, hermes_home, is_existing: bool):
+def _run_first_time_quick_setup(config: dict, avoi_home, is_existing: bool):
     """Streamlined first-time setup: provider + model only.
 
     Applies sensible defaults for TTS (Edge), terminal (local), agent
     settings, and tools — the user can customize later via
-    ``hermes setup <section>``.
+    ``avoi setup <section>``.
     """
     # Step 1: Model & Provider (essential — skips rotation/vision/TTS)
     setup_model_provider(config, quick=True)
@@ -3140,7 +3140,7 @@ def _run_first_time_quick_setup(config: dict, hermes_home, is_existing: bool):
         "Connect a messaging platform? (Telegram, Discord, etc.)",
         [
             "Set up messaging now (recommended)",
-            "Skip — set up later with 'hermes setup gateway'",
+            "Skip — set up later with 'avoi setup gateway'",
         ],
         0,
     )
@@ -3152,19 +3152,19 @@ def _run_first_time_quick_setup(config: dict, hermes_home, is_existing: bool):
     print()
     print_success("Setup complete! You're ready to go.")
     print()
-    print_info("  Configure all settings:    hermes setup")
+    print_info("  Configure all settings:    avoi setup")
     if gateway_choice != 0:
-        print_info("  Connect Telegram/Discord:  hermes setup gateway")
+        print_info("  Connect Telegram/Discord:  avoi setup gateway")
     print()
 
-    _print_setup_summary(config, hermes_home)
+    _print_setup_summary(config, avoi_home)
 
     _offer_launch_chat()
 
 
-def _run_quick_setup(config: dict, hermes_home):
+def _run_quick_setup(config: dict, avoi_home):
     """Quick setup — only configure items that are missing."""
-    from hermes_cli.config import (
+    from avoi_cli.config import (
         get_missing_env_vars,
         get_missing_config_fields,
         check_config_version,
@@ -3193,7 +3193,7 @@ def _run_quick_setup(config: dict, hermes_home):
     if not has_anything_missing:
         print_success("Everything is configured! Nothing to do.")
         print()
-        print_info("Run 'hermes setup' and choose 'Full Setup' to reconfigure,")
+        print_info("Run 'avoi setup' and choose 'Full Setup' to reconfigure,")
         print_info("or pick a specific section from the menu.")
         return
 
@@ -3256,7 +3256,7 @@ def _run_quick_setup(config: dict, hermes_home):
         print()
         print_header("Messaging Platforms")
         print_info("Connect Hermes to messaging apps to chat from anywhere.")
-        print_info("You can configure these later with 'hermes setup gateway'.")
+        print_info("You can configure these later with 'avoi setup gateway'.")
 
         # Group by platform (preserving order)
         platform_order = []
@@ -3325,4 +3325,4 @@ def _run_quick_setup(config: dict, hermes_home):
         save_config(config)
 
     # Jump to summary
-    _print_setup_summary(config, hermes_home)
+    _print_setup_summary(config, avoi_home)

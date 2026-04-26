@@ -2,10 +2,10 @@
 name: parallel-cli
 description: Optional vendor skill for Parallel CLI — agent-native web search, extraction, deep research, enrichment, FindAll, and monitoring. Prefer JSON output and non-interactive flows.
 version: 1.1.0
-author: Hermes Agent
+author: AVOI Agent
 license: MIT
 metadata:
-  hermes:
+  avoi:
     tags: [Research, Web, Search, Deep-Research, Enrichment, CLI]
     related_skills: [duckduckgo-search, mcporter]
 ---

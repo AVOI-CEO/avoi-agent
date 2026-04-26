@@ -22,16 +22,16 @@ from typing import Any, Mapping, Optional
 logger = logging.getLogger(__name__)
 
 _STATE_SUBDIR = "rate_limits"
-_STATE_FILENAME = "nous.json"
+_STATE_FILENAME = "avoi.json"
 
 
 def _state_path() -> str:
     """Return the path to the Nous rate limit state file."""
     try:
-        from hermes_constants import get_hermes_home
-        base = get_hermes_home()
+        from avoi_constants import get_avoi_home
+        base = get_avoi_home()
     except ImportError:
-        base = os.path.join(os.path.expanduser("~"), ".hermes")
+        base = os.path.join(os.path.expanduser("~"), ".avoi")
     return os.path.join(base, _STATE_SUBDIR, _STATE_FILENAME)
 
 
@@ -67,7 +67,7 @@ def _parse_reset_seconds(headers: Optional[Mapping[str, str]]) -> Optional[float
     return None
 
 
-def record_nous_rate_limit(
+def record_avoi_rate_limit(
     *,
     headers: Optional[Mapping[str, str]] = None,
     error_context: Optional[dict[str, Any]] = None,
@@ -135,7 +135,7 @@ def record_nous_rate_limit(
         logger.debug("Failed to write Nous rate limit state: %s", exc)
 
 
-def nous_rate_limit_remaining() -> Optional[float]:
+def avoi_rate_limit_remaining() -> Optional[float]:
     """Check if Nous Portal is currently rate-limited.
 
     Returns:
@@ -159,7 +159,7 @@ def nous_rate_limit_remaining() -> Optional[float]:
         return None
 
 
-def clear_nous_rate_limit() -> None:
+def clear_avoi_rate_limit() -> None:
     """Clear the rate limit state (e.g., after a successful Nous request)."""
     try:
         os.unlink(_state_path())
