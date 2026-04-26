@@ -188,7 +188,7 @@ from avoi_cli import __version__ as _AVOI_VERSION
 _AI_GATEWAY_HEADERS = {
     "HTTP-Referer": "https://avoi-agent.avoi-ai.com",
     "X-Title": "AVOI Agent",
-    "User-Agent": f"HermesAgent/{_AVOI_VERSION}",
+    "User-Agent": f"AVOIAgent/{_AVOI_VERSION}",
 }
 
 # Nous Portal extra_body for product attribution.

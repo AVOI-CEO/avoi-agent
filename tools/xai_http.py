@@ -9,4 +9,4 @@ def avoi_xai_user_agent() -> str:
         from avoi_cli import __version__
     except Exception:
         __version__ = "unknown"
-    return f"Hermes-Agent/{__version__}"
+    return f"AVOIAgent/{__version__}"

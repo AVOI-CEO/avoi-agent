@@ -106,7 +106,7 @@ _MARKER_TTL = 86400  # 24 hours
 
 
 def _get_avoi_home() -> str:
-    """Return the Hermes home directory, respecting AVOI_HOME env var."""
+    """Return the AVOI home directory, respecting AVOI_HOME env var."""
     return str(get_avoi_home())
 
 

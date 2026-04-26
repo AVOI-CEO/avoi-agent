@@ -1,5 +1,5 @@
 """
-Session-scoped context variables for the Hermes gateway.
+Session-scoped context variables for the AVOI gateway.
 
 Replaces the previous ``os.environ``-based session state
 (``AVOI_SESSION_PLATFORM``, ``AVOI_SESSION_CHAT_ID``, etc.) with

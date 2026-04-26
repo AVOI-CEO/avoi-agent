@@ -1815,7 +1815,7 @@ class AvoiCLI:
         ignore_rules: bool = False,
     ):
         """
-        Initialize the Hermes CLI.
+        Initialize the AVOI CLI.
 
         Args:
             model: Model to use (default: from env or claude-sonnet)
@@ -4256,7 +4256,7 @@ class AvoiCLI:
         is_running = bool(getattr(self, "_agent_running", False))
 
         lines = [
-            "Hermes CLI Status",
+            "AVOI CLI Status",
             "",
             f"Session ID: {self.session_id}",
             f"Path: {display_avoi_home()}",
@@ -10912,7 +10912,7 @@ def main(
     if gateway:
         import asyncio
         from gateway.run import start_gateway
-        print("Starting Hermes Gateway (messaging platforms)...")
+        print("Starting AVOI Gateway (messaging platforms)...")
         asyncio.run(start_gateway())
         return
 

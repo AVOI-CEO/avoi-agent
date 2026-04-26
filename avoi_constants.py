@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 def get_avoi_home() -> Path:
-    """Return the Hermes home directory (default: ~/.avoi).
+    """Return the AVOI home directory (default: ~/.avoi).
 
     Reads AVOI_HOME env var, falls back to ~/.avoi.
     This is the single source of truth — all other copies should import this.

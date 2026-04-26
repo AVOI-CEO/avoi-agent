@@ -114,7 +114,7 @@ from cron.jobs import get_due_jobs, mark_job_run, save_job_output, advance_next_
 # locally for audit.
 SILENT_MARKER = "[SILENT]"
 
-# Resolve Hermes home directory (respects AVOI_HOME override)
+# Resolve AVOI home directory (respects AVOI_HOME override)
 _avoi_home = get_avoi_home()
 
 # File-based lock prevents concurrent ticks from gateway + daemon + systemd timer

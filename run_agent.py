@@ -765,7 +765,7 @@ def _routermint_headers() -> dict:
     from avoi_cli import __version__ as _AVOI_VERSION
 
     return {
-        "User-Agent": f"HermesAgent/{_AVOI_VERSION}",
+        "User-Agent": f"AVOIAgent/{_AVOI_VERSION}",
     }
 
 

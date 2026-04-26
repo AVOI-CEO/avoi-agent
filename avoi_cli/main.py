@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Hermes CLI - Main entry point.
+AVOI CLI - Main entry point.
 
 Usage:
     avoi                     # Interactive chat (default)
@@ -4739,7 +4739,7 @@ def _model_flow_anthropic(config, current_model=""):
 
 
 def cmd_login(args):
-    """Authenticate Hermes CLI with a provider."""
+    """Authenticate AVOI CLI with a provider."""
     from avoi_cli.auth import login_command
 
     login_command(args)
@@ -4815,7 +4815,7 @@ def cmd_config(args):
 
 
 def cmd_backup(args):
-    """Back up Hermes home directory to a zip file."""
+    """Back up AVOI home directory to a zip file."""
     if getattr(args, "quick", False):
         from avoi_cli.backup import run_quick_backup
 
@@ -4827,7 +4827,7 @@ def cmd_backup(args):
 
 
 def cmd_import(args):
-    """Restore a Hermes backup from a zip file."""
+    """Restore a AVOI backup from a zip file."""
     from avoi_cli.backup import run_import
 
     run_import(args)
@@ -6719,7 +6719,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         except Exception as e:
             logger.debug("Gateway restart during update failed: %s", e)
 
-        # Warn if legacy Hermes gateway unit files are still installed.
+        # Warn if legacy AVOI gateway unit files are still installed.
         # When both avoi.service (from a pre-rename install) and the
         # current avoi-gateway.service are enabled, they SIGTERM-fight
         # for the same bot token (see PR #11909). Flagging here means
@@ -6733,7 +6733,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
             if supports_systemd_services() and has_legacy_avoi_units():
                 print()
-                print("⚠ Legacy Hermes gateway unit(s) detected:")
+                print("⚠ Legacy AVOI gateway unit(s) detected:")
                 for name, path, is_sys in _find_legacy_avoi_units():
                     scope = "system" if is_sys else "user"
                     print(f"    {path}  ({scope} scope)")
@@ -7183,7 +7183,7 @@ def cmd_completion(args, parser=None):
 
 
 def cmd_logs(args):
-    """View and filter Hermes log files."""
+    """View and filter AVOI log files."""
     from avoi_cli.logs import tail_log, list_logs
 
     log_name = getattr(args, "log_name", "agent") or "agent"
@@ -7688,7 +7688,7 @@ For more help on a command:
         "migrate-legacy",
         help="Remove legacy avoi.service units from pre-rename installs",
         description=(
-            "Stop, disable, and remove legacy Hermes gateway unit files "
+            "Stop, disable, and remove legacy AVOI gateway unit files "
             "(e.g. avoi.service) left over from older installs. Profile "
             "units (avoi-gateway-<profile>.service) and unrelated "
             "third-party services are never touched."
@@ -7752,7 +7752,7 @@ For more help on a command:
     login_parser = subparsers.add_parser(
         "login",
         help="Authenticate with an inference provider",
-        description="Run OAuth device authorization flow for Hermes CLI",
+        description="Run OAuth device authorization flow for AVOI CLI",
     )
     login_parser.add_argument(
         "--provider",
@@ -8144,7 +8144,7 @@ For more help on a command:
     dump_parser = subparsers.add_parser(
         "dump",
         help="Dump setup summary for support/debugging",
-        description="Output a compact, plain-text summary of your Hermes setup "
+        description="Output a compact, plain-text summary of your AVOI setup "
         "that can be copy-pasted into Discord/GitHub for support context",
     )
     dump_parser.add_argument(
@@ -8212,8 +8212,8 @@ Examples:
     # =========================================================================
     backup_parser = subparsers.add_parser(
         "backup",
-        help="Back up Hermes home directory to a zip file",
-        description="Create a zip archive of your entire Hermes configuration, "
+        help="Back up AVOI home directory to a zip file",
+        description="Create a zip archive of your entire AVOI configuration, "
         "skills, sessions, and data (excludes the avoi-agent codebase). "
         "Use --quick for a fast snapshot of just critical state files.",
     )
@@ -8238,9 +8238,9 @@ Examples:
     # =========================================================================
     import_parser = subparsers.add_parser(
         "import",
-        help="Restore a Hermes backup from a zip file",
-        description="Extract a previously created Hermes backup into your "
-        "Hermes home directory, restoring configuration, skills, "
+        help="Restore a AVOI backup from a zip file",
+        description="Extract a previously created AVOI backup into your "
+        "AVOI home directory, restoring configuration, skills, "
         "sessions, and data",
     )
     import_parser.add_argument("zipfile", help="Path to the backup zip file")
@@ -9406,7 +9406,7 @@ Examples:
     # =========================================================================
     logs_parser = subparsers.add_parser(
         "logs",
-        help="View and filter Hermes log files",
+        help="View and filter AVOI log files",
         description="View, tail, and filter agent.log / errors.log / gateway.log",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\

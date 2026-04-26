@@ -112,11 +112,11 @@ def _format_size(nbytes: int) -> str:
 
 
 def run_backup(args) -> None:
-    """Create a zip backup of the Hermes home directory."""
+    """Create a zip backup of the AVOI home directory."""
     avoi_root = get_default_avoi_root()
 
     if not avoi_root.is_dir():
-        print(f"Error: Hermes home directory not found at {avoi_root}")
+        print(f"Error: AVOI home directory not found at {avoi_root}")
         sys.exit(1)
 
     # Determine output path
@@ -240,7 +240,7 @@ def run_backup(args) -> None:
 # ---------------------------------------------------------------------------
 
 def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
-    """Check that a zip looks like a Hermes backup.
+    """Check that a zip looks like a AVOI backup.
 
     Returns (ok, reason).
     """
@@ -259,7 +259,7 @@ def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
 
     if not found:
         return False, (
-            "zip does not appear to be a Hermes backup "
+            "zip does not appear to be a AVOI backup "
             "(no config.yaml, .env, or state databases found)"
         )
 
@@ -291,7 +291,7 @@ def _detect_prefix(zf: zipfile.ZipFile) -> str:
 
 
 def run_import(args) -> None:
-    """Restore a Hermes backup from a zip file."""
+    """Restore a AVOI backup from a zip file."""
     zip_path = Path(args.zipfile).expanduser().resolve()
 
     if not zip_path.is_file():
@@ -327,7 +327,7 @@ def run_import(args) -> None:
 
         if (has_config or has_env) and not args.force:
             print()
-            print("Warning: Target directory already has Hermes configuration.")
+            print("Warning: Target directory already has AVOI configuration.")
             print("Importing will overwrite existing files with backup contents.")
             print()
             try:
@@ -444,7 +444,7 @@ def run_import(args) -> None:
             for pname in gw_profiles:
                 print(f"  avoi -p {pname} gateway install")
 
-        print("Done. Your Hermes configuration has been restored.")
+        print("Done. Your AVOI configuration has been restored.")
 
 
 # ---------------------------------------------------------------------------

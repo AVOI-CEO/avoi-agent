@@ -1,5 +1,5 @@
 """
-Hermes CLI - Unified command-line interface for AVOI Agent.
+AVOI CLI - Unified command-line interface for AVOI Agent.
 
 Provides subcommands for:
 - avoi chat          - Interactive chat (same as ./avoi)

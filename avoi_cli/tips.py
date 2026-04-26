@@ -94,7 +94,7 @@ TIPS = [
     "avoi auth add lets you add multiple API keys for credential pool rotation.",
     "avoi completion bash >> ~/.bashrc enables tab completion for all commands and profiles.",
     "avoi logs -f follows agent.log in real time. --level WARNING --since 1h filters output.",
-    "avoi backup creates a zip backup of your entire Hermes home directory.",
+    "avoi backup creates a zip backup of your entire AVOI home directory.",
     "avoi profile create coder creates an isolated profile that becomes its own command.",
     "avoi profile create work --clone copies your current config and keys to a new profile.",
     "avoi update syncs new bundled skills to ALL profiles automatically.",

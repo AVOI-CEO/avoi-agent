@@ -1048,7 +1048,7 @@ def _legacy_unit_search_paths() -> list[tuple[bool, Path]]:
 
 
 def _find_legacy_avoi_units() -> list[tuple[str, Path, bool]]:
-    """Return ``[(unit_name, unit_path, is_system)]`` for legacy Hermes gateway units.
+    """Return ``[(unit_name, unit_path, is_system)]`` for legacy AVOI gateway units.
 
     Detects unit files installed by older Hermes versions that used a
     different service name (e.g. ``avoi.service`` before the rename to
@@ -1086,12 +1086,12 @@ def _find_legacy_avoi_units() -> list[tuple[str, Path, bool]]:
 
 
 def has_legacy_avoi_units() -> bool:
-    """Return True when any legacy Hermes gateway unit files exist."""
+    """Return True when any legacy AVOI gateway unit files exist."""
     return bool(_find_legacy_avoi_units())
 
 
 def print_legacy_unit_warning() -> None:
-    """Warn about legacy Hermes gateway unit files if any are installed.
+    """Warn about legacy AVOI gateway unit files if any are installed.
 
     Idempotent: prints nothing when no legacy units are detected. Safe to
     call from any status/install/setup path.
@@ -1099,7 +1099,7 @@ def print_legacy_unit_warning() -> None:
     legacy = _find_legacy_avoi_units()
     if not legacy:
         return
-    print_warning("Legacy Hermes gateway unit(s) detected from an older install:")
+    print_warning("Legacy AVOI gateway unit(s) detected from an older install:")
     for name, path, is_system in legacy:
         scope = "system" if is_system else "user"
         print_info(f"    {path}  ({scope} scope)")
@@ -1113,7 +1113,7 @@ def remove_legacy_avoi_units(
     interactive: bool = True,
     dry_run: bool = False,
 ) -> tuple[int, list[Path]]:
-    """Stop, disable, and remove legacy Hermes gateway unit files.
+    """Stop, disable, and remove legacy AVOI gateway unit files.
 
     Iterates over whatever ``_find_legacy_avoi_units()`` returns — which is
     an explicit allowlist of legacy names (not a glob). Profile units and
@@ -1131,14 +1131,14 @@ def remove_legacy_avoi_units(
     """
     legacy = _find_legacy_avoi_units()
     if not legacy:
-        print("No legacy Hermes gateway units found.")
+        print("No legacy AVOI gateway units found.")
         return 0, []
 
     user_units = [(n, p) for n, p, is_sys in legacy if not is_sys]
     system_units = [(n, p) for n, p, is_sys in legacy if is_sys]
 
     print()
-    print("Legacy Hermes gateway unit(s) found:")
+    print("Legacy AVOI gateway unit(s) found:")
     for name, path, is_system in legacy:
         scope = "system" if is_system else "user"
         print(f"  {path}  ({scope} scope)")
@@ -2340,7 +2340,7 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False):
     from gateway.run import start_gateway
     
     print("┌─────────────────────────────────────────────────────────┐")
-    print("│           ⚕ Hermes Gateway Starting...                 │")
+    print("│           ⚕ AVOI Gateway Starting...                 │")
     print("├─────────────────────────────────────────────────────────┤")
     print("│  Messaging platforms + cron scheduler                    │")
     print("│  Press Ctrl+C to stop                                   │")
@@ -3596,7 +3596,7 @@ def _setup_signal():
         print_info("    Docker: bbernhard/signal-cli-rest-api")
         print()
         print_info("  After installing, link your account and start the daemon:")
-        print_info("    signal-cli link -n \"HermesAgent\"")
+        print_info("    signal-cli link -n \"AvoiAgent\"")
         print_info("    signal-cli --account +YOURNUMBER daemon --http 127.0.0.1:8080")
         print()
 
@@ -4199,7 +4199,7 @@ def _gateway_command_inner(args):
                     print("  sudo avoi gateway install --system  # Install as boot-time system service")
 
     elif subcmd == "migrate-legacy":
-        # Stop, disable, and remove legacy Hermes gateway unit files from
+        # Stop, disable, and remove legacy AVOI gateway unit files from
         # pre-rename installs (e.g. avoi.service). Profile units and
         # unrelated third-party services are never touched.
         dry_run = getattr(args, 'dry_run', False)

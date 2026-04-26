@@ -110,9 +110,9 @@ def main() -> None:
         sys.path.insert(0, project_root)
 
     import acp
-    from .server import HermesACPAgent
+    from .server import AvoiACPAgent
 
-    agent = HermesACPAgent()
+    agent = AvoiACPAgent()
     try:
         asyncio.run(acp.run_agent(agent, use_unstable_protocol=True))
     except KeyboardInterrupt:

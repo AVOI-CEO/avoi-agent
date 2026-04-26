@@ -98,7 +98,7 @@ def _extract_text(
     return "\n".join(parts)
 
 
-class HermesACPAgent(acp.Agent):
+class AvoiACPAgent(acp.Agent):
     """ACP Agent implementation wrapping Hermes AIAgent."""
 
     _SLASH_COMMANDS = {

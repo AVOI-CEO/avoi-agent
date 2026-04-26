@@ -162,7 +162,7 @@ def setup_logging(
     mode: Optional[str] = None,
     force: bool = False,
 ) -> Path:
-    """Configure the Hermes logging subsystem.
+    """Configure the AVOI logging subsystem.
 
     Safe to call multiple times — the second call is a no-op unless
     *force* is ``True``.
@@ -170,7 +170,7 @@ def setup_logging(
     Parameters
     ----------
     avoi_home
-        Override for the Hermes home directory.  Falls back to
+        Override for the AVOI home directory.  Falls back to
         ``get_avoi_home()`` (profile-aware).
     log_level
         Minimum level for the ``agent.log`` file handler.  Accepts any

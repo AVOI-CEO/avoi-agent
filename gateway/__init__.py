@@ -1,5 +1,5 @@
 """
-Hermes Gateway - Multi-platform messaging integration.
+AVOI Gateway - Multi-platform messaging integration.
 
 This module provides a unified gateway for connecting the AVOI agent
 to various messaging platforms (Telegram, Discord, WhatsApp) with:

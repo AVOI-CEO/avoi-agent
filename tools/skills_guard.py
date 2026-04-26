@@ -430,7 +430,7 @@ THREAT_PATTERNS = [
      "references agent config files (could persist malicious instructions across sessions)"),
     (r'\.avoi/config\.yaml|\.avoi/SOUL\.md',
      "avoi_config_mod", "critical", "persistence",
-     "references Hermes configuration files directly"),
+     "references AVOI configuration files directly"),
     (r'\.claude/settings|\.codex/config',
      "other_agent_config", "high", "persistence",
      "references other agent configuration files"),
