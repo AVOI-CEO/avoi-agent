@@ -4,7 +4,7 @@ Full whitelabel rebrand: Hermes/Nous -> AVOI/Avoi/avoi
 
 This script handles ALL occurrences including:
   - Imports (from hermes_xxx import ...)
-  - Internal variable/class names (HermesCLI, hermes_xxx)
+  - Internal variable/class names (AvoiCLI, hermes_xxx)
   - Constants (HERMES_HOME, get_hermes_home())
   - File references (~/.hermes/, .hermes/, hermes/)
   - User-facing display strings
@@ -32,11 +32,11 @@ SKIP_DIRS = {
 # ── Rename mapping for imports and internal identifiers ─────────────
 # hermes_XXX -> avoi_XXX for core modules
 IMPORT_RENAMES = {
-    "hermes_constants": "avoi_constants",
-    "hermes_logging": "avoi_logging",
-    "hermes_state": "avoi_state",
-    "hermes_time": "avoi_time",
-    "hermes_cli": "avoi_cli",
+    "avoi_constants": "avoi_constants",
+    "avoi_logging": "avoi_logging",
+    "avoi_state": "avoi_state",
+    "avoi_time": "avoi_time",
+    "avoi_cli": "avoi_cli",
 }
 
 # ── String replacements for user-facing text ────────────────────────

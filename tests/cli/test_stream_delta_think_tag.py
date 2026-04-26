@@ -7,10 +7,10 @@ import pytest
 
 
 def _make_cli_stub():
-    """Create a minimal HermesCLI-like object with stream state."""
-    from cli import HermesCLI
+    """Create a minimal AvoiCLI-like object with stream state."""
+    from cli import AvoiCLI
 
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = AvoiCLI.__new__(AvoiCLI)
     cli.show_reasoning = False
     cli._stream_buf = ""
     cli._stream_started = False

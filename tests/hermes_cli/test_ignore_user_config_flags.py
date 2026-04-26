@@ -11,7 +11,7 @@ files. In Hermes the equivalent isolation is:
   skip_memory=True)``).
 
 Both flags are wired via env vars so they work cleanly across the
-argparse → cmd_chat → cli.main() → HermesCLI → AIAgent call chain.
+argparse → cmd_chat → cli.main() → AvoiCLI → AIAgent call chain.
 """
 
 from __future__ import annotations
@@ -108,26 +108,26 @@ class TestIgnoreUserConfigEnvGate:
 
 
 class TestIgnoreRulesEnvGate:
-    """The constructor / env var must propagate to ``HermesCLI.ignore_rules``
+    """The constructor / env var must propagate to ``AvoiCLI.ignore_rules``
     so ``AIAgent`` is built with ``skip_context_files=True`` and
     ``skip_memory=True``.
     """
 
     def test_env_var_enables_ignore_rules(self, monkeypatch):
-        """Setting AVOI_IGNORE_RULES=1 flips HermesCLI.ignore_rules True."""
+        """Setting AVOI_IGNORE_RULES=1 flips AvoiCLI.ignore_rules True."""
         monkeypatch.setenv("AVOI_IGNORE_RULES", "1")
 
-        # Import HermesCLI lazily — cli.py has heavy module-init side effects
+        # Import AvoiCLI lazily — cli.py has heavy module-init side effects
         # that we don't want to run at test collection time.
         import cli
         importlib.reload(cli)
 
-        # Build only enough of HermesCLI to reach the ignore_rules assignment.
+        # Build only enough of AvoiCLI to reach the ignore_rules assignment.
         # The full __init__ pulls in provider/auth/session DB, so we cheat:
         # create the object via object.__new__ and manually run the assignment
         # the same way the real constructor does.
-        obj = object.__new__(cli.HermesCLI)
-        # Replicate the exact logic from cli.py HermesCLI.__init__:
+        obj = object.__new__(cli.AvoiCLI)
+        # Replicate the exact logic from cli.py AvoiCLI.__init__:
         ignore_rules = False  # constructor default
         obj.ignore_rules = ignore_rules or os.environ.get("AVOI_IGNORE_RULES") == "1"
 
@@ -136,7 +136,7 @@ class TestIgnoreRulesEnvGate:
     def test_constructor_flag_alone_enables_ignore_rules(self, monkeypatch):
         monkeypatch.delenv("AVOI_IGNORE_RULES", raising=False)
         import cli
-        obj = object.__new__(cli.HermesCLI)
+        obj = object.__new__(cli.AvoiCLI)
         ignore_rules = True  # constructor argument
         obj.ignore_rules = ignore_rules or os.environ.get("AVOI_IGNORE_RULES") == "1"
         assert obj.ignore_rules is True
@@ -144,7 +144,7 @@ class TestIgnoreRulesEnvGate:
     def test_neither_flag_nor_env_leaves_rules_enabled(self, monkeypatch):
         monkeypatch.delenv("AVOI_IGNORE_RULES", raising=False)
         import cli
-        obj = object.__new__(cli.HermesCLI)
+        obj = object.__new__(cli.AvoiCLI)
         ignore_rules = False
         obj.ignore_rules = ignore_rules or os.environ.get("AVOI_IGNORE_RULES") == "1"
         assert obj.ignore_rules is False
