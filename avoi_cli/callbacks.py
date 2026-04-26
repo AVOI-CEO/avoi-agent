@@ -33,7 +33,9 @@ def clarify_callback(cli, question, choices):
         "selected": 0,
         "response_queue": response_queue,
     }
-    cli._clarify_deadline = _time.monotonic() + timeout
+    # Disabled timeout: user can take as long as they want
+    # cli._clarify_deadline = _time.monotonic() + timeout
+    cli._clarify_deadline = float('inf')
     cli._clarify_freetext = is_open_ended
 
     if hasattr(cli, "_app") and cli._app:

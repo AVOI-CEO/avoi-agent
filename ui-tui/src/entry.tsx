@@ -5,7 +5,7 @@ import { formatBytes, type HeapDumpResult, performHeapDump } from './lib/memory.
 import { type MemorySnapshot, startMemoryMonitor } from './lib/memoryMonitor.js'
 
 if (!process.stdin.isTTY) {
-  console.log('hermes-tui: no TTY')
+  console.log('avoi-tui: no TTY')
   process.exit(0)
 }
 
@@ -14,33 +14,33 @@ const gw = new GatewayClient()
 gw.start()
 
 const dumpNotice = (snap: MemorySnapshot, dump: HeapDumpResult | null) =>
-  `hermes-tui: ${snap.level} memory (${formatBytes(snap.heapUsed)}) — auto heap dump → ${dump?.heapPath ?? '(failed)'}\n`
+  `avoi-tui: ${snap.level} memory (${formatBytes(snap.heapUsed)}) — auto heap dump → ${dump?.heapPath ?? '(failed)'}\n`
 
 setupGracefulExit({
   cleanups: [() => gw.kill()],
   onError: (scope, err) => {
     const message = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
 
-    process.stderr.write(`hermes-tui ${scope}: ${message.slice(0, 2000)}\n`)
+    process.stderr.write(`avoi-tui ${scope}: ${message.slice(0, 2000)}\n`)
   },
-  onSignal: signal => process.stderr.write(`hermes-tui: received ${signal}\n`)
+  onSignal: signal => process.stderr.write(`avoi-tui: received ${signal}\n`)
 })
 
 const stopMemoryMonitor = startMemoryMonitor({
   onCritical: (snap, dump) => {
     process.stderr.write(dumpNotice(snap, dump))
-    process.stderr.write('hermes-tui: exiting to avoid OOM; restart to recover\n')
+    process.stderr.write('avoi-tui: exiting to avoid OOM; restart to recover\n')
     process.exit(137)
   },
   onHigh: (snap, dump) => process.stderr.write(dumpNotice(snap, dump))
 })
 
-if (process.env.HERMES_HEAPDUMP_ON_START === '1') {
+if (process.env.AVOI_HEAPDUMP_ON_START === '1') {
   void performHeapDump('manual')
 }
 
 process.on('beforeExit', () => stopMemoryMonitor())
 
-const [{ render }, { App }] = await Promise.all([import('@hermes/ink'), import('./app.js')])
+const [{ render }, { App }] = await Promise.all([import('@avoi/ink'), import('./app.js')])
 
 render(<App gw={gw} />, { exitOnCtrlC: false })

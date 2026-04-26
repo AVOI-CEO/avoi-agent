@@ -1,4 +1,4 @@
-import { AlternateScreen, Box, NoSelect, ScrollBox, Text } from '@hermes/ink'
+import { AlternateScreen, Box, NoSelect, ScrollBox, Text } from '@avoi/ink'
 import { useStore } from '@nanostores/react'
 import { memo } from 'react'
 
@@ -252,7 +252,7 @@ const ComposerPane = memo(function ComposerPane({
         )}
       </Box>
 
-      {!composer.empty && !ui.sid && <Text color={ui.theme.color.dim}>⚕ {ui.status}</Text>}
+      {!composer.empty && !ui.sid && <Text color={ui.theme.color.dim}>{ui.status}</Text>}
 
       <StatusRulePane at="bottom" composer={composer} status={status} />
     </NoSelect>

@@ -79,11 +79,11 @@ function mix(a: string, b: string, t: number) {
 // ── Defaults ─────────────────────────────────────────────────────────
 
 const BRAND: ThemeBrand = {
-  name: 'Hermes Agent',
-  icon: '⚕',
+  name: 'MIGO by AVOI',
+  icon: '🤖',
   prompt: '❯',
   welcome: 'Type your message or /help for commands.',
-  goodbye: 'Goodbye! ⚕',
+  goodbye: 'Goodbye!',
   tool: '┊',
   helpHeader: '(^_^)? Commands'
 }
@@ -179,11 +179,11 @@ export const LIGHT_THEME: Theme = {
   bannerHero: ''
 }
 
-// Pick light vs dark. Explicit `HERMES_TUI_LIGHT` wins; otherwise sniff
+// Pick light vs dark. Explicit `AVOI_TUI_LIGHT` wins; otherwise sniff
 // `COLORFGBG` (set by XFCE Terminal, rxvt, Terminal.app, etc.) — last field is the
 // background ANSI index; 7/15 are the "white" slots most light themes emit (#11300).
 export function detectLightMode(env: NodeJS.ProcessEnv = process.env): boolean {
-  const explicit = (env.HERMES_TUI_LIGHT ?? '').trim().toLowerCase()
+  const explicit = (env.AVOI_TUI_LIGHT ?? '').trim().toLowerCase()
 
   if (/^(?:1|true|yes|on)$/.test(explicit)) {
     return true
