@@ -97,7 +97,7 @@ def test_setup_keep_current_config_provider_uses_provider_specific_model_menu(
     _clear_provider_env(monkeypatch)
     _stub_tts(monkeypatch)
 
-    _write_model_config("zai", "https://open.bigmodel.cn/api/paas/v4", "glm-5")
+    _write_model_config("zai", "https://api.z.ai/api/paas/v4", "glm-5")
 
     config = load_config()
 
