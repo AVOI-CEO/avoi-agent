@@ -128,6 +128,65 @@ def _clear_read_only_cache() -> None:
     _READ_ONLY_CACHE = None
 
 
+# ---------------------------------------------------------------------------
+# Path whitelist — restrict file access to allowed directories
+# ---------------------------------------------------------------------------
+
+_PATH_WHITELIST_CACHE: list[str] | None = None
+_PATH_WHITELIST_ENFORCED: bool | None = None
+_PATH_WHITELIST_CACHE_LOCK = threading.Lock()
+
+
+def _load_path_whitelist() -> tuple[list[str], bool]:
+    """Load path whitelist from config.
+
+    Returns:
+        (allowed_prefixes, is_enforced) — prefixes are resolved realpaths.
+        If not enforced, allowed_prefixes is empty and all paths are allowed.
+    """
+    global _PATH_WHITELIST_CACHE, _PATH_WHITELIST_ENFORCED
+    if _PATH_WHITELIST_CACHE is None or _PATH_WHITELIST_ENFORCED is None:
+        with _PATH_WHITELIST_CACHE_LOCK:
+            if _PATH_WHITELIST_CACHE is None or _PATH_WHITELIST_ENFORCED is None:
+                try:
+                    from avoi_cli.config import load_config
+                    cfg = load_config()
+                    fa = cfg.get("file_access", {})
+                    _PATH_WHITELIST_ENFORCED = fa.get("enforce", False)
+                    raw_prefixes = fa.get("allow", [])
+                    resolved = []
+                    for p in raw_prefixes:
+                        expanded = os.path.expanduser(os.path.expandvars(p))
+                        resolved.append(os.path.realpath(expanded))
+                    _PATH_WHITELIST_CACHE = resolved
+                except Exception:
+                    _PATH_WHITELIST_CACHE = []
+                    _PATH_WHITELIST_ENFORCED = False
+    return _PATH_WHITELIST_CACHE, _PATH_WHITELIST_ENFORCED
+
+
+def _check_path_whitelist(filepath: str) -> str | None:
+    """Return error message if path is outside the whitelist. None = allowed."""
+    allowed, enforced = _load_path_whitelist()
+    if not enforced or not allowed:
+        return None
+    try:
+        resolved = os.path.realpath(os.path.expanduser(filepath))
+        for prefix in allowed:
+            if resolved.startswith(prefix):
+                return None
+        return f"Access denied: path is outside allowed directories. Allowed: {', '.join(allowed)}"
+    except Exception:
+        return f"Access denied: could not resolve path '{filepath}'"
+
+
+def _clear_path_whitelist_cache() -> None:
+    """Clear cached whitelist (called on config reload)."""
+    global _PATH_WHITELIST_CACHE, _PATH_WHITELIST_ENFORCED
+    _PATH_WHITELIST_CACHE = None
+    _PATH_WHITELIST_ENFORCED = None
+
+
 def _check_sensitive_path(filepath: str) -> str | None:
     """Return an error message if the path targets a sensitive system location."""
     try:
@@ -362,6 +421,10 @@ def clear_file_ops_cache(task_id: str = None):
 
 def read_file_tool(path: str, offset: int = 1, limit: int = 500, task_id: str = "default") -> str:
     """Read a file with pagination and line numbers."""
+    # Check path whitelist
+    whitelist_err = _check_path_whitelist(path)
+    if whitelist_err:
+        return json.dumps({"error": whitelist_err})
     try:
         # ── Device path guard ─────────────────────────────────────────
         # Block paths that would hang the process (infinite output,
@@ -626,6 +689,10 @@ def _check_file_staleness(filepath: str, task_id: str) -> str | None:
 
 def write_file_tool(path: str, content: str, task_id: str = "default") -> str:
     """Write content to a file."""
+    # Check path whitelist
+    whitelist_err = _check_path_whitelist(path)
+    if whitelist_err:
+        return tool_error(whitelist_err, success=False)
     # Check read-only mode
     if _is_read_only_mode():
         return tool_error("File system is read-only. Write operations disabled.", success=False)
@@ -667,6 +734,10 @@ def patch_tool(mode: str = "replace", path: str = None, old_string: str = None,
         for _m in _re.finditer(r'^\*\*\*\s+(?:Update|Add|Delete)\s+File:\s*(.+)$', patch, _re.MULTILINE):
             _paths_to_check.append(_m.group(1).strip())
     for _p in _paths_to_check:
+        # Check path whitelist
+        whitelist_err = _check_path_whitelist(_p)
+        if whitelist_err:
+            return tool_error(whitelist_err, success=False)
         sensitive_err = _check_sensitive_path(_p)
         if sensitive_err:
             return tool_error(sensitive_err)
@@ -716,6 +787,10 @@ def search_tool(pattern: str, target: str = "content", path: str = ".",
                 output_mode: str = "content", context: int = 0,
                 task_id: str = "default") -> str:
     """Search for content or files."""
+    # Check path whitelist
+    whitelist_err = _check_path_whitelist(path or ".")
+    if whitelist_err:
+        return json.dumps({"error": whitelist_err, "matches": []})
     try:
         # Track searches to detect *consecutive* repeated search loops.
         # Include pagination args so users can page through truncated

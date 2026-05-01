@@ -679,6 +679,14 @@ DEFAULT_CONFIG = {
         "read_only": False,
     },
 
+    # File access restrictions — opt-in path whitelist
+    "file_access": {
+        # When true, file tools only operate within the directories in 'allow'
+        "enforce": False,
+        # List of allowed directory paths (supports $HOME, ~, env vars)
+        "allow": [],
+    },
+
     # Subagent delegation — override the provider:model used by delegate_task
     # so child agents can run on a different (cheaper/faster) provider and model.
     # Uses the same runtime provider resolution as CLI/gateway startup, so all
