@@ -151,7 +151,64 @@ def _check_all_guards(command: str, env_type: str) -> dict:
 # Covers alphanumeric, path separators, Windows drive/UNC separators, tilde,
 # dot, hyphen, underscore, space, plus, at, equals, and comma.  Everything
 # else is rejected.
-_WORKDIR_SAFE_RE = re.compile(r'^[A-Za-z0-9/\\:_\-.~ +@=,]+$')
+_WORKDIR_SAFE_RE = re.compile(r'^[A-Za-z0-9/\:_\-.~ +@=,]+$')
+
+
+# ---------------------------------------------------------------------------
+# Read-only mode helpers
+# ---------------------------------------------------------------------------
+
+_WRITE_COMMAND_PATTERNS = [
+    # File system mutations
+    r'^\s*(touch|mkdir|rm(?:dir)?|mv|cp|ln|chmod|chown|chattr)\s',
+    # Package managers
+    r'\b(pip|pip3|npm|npx|apt|apt-get|dnf|yum|zypper|pacman|brew|gem|cargo|go\s+install|nuget|choco|winget)\s.*(install|uninstall|remove|update|upgrade|add|delete)',
+    # Write redirects (but not /dev/null)
+    r'(?<!#)\s>+>\s(?!\s*/dev/null\b)',
+    r'(?<!#)\s>\s(?!\s*/dev/null\b)',
+    # In-place edits
+    r'\bsed\s+-i\b',
+    r'\bawk\s+-i\s+inplace\b',
+    # Git mutations
+    r'\bgit\s+(commit|push|merge|rebase|checkout\s+-b|branch\s+\w+|tag|add)\b',
+    # Docker mutations
+    r'\bdocker\s+(build|commit|push|tag|rmi?|network\s+create|volume\s+create)\b',
+]
+
+_WRITE_COMMAND_CACHE: dict | None = None
+_WRITE_COMMAND_CACHE_LOCK = threading.Lock()
+
+
+def _load_terminal_config() -> dict:
+    """Load terminal config (cached)."""
+    global _WRITE_COMMAND_CACHE
+    if _WRITE_COMMAND_CACHE is None:
+        with _WRITE_COMMAND_CACHE_LOCK:
+            if _WRITE_COMMAND_CACHE is None:
+                try:
+                    from avoi_cli.config import load_config
+                    cfg = load_config()
+                    _WRITE_COMMAND_CACHE = cfg.get("terminal", {})
+                except Exception:
+                    _WRITE_COMMAND_CACHE = {}
+    return _WRITE_COMMAND_CACHE
+
+
+def _is_write_command(command: str) -> bool:
+    """Check if a command modifies the system in any way."""
+    command_stripped = command.strip()
+    if not command_stripped:
+        return False
+    for pattern in _WRITE_COMMAND_PATTERNS:
+        if re.search(pattern, command_stripped, re.IGNORECASE):
+            return True
+    return False
+
+
+def _clear_terminal_config_cache() -> None:
+    """Clear the cached terminal config (called on config reload)."""
+    global _WRITE_COMMAND_CACHE
+    _WRITE_COMMAND_CACHE = None
 
 
 def _validate_workdir(workdir: str) -> str | None:
@@ -1310,6 +1367,18 @@ def terminal_tool(
                     "output": "",
                     "exit_code": -1,
                     "error": approval.get("message", fallback_msg),
+                    "status": "blocked"
+                }, ensure_ascii=False)
+
+        # Read-only mode check — block write commands when terminal.read_only is true.
+        # Placed after force check so force=True still bypasses it.
+        if not force:
+            _read_only = _load_terminal_config().get("read_only", False)
+            if _read_only and _is_write_command(command):
+                return json.dumps({
+                    "output": "",
+                    "exit_code": -1,
+                    "error": "Terminal is in read-only mode. Write commands and package modifications are blocked.",
                     "status": "blocked"
                 }, ensure_ascii=False)
             # Track whether approval was explicitly granted by the user

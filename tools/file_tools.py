@@ -99,6 +99,35 @@ _SENSITIVE_PATH_PREFIXES = (
 _SENSITIVE_EXACT_PATHS = {"/var/run/docker.sock", "/run/docker.sock"}
 
 
+# ---------------------------------------------------------------------------
+# Read-only mode check (shared with terminal_tool.py)
+# ---------------------------------------------------------------------------
+
+_READ_ONLY_CACHE: bool | None = None
+_READ_ONLY_CACHE_LOCK = threading.Lock()
+
+
+def _is_read_only_mode() -> bool:
+    """Check if read-only mode is enabled in config (cached)."""
+    global _READ_ONLY_CACHE
+    if _READ_ONLY_CACHE is None:
+        with _READ_ONLY_CACHE_LOCK:
+            if _READ_ONLY_CACHE is None:
+                try:
+                    from avoi_cli.config import load_config
+                    cfg = load_config()
+                    _READ_ONLY_CACHE = cfg.get("terminal", {}).get("read_only", False)
+                except Exception:
+                    _READ_ONLY_CACHE = False
+    return _READ_ONLY_CACHE
+
+
+def _clear_read_only_cache() -> None:
+    """Clear the cached read-only flag (called on config reload)."""
+    global _READ_ONLY_CACHE
+    _READ_ONLY_CACHE = None
+
+
 def _check_sensitive_path(filepath: str) -> str | None:
     """Return an error message if the path targets a sensitive system location."""
     try:
@@ -597,6 +626,9 @@ def _check_file_staleness(filepath: str, task_id: str) -> str | None:
 
 def write_file_tool(path: str, content: str, task_id: str = "default") -> str:
     """Write content to a file."""
+    # Check read-only mode
+    if _is_read_only_mode():
+        return tool_error("File system is read-only. Write operations disabled.", success=False)
     sensitive_err = _check_sensitive_path(path)
     if sensitive_err:
         return tool_error(sensitive_err)
@@ -623,6 +655,9 @@ def patch_tool(mode: str = "replace", path: str = None, old_string: str = None,
                new_string: str = None, replace_all: bool = False, patch: str = None,
                task_id: str = "default") -> str:
     """Patch a file using replace mode or V4A patch format."""
+    # Check read-only mode
+    if _is_read_only_mode():
+        return tool_error("File system is read-only. Write operations disabled.", success=False)
     # Check sensitive paths for both replace (explicit path) and V4A patch (extract paths)
     _paths_to_check = []
     if path:

@@ -70,8 +70,47 @@ _SENSITIVE_WRITE_TARGET = (
 )
 
 # =========================================================================
-# Dangerous command patterns
+# Hard blocklist patterns — NEVER execute, no approval prompt, not even in YOLO mode.
+# These are patterns that are ALWAYS destructive with no legitimate use case
+# in an agent context. They short-circuit before any other approval logic.
 # =========================================================================
+
+BLOCKLIST_PATTERNS = [
+    # sudo without password configured — never allow
+    (r'^sudo(\s+|$)', "sudo command requires configured SUDO_PASSWORD"),
+    # Recursive root delete — never safe
+    (r'\brm\s+(-[^\s]*\s+)*[-]?-?rf?\s+/\s*(\s|$|\*)', "recursive root delete — blocked"),
+    # Format filesystem (already in DANGEROUS_PATTERNS, but re-blocked here for hard stop)
+    (r'\b(mkfs|mkfs\.\w+)\b', "format filesystem — blocked"),
+    # Raw block device write — never safe in an agent
+    (r'\bdd\s+.*if=\s*/dev/', "raw block device read — blocked"),
+    (r'\bdd\s+.*of=\s*/dev/', "raw block device write — blocked"),
+    # Fork bombs
+    (r':\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:', "fork bomb — blocked"),
+    # System shutdown/reboot
+    (r'\b(shutdown|reboot|halt|poweroff)\b', "system shutdown/reboot — blocked"),
+    # World-writable permissions on root
+    (r'\bchmod\s+(-[^\s]*\s+)*777\s+/', "world-writable root — blocked"),
+    # Firewall flush
+    (r'\biptables\s+-F\b', "iptables flush — blocked"),
+    (r'\bnft\s+flush\s+ruleset\b', "nftables flush — blocked"),
+]
+
+
+def detect_blocklisted_command(command: str) -> tuple:
+    """Check if a command matches any hard-blocklist patterns.
+
+    Same interface as detect_dangerous_command but patterns are NEVER
+    askable — they short-circuit execution entirely.
+
+    Returns:
+        (is_blocklisted, pattern_key, description) or (False, None, None)
+    """
+    command_lower = _normalize_command_for_detection(command).lower()
+    for pattern, description in BLOCKLIST_PATTERNS:
+        if re.search(pattern, command_lower, re.IGNORECASE | re.DOTALL):
+            return (True, description, description)
+    return (False, None, None)
 
 DANGEROUS_PATTERNS = [
     (r'\brm\s+(-[^\s]*\s+)*/', "delete in root path"),
@@ -695,6 +734,13 @@ def check_all_command_guards(command: str, env_type: str,
     a gateway force=True replay from bypassing one check when only the
     other was shown to the user.
     """
+    # --- Phase 0: Hard blocklist check (NEVER askable) ---
+    is_blocklisted, bl_key, bl_desc = detect_blocklisted_command(command)
+    if is_blocklisted:
+        return {"approved": False, "blocklisted": True,
+                "message": f"Command blocked: {bl_desc}",
+                "description": bl_desc, "pattern_key": bl_key}
+
     # Skip containers for both checks
     if env_type in ("docker", "singularity", "modal", "daytona"):
         return {"approved": True, "message": None}

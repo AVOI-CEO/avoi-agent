@@ -673,6 +673,12 @@ DEFAULT_CONFIG = {
         },
     },
 
+    # Terminal execution settings
+    "terminal": {
+        # When true, terminal tool blocks write commands (touch, rm, mv, pip install, etc.)
+        "read_only": False,
+    },
+
     # Subagent delegation — override the provider:model used by delegate_task
     # so child agents can run on a different (cheaper/faster) provider and model.
     # Uses the same runtime provider resolution as CLI/gateway startup, so all
