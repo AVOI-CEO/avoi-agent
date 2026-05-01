@@ -1271,6 +1271,7 @@ class AIAgent:
             _agent_cfg = _load_agent_config()
         except Exception:
             _agent_cfg = {}
+        self._agent_cfg = _agent_cfg
 
         # Persistent memory (MEMORY.md + USER.md) -- loaded from disk
         self._memory_store = None
@@ -3818,6 +3819,58 @@ class AIAgent:
         platform_key = (self.platform or "").lower().strip()
         if platform_key in PLATFORM_HINTS:
             prompt_parts.append(PLATFORM_HINTS[platform_key])
+
+        # -------------------------------------------------------------------
+        # Context budgeting: estimate token usage and drop low-priority blocks
+        # when the system prompt exceeds the configured budget ratio.
+        # -------------------------------------------------------------------
+        if prompt_parts:
+            try:
+                from agent.model_metadata import estimate_tokens_rough, get_model_context_length as _gmcl
+                from avoi_cli.config import load_config as _lc
+                _budget_ratio = float(_lc().get("agent", {}).get("system_prompt_budget_ratio", 0.30))
+                _model_context = _gmcl(
+                    model=self.model,
+                    base_url=self.base_url,
+                    provider=self.provider,
+                    config_context_length=self._config_context_length,
+                )
+                _budget_tokens = max(2048, int(_model_context * _budget_ratio))
+                _estimated = estimate_tokens_rough("\n\n".join(p.strip() for p in prompt_parts if p.strip()))
+                if _estimated > _budget_tokens:
+                    logger.debug(
+                        "System prompt ~%d tokens exceeds budget %d. Dropping low-priority blocks.",
+                        _estimated, _budget_tokens,
+                    )
+                    # Priority layers: 0=drop first, 10=keep last
+                    _scored = [
+                        (10, prompt_parts[0]),  # Identity / SOUL.md -- always keep
+                    ]
+                    # Remaining parts get priority 5 by default
+                    for _p in prompt_parts[1:]:
+                        _scored.append((5, _p))
+                    # Deduplicate by content
+                    _seen = set()
+                    _unique = []
+                    for _pri, _part in sorted(_scored, key=lambda x: -x[0]):
+                        _normalized = _part.strip()
+                        if not _normalized or _normalized in _seen:
+                            continue
+                        _seen.add(_normalized)
+                        _unique.append((_pri, _normalized))
+                    # Keep highest priority within budget
+                    _selected = []
+                    _running = 0
+                    for _pri, _part in _unique:
+                        _part_tokens = estimate_tokens_rough(_part)
+                        if _running + _part_tokens > _budget_tokens and _selected:
+                            logger.debug("Budget: dropping priority %d block (~%d tokens)", _pri, _part_tokens)
+                            continue
+                        _selected.append(_part)
+                        _running += _part_tokens
+                    prompt_parts = _selected
+            except Exception:
+                pass
 
         return "\n\n".join(p.strip() for p in prompt_parts if p.strip())
 

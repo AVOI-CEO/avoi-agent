@@ -366,6 +366,10 @@ DEFAULT_CONFIG = {
         # (force on/off for all models), or a list of model-name substrings
         # to match (e.g. ["gpt", "codex", "gemini", "qwen"]).
         "tool_use_enforcement": "auto",
+        # System prompt token budget: percentage of model context window
+        # allocated to the system prompt. When exceeded, lower-priority
+        # blocks (wsl hints, subscription prompts, etc.) are dropped.
+        "system_prompt_budget_ratio": 0.30,
         # Staged inactivity warning: send a warning to the user at this
         # threshold before escalating to a full timeout.  The warning fires
         # once per run and does not interrupt the agent.  0 = disable warning.
