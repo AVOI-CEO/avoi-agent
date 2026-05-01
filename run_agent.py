@@ -1298,8 +1298,31 @@ class AIAgent:
                 pass  # Memory is optional -- don't break agent init
         
 
+        # -------------------------------------------------------------------
+        # LLM call wrapper for memory providers that need background extraction
+        # (Second Brain learns from conversations post-turn)
+        # -------------------------------------------------------------------
+        def _build_llm_call_fn(agent_self):
+            """Return a function that calls the agent's current model."""
+            def _llm_call(system_prompt, user_content):
+                try:
+                    result = agent_self._create_completion(
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_content},
+                        ],
+                        max_tokens=400,
+                        temperature=0.1,
+                    )
+                    if isinstance(result, dict):
+                        return result.get("content", "") or result.get("text", "") or str(result)
+                    return str(result) if result else ""
+                except Exception as e:
+                    logger.debug("LLM call for memory extraction failed: %s", e)
+                    return ""
+            return _llm_call
 
-        # Memory provider plugin (external — one at a time, alongside built-in)
+        # Memory provider plugin (external -- one at a time, alongside built-in)
         # Reads memory.provider from config to select which plugin to activate.
         self._memory_manager = None
         if not skip_memory:
@@ -1345,7 +1368,13 @@ class AIAgent:
                             "platform": platform or "cli",
                             "avoi_home": str(_ghh()),
                             "agent_context": "primary",
+                            "config": _agent_cfg,
                         }
+                        # Wire an LLM call function for providers that need
+                        # background extraction (Second Brain, etc.)
+                        if hasattr(self, '_create_completion'):
+                            _llm_wrapper = _build_llm_call_fn(self)
+                            _init_kwargs["llm_call_fn"] = _llm_wrapper
                         # Thread session title for memory provider scoping
                         # (e.g. honcho uses this to derive chat-scoped session keys)
                         if self._session_db:
