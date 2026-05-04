@@ -6974,7 +6974,7 @@ For more help on a command:
         description="Manage and run the skill library curator: view status, trigger reviews, pin/restore skills",
     )
     from avoi_cli.curator import register_subparser as register_curator
-    register_curator(curator_parser)
+    register_curator(curator_parser.add_subparsers(dest="curator_command", metavar="<subcommand>"))
 
     # =========================================================================
     # webhook command

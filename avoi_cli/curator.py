@@ -210,40 +210,36 @@ def _cmd_restore(args) -> int:
 
 
 def register_subparser(subparsers) -> None:
-    p = subparsers.add_parser("curator", help="Background skill library maintenance")
-    sp = p.add_subparsers(dest="curator_command", metavar="<subcommand>")
-    sp.required = True
-    
-    p_status = sp.add_parser("status", help="Show curator status and skill library overview")
+    p_status = subparsers.add_parser("status", help="Show curator status and skill library overview")
     p_status.set_defaults(func=_cmd_status)
     
-    p_run = sp.add_parser("run", help="Run a curator review pass")
+    p_run = subparsers.add_parser("run", help="Run a curator review pass")
     p_run.add_argument("--sync", action="store_true", help="Run synchronously (block until done)")
     p_run.add_argument("--dry-run", action="store_true", help="Preview only — no mutations")
     p_run.set_defaults(func=_cmd_run)
     
-    sp.add_parser("pause", help="Pause automatic curator runs").set_defaults(func=_cmd_pause)
-    sp.add_parser("resume", help="Resume automatic curator runs").set_defaults(func=_cmd_resume)
+    subparsers.add_parser("pause", help="Pause automatic curator runs").set_defaults(func=_cmd_pause)
+    subparsers.add_parser("resume", help="Resume automatic curator runs").set_defaults(func=_cmd_resume)
     
-    p_pin = sp.add_parser("pin", help="Prevent a skill from auto-transitioning")
+    p_pin = subparsers.add_parser("pin", help="Prevent a skill from auto-transitioning")
     p_pin.add_argument("skill", help="Skill name to pin")
     p_pin.set_defaults(func=_cmd_pin)
     
-    p_unpin = sp.add_parser("unpin", help="Allow auto-transitions for a pinned skill")
+    p_unpin = subparsers.add_parser("unpin", help="Allow auto-transitions for a pinned skill")
     p_unpin.add_argument("skill", help="Skill name to unpin")
     p_unpin.set_defaults(func=_cmd_unpin)
     
-    p_backup = sp.add_parser("backup", help="Take a manual snapshot of the skill library")
+    p_backup = subparsers.add_parser("backup", help="Take a manual snapshot of the skill library")
     p_backup.add_argument("--reason", default="", help="Optional reason for the snapshot")
     p_backup.set_defaults(func=_cmd_backup)
     
-    p_rollback = sp.add_parser("rollback", help="Restore skills from a snapshot")
+    p_rollback = subparsers.add_parser("rollback", help="Restore skills from a snapshot")
     p_rollback.add_argument("--list", dest="list_snapshots", action="store_true", help="List available snapshots")
     p_rollback.add_argument("--id", dest="snapshot_id", default="", help="Snapshot ID (default: newest)")
     p_rollback.add_argument("-y", action="store_true", dest="yes", help="Skip confirmation")
     p_rollback.set_defaults(func=_cmd_rollback)
     
-    p_restore = sp.add_parser("restore", help="Restore an archived skill")
+    p_restore = subparsers.add_parser("restore", help="Restore an archived skill")
     p_restore.add_argument("skill", help="Skill name to restore")
     p_restore.set_defaults(func=_cmd_restore)
 
