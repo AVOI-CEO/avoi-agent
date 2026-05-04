@@ -44,6 +44,8 @@ _avoi_CORE_TOOLS = [
     "browser_type", "browser_scroll", "browser_back",
     "browser_press", "browser_get_images",
     "browser_vision", "browser_console",
+    # Stealth web scraping
+    "scraper_fetch", "scraper_scrape",
     # Text-to-speech
     "text_to_speech",
     # Planning & memory
@@ -116,6 +118,14 @@ TOOLSETS = {
             "browser_type", "browser_scroll", "browser_back",
             "browser_press", "browser_get_images",
             "browser_vision", "browser_console", "web_search"
+        ],
+        "includes": []
+    },
+    
+    "scraper": {
+        "description": "Stealth web scraping with TLS fingerprint spoofing, Cloudflare bypass, adaptive CSS selectors, and headless browser automation",
+        "tools": [
+            "scraper_fetch", "scraper_scrape"
         ],
         "includes": []
     },
