@@ -6966,6 +6966,17 @@ For more help on a command:
     cron_parser.set_defaults(func=cmd_cron)
 
     # =========================================================================
+    # curator command
+    # =========================================================================
+    curator_parser = subparsers.add_parser(
+        "curator",
+        help="Background skill library maintenance (auto-consolidation, archiving)",
+        description="Manage and run the skill library curator: view status, trigger reviews, pin/restore skills",
+    )
+    from avoi_cli.curator import register_subparser as register_curator
+    register_curator(curator_parser)
+
+    # =========================================================================
     # webhook command
     # =========================================================================
     webhook_parser = subparsers.add_parser(

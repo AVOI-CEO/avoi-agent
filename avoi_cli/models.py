@@ -209,8 +209,10 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "claude-haiku-4-5-20251001",
     ],
     "deepseek": [
+        "deepseek-v4-pro",
         "deepseek-chat",
         "deepseek-reasoner",
+        "deepseek-v4-flash",
     ],
     "xiaomi": [
         "mimo-v2-pro",

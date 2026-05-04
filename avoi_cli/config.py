@@ -312,7 +312,7 @@ def ensure_avoi_home():
     else:
         home.mkdir(parents=True, exist_ok=True)
         _secure_dir(home)
-        for subdir in ("cron", "sessions", "logs", "memories"):
+        for subdir in ("cron", "sessions", "logs", "memories", "logs/curator", "skills/.curator_backups"):
             d = home / subdir
             d.mkdir(parents=True, exist_ok=True)
             _secure_dir(d)
@@ -828,8 +828,33 @@ DEFAULT_CONFIG = {
         "force_ipv4": False,
     },
 
+    # Skill library curator — background maintenance for agent-created skills.
+    "curator": {
+        # Enable/disable the curator entirely.
+        "enabled": True,
+        # How often to run (hours).  Default: 7 days.
+        "interval_hours": 168,
+        # Minimum agent idle time before running (hours).
+        "min_idle_hours": 2,
+        # Days without activity before marking a skill as stale.
+        "stale_after_days": 30,
+        # Days without activity before archiving a stale skill.
+        "archive_after_days": 90,
+        # Snapshot settings for pre-run backups.
+        "backup": {
+            "enabled": True,
+            "keep": 5,   # Number of backups to retain
+        },
+        # Optional: run the LLM review pass on a cheaper auxiliary model.
+        # Uncomment to override the main chat model for the curation pass:
+        # "auxiliary": {
+        #     "provider": "deepseek",
+        #     "model": "deepseek-v4-flash",
+        # },
+    },
+
     # Config schema version - bump this when adding new required fields
-    "_config_version": 19,
+    "_config_version": 20,
 }
 
 # =============================================================================

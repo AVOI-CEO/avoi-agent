@@ -1070,6 +1070,13 @@ def tick(verbose: bool = True, adapters=None, loop=None) -> int:
                 logger.error("Error processing job %s: %s", job['id'], e)
                 mark_job_run(job["id"], False, str(e))
 
+        # After processing jobs, check if the curator should run (best-effort)
+        try:
+            from agent.curator import maybe_run_curator
+            maybe_run_curator()
+        except Exception:
+            pass
+
         return executed
     finally:
         if fcntl:

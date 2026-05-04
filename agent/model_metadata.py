@@ -128,6 +128,8 @@ DEFAULT_CONTEXT_LENGTHS = {
     "gemma-3": 131072,
     "gemma": 8192,  # fallback for older gemma models
     # DeepSeek
+    "deepseek-v4-pro": 1048576,
+    "deepseek-v4-flash": 1048576,
     "deepseek": 128000,
     # Meta
     "llama": 131072,

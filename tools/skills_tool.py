@@ -1309,6 +1309,13 @@ def skill_view(name: str, file_path: str = None, task_id: str = None) -> str:
         if isinstance(metadata, dict):
             result["metadata"] = metadata
 
+        # Best-effort usage telemetry — bump view counter for this skill
+        try:
+            from tools import skill_usage as _su
+            _su.bump_view(skill_name)
+        except Exception:
+            pass
+
         return json.dumps(result, ensure_ascii=False)
 
     except Exception as e:
